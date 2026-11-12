@@ -74,3 +74,13 @@ body { overflow-x: hidden; }
   .brand small { font-size: 8px; }
   .project-visual { transform: scale(.78); margin-inline: -18px; }
 }
+
+/* Training page components */
+.training-format-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:28px}
+.training-format-card{border:1px solid #29435d;background:#0c2037;border-radius:6px;padding:24px}
+.training-format-card h3{font:600 18px Manrope;margin:0 0 10px}
+.training-format-card p,.training-details li{font-size:13px;color:#afc0d1}
+.training-details{align-items:start}
+.training-note{font-size:12px;line-height:1.7;color:#afc0d1;margin-top:20px}
+@media (min-width:961px) and (max-width:1100px){.nav{gap:14px;font-size:12px}.brand{gap:8px;font-size:11px}.site-header{padding-inline:18px}}
+@media (max-width:800px){.training-format-grid{grid-template-columns:1fr}}
