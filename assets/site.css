@@ -10,3 +10,67 @@
 .about-profile-photo{display:block;width:138px;height:158px;object-fit:cover;object-position:center 34%;border:1px solid #355675;border-radius:6px;margin:0 0 22px;box-shadow:0 12px 28px #020b1655}
 .credential-panel{align-self:start}
 @media(max-width:800px){.hero-profile-photo{width:42px;height:42px}.panel-identity{gap:9px}.about-profile-photo{width:124px;height:144px}}
+
+/* Responsive refinements for restored laptop windows and narrow screens */
+img, video, iframe { max-width: 100%; }
+body { overflow-x: hidden; }
+.wrap, .site-header, .hero, .feature-grid, .about-grid, .contact-grid,
+.service-grid, .case-columns, .footer-inner { min-width: 0; }
+.contact-email, .contact-aside a, .footer a { overflow-wrap: anywhere; }
+
+@media (min-width: 961px) and (max-width: 1100px) {
+  .site-header { padding-inline: 22px; }
+  .nav { gap: 17px; }
+  .hero { gap: 38px; }
+  .feature-grid { gap: 38px; }
+  .about-grid { gap: 42px; }
+  .contact-grid { gap: 38px; }
+  .service-card { padding: 22px; }
+}
+
+@media (min-width: 801px) and (max-width: 960px) {
+  .site-header { height: 72px; padding-inline: 22px; }
+  .menu-toggle { display: block; }
+  .nav {
+    display: none;
+    position: absolute;
+    top: 71px;
+    left: 0;
+    right: 0;
+    padding: 18px 24px 24px;
+    background: #0a1b30;
+    border-bottom: 1px solid #29435d;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 17px;
+  }
+  .nav.open { display: flex; }
+  .hero { grid-template-columns: 1fr 0.9fr; gap: 28px; padding-top: 65px; padding-bottom: 65px; }
+  .hero h1 { font-size: clamp(38px, 4.7vw, 46px); }
+  .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .service-card { min-height: 0; padding: 22px; }
+  .service-card p { min-height: 0; }
+  .feature-grid { gap: 25px; }
+  .about-grid, .contact-grid { gap: 28px; }
+  .project-visual { min-width: 0; transform: scale(.92); }
+  .proof { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .proof div:nth-child(2) { border: 0; }
+}
+
+@media (max-width: 480px) {
+  .site-header { padding-inline: 18px; }
+  .brand { gap: 9px; font-size: 11px; }
+  .brand-mark { width: 34px; height: 34px; }
+  .actions { align-items: stretch; }
+  .actions .button { width: 100%; }
+  .contact-form .button { width: 100%; }
+  .detail-card { grid-template-columns: 32px minmax(0, 1fr); }
+  .credential-panel, .case-card, .hero-panel { min-width: 0; }
+}
+
+@media (max-width: 360px) {
+  .wrap { width: calc(100% - 28px); }
+  .hero h1, .page-hero h1 { font-size: 35px; }
+  .brand small { font-size: 8px; }
+  .project-visual { transform: scale(.78); margin-inline: -18px; }
+}
