@@ -11,5 +11,5 @@ run_worker_first = ["/api/*", "/admin", "/src/*", "/migrations/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "consulting-db"
-database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+database_id = "3a4f765a-46c2-4040-9753-36e9483893a4"
 migrations_dir = "migrations"
