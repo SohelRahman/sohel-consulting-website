@@ -22,6 +22,5 @@ document.querySelectorAll('[data-quote]').forEach(b=>b.addEventListener('click',
 document.querySelectorAll('[data-enroll]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Confirm this learner enrollment?'))return;try{await api('/api/admin/registrations/'+b.dataset.enroll+'/enrollment',{method:'PATCH',body:JSON.stringify({enrollmentStatus:'confirmed'})});await loadDashboard();}catch(e){alert(e.message);}}));
 }
 function renderInquiries(rows){$('#inquiries').innerHTML=rows.length?'<table class="admin-table"><thead><tr><th>Received</th><th>Contact</th><th>Topic</th><th>Message</th><th>Status</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.created_at)+'</td><td>'+esc(r.full_name)+'<br>'+esc(r.email)+'<br>'+esc(r.phone)+'</td><td>'+esc(r.inquiry_type)+' · '+esc(r.topic)+'</td><td>'+esc(r.message)+'</td><td>'+esc(r.status)+'</td></tr>').join('')+'</tbody></table>':'<p class="admin-message">No inquiries yet.</p>';}
-$('#course-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;try{await api('/api/admin/courses',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(f)))});$('#course-message').textContent='Course created.';f.reset();await loadDashboard();}catch(err){$('#course-message').textContent=err.message;}});
 loadDashboard();
 </script></body></html>
