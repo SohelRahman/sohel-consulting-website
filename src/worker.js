@@ -113,7 +113,7 @@ async function handleApi(request, env) {
       await audit(env,session.email,"course_created","course",courseId,slug);
       return json({ok:true,id:courseId},201);
     }
-    const courseMatch=path.match(/^\\/api\\/admin\\/courses\\/([a-f0-9-]+)\\/status$/);
+    const courseMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)\/status$/);
     if (courseMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
@@ -140,7 +140,7 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 200").all();
       return json({inquiries:results});
     }
-    const enrollmentMatch=path.match(/^\\/api\\/admin\\/registrations\\/([a-f0-9-]+)\\/enrollment$/);
+    const enrollmentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/enrollment$/);
     if (enrollmentMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
