@@ -1,0 +1,20 @@
+name = "consulting"
+main = "src/worker.js"
+compatibility_date = "2026-11-12"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+not_found_handling = "404-page"
+html_handling = "none"
+run_worker_first = ["/api/*", "/admin", "/src/*", "/migrations/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "consulting-db"
+database_id = "3a4f765a-46c2-4040-9753-36e9483893a4"
+migrations_dir = "migrations"
+
+[[previews.d1_databases]]
+binding = "DB"
+database_id = "e0317397-77cb-4f36-9d19-2594ff75b0c2"

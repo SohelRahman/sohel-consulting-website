@@ -1,0 +1,6 @@
+/src/**
+/migrations/**
+/README.md
+/wrangler.toml
+/.assetsignore
+/.git/**
