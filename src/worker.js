@@ -140,6 +140,17 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 200").all();
       return json({inquiries:results});
     }
+    const enrollmentMatch=path.match(/^\\/api\\/admin\\/registrations\\/([a-f0-9-]+)\\/enrollment$/);
+    if (enrollmentMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      if (!["awaiting_confirmation","confirmed","cancelled"].includes(data?.enrollmentStatus)) return json({error:"Invalid enrollment status."},400);
+      const result=await env.DB.prepare("UPDATE registrations SET enrollment_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+        .bind(data.enrollmentStatus,enrollmentMatch[1]).run();
+      if (!result.meta.changes) return json({error:"Registration not found."},404);
+      await audit(env,session.email,"enrollment_status_changed","registration",enrollmentMatch[1],data.enrollmentStatus);
+      return json({ok:true});
+    }
     const match=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)$/);
     if (match && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
