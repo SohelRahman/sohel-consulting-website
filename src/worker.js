@@ -143,6 +143,19 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 200").all();
       return json({inquiries:results});
     }
+    const quoteMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/quote$/);
+    if (quoteMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const amount=Number(data?.amount);
+      const amountMinor=Math.round(amount*100);
+      if (!Number.isFinite(amountMinor) || amountMinor<1 || amountMinor>100000000000) return json({error:"Enter a valid quotation amount in BDT."},400);
+      const result=await env.DB.prepare("UPDATE registrations SET pricing_type='custom',quoted_fee_minor=?,currency='BDT',updated_at=CURRENT_TIMESTAMP WHERE id=?")
+        .bind(amountMinor,quoteMatch[1]).run();
+      if (!result.meta.changes) return json({error:"Registration not found."},404);
+      await audit(env,session.email,"custom_quote_set","registration",quoteMatch[1],String(amount));
+      return json({ok:true});
+    }
     const enrollmentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/enrollment$/);
     if (enrollmentMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
