@@ -169,6 +169,16 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 200").all();
       return json({inquiries:results});
     }
+    const inquiryMatch=path.match(new RegExp("^/api/admin/inquiries/([a-f0-9-]+)$"));
+    if (inquiryMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      if (!["new","in_progress","responded","closed"].includes(data?.status)) return json({error:"Invalid inquiry status."},400);
+      const result=await env.DB.prepare("UPDATE inquiries SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(data.status,inquiryMatch[1]).run();
+      if (!result.meta.changes) return json({error:"Inquiry not found."},404);
+      await audit(env,session.email,"inquiry_status_changed","inquiry",inquiryMatch[1],data.status);
+      return json({ok:true});
+    }
     const quoteMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/quote$/);
     if (quoteMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
