@@ -44,6 +44,7 @@ Do not publish the Worker with the placeholder D1 database ID or without setting
 - `PATCH /api/admin/courses/:id/status`
 - `GET /api/admin/registrations`
 - `PATCH /api/admin/registrations/:id`
+- `PATCH /api/admin/registrations/:id/quote`
 - `PATCH /api/admin/registrations/:id/enrollment`
 - `GET /api/admin/inquiries`
 
