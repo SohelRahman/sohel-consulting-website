@@ -96,6 +96,33 @@ async function handleApi(request, env) {
   if (path.startsWith("/api/admin/")) {
     const session=await readSession(request,env.SESSION_SECRET);
     if (!session) return json({error:"Authentication required."},401);
+    if (path === "/api/admin/courses" && method === "GET") {
+      const {results=[]}=await env.DB.prepare("SELECT * FROM courses ORDER BY title_en").all();
+      return json({courses:results});
+    }
+    if (path === "/api/admin/courses" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const title=clean(data?.title,140), slug=clean(data?.slug,100).toLowerCase().replace(/[^a-z0-9-]/g,"-");
+      if (!title || !slug) return json({error:"Course title and URL slug are required."},400);
+      const courseId=id();
+      try {
+        await env.DB.prepare("INSERT INTO courses (id,slug,title_en,title_bn,summary_en,summary_bn,pricing_type,currency,active) VALUES (?,?,?,?,?,?,?,?,1)")
+          .bind(courseId,slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),["fixed","custom","both"].includes(data.pricingType)?data.pricingType:"both","BDT").run();
+      } catch { return json({error:"Could not create course. Check whether the URL slug is already in use."},409); }
+      await audit(env,session.email,"course_created","course",courseId,slug);
+      return json({ok:true,id:courseId},201);
+    }
+    const courseMatch=path.match(/^\\/api\\/admin\\/courses\\/([a-f0-9-]+)\\/status$/);
+    if (courseMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      if (![0,1].includes(data?.active)) return json({error:"Invalid course status."},400);
+      const result=await env.DB.prepare("UPDATE courses SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(data.active,courseMatch[1]).run();
+      if (!result.meta.changes) return json({error:"Course not found."},404);
+      await audit(env,session.email,"course_status_changed","course",courseMatch[1],String(data.active));
+      return json({ok:true});
+    }
     if (path === "/api/admin/summary" && method === "GET") {
       const queries=await Promise.all([
         env.DB.prepare("SELECT COUNT(*) AS n FROM registrations").first(),
