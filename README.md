@@ -15,20 +15,42 @@ Bilingual English/Bangla website with consulting pages, course registration, inq
 
 - `index.html`, `services.html`, `training.html`, `about.html`, `case-studies.html`, `contact.html`
 - `register.html`, `faq.html`, `privacy.html`, `terms.html`, `refund.html`
-- Bangla pages are currently provided under `/bn/` for Home, Consulting, Training, Registration and Contact.
+- Bangla pages are provided under `/bn/`.
 - `404.html` provides the not-found page.
 
-## Cloudflare setup required before deployment
+## Cloudflare resources
 
-1. Create a D1 database named `consulting-db` in the Cloudflare account.
-2. Copy its database ID into `wrangler.toml`, replacing `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID`.
-3. Ensure the Worker is deployed with the D1 binding named `DB` and the static assets binding named `ASSETS`.
-4. Configure these Worker secrets: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `SESSION_SECRET`. Use a unique, strong password and a long random session secret.
-5. Apply the migration to the remote database with `npx wrangler d1 migrations apply consulting-db --remote`.
-6. Deploy with `npx wrangler deploy`.
-7. Test `/api/health`, public course listing, registration submission, admin login and administrator status updates.
+The D1 database `consulting-db` is configured in `wrangler.toml` with binding `DB`. Its initial schema migration is applied to the remote database.
 
-Do not publish the Worker with the placeholder D1 database ID or without setting all three administrator secrets. Do not commit secrets to GitHub.
+The Worker uses the static assets binding `ASSETS` and the D1 binding `DB`.
+
+## Manual production deployment through GitHub Actions
+
+The workflow at `.github/workflows/deploy-cloudflare.yml` is deliberately manual. It only deploys when it is run from the `main` branch; it does not deploy on every push or pull request.
+
+Before using it:
+
+1. Create a Cloudflare API token for CI/CD. Give it the Workers **Editor** role scoped to the existing `consulting` Worker only, if the Cloudflare account UI offers that resource scope. Do not grant account-wide Admin access. Cloudflare's current guidance: https://developers.cloudflare.com/workers/authorization/workers/ and https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/.
+2. In GitHub, open **Settings → Secrets and variables → Actions** for this repository.
+3. Add repository secrets named `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Paste the token and account ID into GitHub's secret-value fields. Never commit either value to the repository or paste them into chat.
+4. Merge the reviewed development pull request into `main` only after the application has passed review and testing.
+5. In GitHub, open **Actions → Deploy Cloudflare Worker → Run workflow**. Select `main` and start the workflow. The workflow will deploy the Worker and static assets to the existing `consulting` Worker.
+
+The deployment token is for GitHub Actions deployment only. It is not the same as the application's runtime secrets.
+
+## Worker runtime secrets
+
+After the Worker script has been deployed, configure these three encrypted secrets in Cloudflare under the `consulting` Worker:
+
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
+- `SESSION_SECRET`
+
+Use a unique administrator password and a long random session secret. Do not put these values in GitHub source files or share them in chat. These secrets are required for administrator login.
+
+## Database migration
+
+The remote D1 migration `0001_initial_schema.sql` has already been applied to `consulting-db`. Do not run it again manually unless a new migration file is added and its status is checked first.
 
 ## Current API routes
 
@@ -58,7 +80,7 @@ No payment gateway is connected. Registration records use a `not_configured` pay
 - Confirm biography, exact degree titles, employment history and case-study details.
 - Review privacy, terms and refund drafts for the actual business and applicable legal requirements.
 - Confirm course titles, schedules, delivery availability and fee amounts.
-- Configure D1, Worker secrets and deploy the Worker.
-- Run end-to-end tests in English and Bangla.
+- Configure the three Worker runtime secrets.
+- Run end-to-end tests in English and Bangla, including registration, inquiry intake and administrator actions.
 
 Never publish unconfirmed client names, project outcomes, prices or credentials.
