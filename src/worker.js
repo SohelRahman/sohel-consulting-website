@@ -56,7 +56,7 @@ async function handleApi(request, env) {
     if (!fullName || !emailOk(email) || !courseId) return json({error:"Please provide your name, valid email and course."},400);
     const course=await env.DB.prepare("SELECT id,pricing_type,fixed_fee_minor,currency FROM courses WHERE id=? AND active=1").bind(courseId).first();
     if (!course) return json({error:"Please select an available course."},400);
-    if (pricingType==="fixed" && course.pricing_type==="custom") return json({error:"This course requires a quotation."},400);
+    if (pricingType==="fixed" && (course.pricing_type==="custom" || !course.fixed_fee_minor)) return json({error:"A fixed fee is not configured for this course. Please request a customized quotation."},400);
     const learnerId=id(), registrationId=id();
     const reference="SR-"+crypto.randomUUID().replace(/-/g,"").slice(0,10).toUpperCase();
     await env.DB.batch([
@@ -104,11 +104,14 @@ async function handleApi(request, env) {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
       const title=clean(data?.title,140), slug=clean(data?.slug,100).toLowerCase().replace(/[^a-z0-9-]/g,"-");
+      const fixedFee=data?.fixedFee===""||data?.fixedFee==null?null:Math.round(Number(data.fixedFee)*100);
+      if (fixedFee!==null && (!Number.isFinite(fixedFee) || fixedFee<1)) return json({error:"Enter a valid positive fixed fee."},400);
+      if (data?.pricingType==="fixed" && fixedFee===null) return json({error:"A fixed-fee course needs a fee amount."},400);
       if (!title || !slug) return json({error:"Course title and URL slug are required."},400);
       const courseId=id();
       try {
-        await env.DB.prepare("INSERT INTO courses (id,slug,title_en,title_bn,summary_en,summary_bn,pricing_type,currency,active) VALUES (?,?,?,?,?,?,?,?,1)")
-          .bind(courseId,slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),["fixed","custom","both"].includes(data.pricingType)?data.pricingType:"both","BDT").run();
+        await env.DB.prepare("INSERT INTO courses (id,slug,title_en,title_bn,summary_en,summary_bn,pricing_type,fixed_fee_minor,currency,active) VALUES (?,?,?,?,?,?,?,?,?,1)")
+          .bind(courseId,slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),["fixed","custom","both"].includes(data.pricingType)?data.pricingType:"both",fixedFee,"BDT").run();
       } catch { return json({error:"Could not create course. Check whether the URL slug is already in use."},409); }
       await audit(env,session.email,"course_created","course",courseId,slug);
       return json({ok:true,id:courseId},201);
