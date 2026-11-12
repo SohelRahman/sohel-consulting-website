@@ -50,7 +50,7 @@ Use a unique administrator password and a long random session secret. Do not put
 
 ## Database migration
 
-The remote D1 migration `0001_initial_schema.sql` has already been applied to `consulting-db`. Do not run it again manually unless a new migration file is added and its status is checked first.
+The initial D1 migration `0001_initial_schema.sql` was applied to `consulting-db`. The development branch now includes `0002_rate_limits.sql`; this second migration must be applied to the remote database before deploying the updated Worker. Check migration status before applying it.
 
 ## Current API routes
 
@@ -69,6 +69,7 @@ The remote D1 migration `0001_initial_schema.sql` has already been applied to `c
 - `PATCH /api/admin/registrations/:id/quote`
 - `PATCH /api/admin/registrations/:id/enrollment`
 - `GET /api/admin/inquiries`
+- `PATCH /api/admin/inquiries/:id`
 
 ## Payment status
 
@@ -80,6 +81,7 @@ No payment gateway is connected. Registration records use a `not_configured` pay
 - Confirm biography, exact degree titles, employment history and case-study details.
 - Review privacy, terms and refund drafts for the actual business and applicable legal requirements.
 - Confirm course titles, schedules, delivery availability and fee amounts.
+- Apply any pending D1 migrations, including `0002_rate_limits.sql`.
 - Configure the three Worker runtime secrets.
 - Run end-to-end tests in English and Bangla, including registration, inquiry intake and administrator actions.
 
