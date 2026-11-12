@@ -84,3 +84,7 @@ body { overflow-x: hidden; }
 .training-note{font-size:12px;line-height:1.7;color:#afc0d1;margin-top:20px}
 @media (min-width:961px) and (max-width:1100px){.nav{gap:14px;font-size:12px}.brand{gap:8px;font-size:11px}.site-header{padding-inline:18px}}
 @media (max-width:800px){.training-format-grid{grid-template-columns:1fr}}
+
+/* Bengali text rendering */
+html[lang='bn'], html[lang='bn'] body { font-family: 'Noto Sans Bengali', 'Nirmala UI', sans-serif; }
+html[lang='bn'] h1, html[lang='bn'] h2, html[lang='bn'] h3, html[lang='bn'] .brand { font-family: 'Noto Sans Bengali', 'Nirmala UI', sans-serif; }
