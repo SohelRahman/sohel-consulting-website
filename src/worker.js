@@ -10,6 +10,26 @@ async function sign(value, secret) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
   return b64url(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)));
 }
+async function verifySignature(value, signature, secret) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name:"HMAC",hash:"SHA-256"}, false, ["verify"]);
+  try { return await crypto.subtle.verify("HMAC", key, fromB64url(signature), new TextEncoder().encode(value)); }
+  catch { return false; }
+}
+async function rateLimit(env, request, scope, maxRequests, windowMs) {
+  const ip = request.headers.get("cf-connecting-ip") || "unknown";
+  const identity = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(scope + ":" + ip));
+  const key = scope + ":" + Array.from(new Uint8Array(identity), b => b.toString(16).padStart(2,"0")).join("");
+  const now = Date.now();
+  await env.DB.prepare("DELETE FROM rate_limits WHERE expires_at < ?").bind(now).run();
+  const row = await env.DB.prepare(`INSERT INTO rate_limits (rate_key,window_started_at,request_count,expires_at) VALUES (?,?,1,?)
+    ON CONFLICT(rate_key) DO UPDATE SET
+      request_count=CASE WHEN rate_limits.window_started_at + ? <= ? THEN 1 ELSE rate_limits.request_count + 1 END,
+      window_started_at=CASE WHEN rate_limits.window_started_at + ? <= ? THEN ? ELSE rate_limits.window_started_at END,
+      expires_at=?
+    RETURNING request_count`)
+    .bind(key,now,now+windowMs,windowMs,now,windowMs,now,now,now+windowMs).first();
+  return (row?.request_count || 0) <= maxRequests;
+}
 async function makeSession(email, secret) {
   const payload = b64url(new TextEncoder().encode(JSON.stringify({email, exp:Date.now()+8*60*60*1000})));
   return payload + "." + await sign(payload, secret);
@@ -17,9 +37,9 @@ async function makeSession(email, secret) {
 async function readSession(request, secret) {
   const cookie = request.headers.get("cookie") || "";
   const token = cookie.split(";").map(x=>x.trim()).find(x=>x.startsWith("sr_admin="))?.slice(9);
-  if (!token || !secret) return null;
-  const [payload, signature] = token.split(".");
-  if (!payload || !signature || await sign(payload,secret) !== signature) return null;
+  if (!token || !secret || token.length > 2048) return null;
+  const [payload, signature, extra] = token.split(".");
+  if (!payload || !signature || extra || !(await verifySignature(payload,signature,secret))) return null;
   try {
     const data = JSON.parse(new TextDecoder().decode(fromB64url(payload)));
     return data.exp > Date.now() ? data : null;
@@ -27,7 +47,7 @@ async function readSession(request, secret) {
 }
 function sameOrigin(request) {
   const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
+  return Boolean(origin) && origin === new URL(request.url).origin;
 }
 async function audit(env, email, action, entityType, entityId, details = "") {
   await env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES (?,?,?,?,?,?)")
@@ -45,6 +65,7 @@ async function handleApi(request, env) {
 
   if (path === "/api/registrations" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"registration",5,15*60*1000))) return json({error:"Too many registration attempts. Please try again later."},429);
     const data = await request.json().catch(()=>null);
     if (!data || data.website) return json({error:"Invalid submission."},400);
     const fullName=clean(data.fullName,120), email=clean(data.email,180).toLowerCase();
@@ -69,6 +90,7 @@ async function handleApi(request, env) {
 
   if (path === "/api/inquiries" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"inquiry",5,15*60*1000))) return json({error:"Too many inquiry attempts. Please try again later."},429);
     const data=await request.json().catch(()=>null);
     if (!data || data.website) return json({error:"Invalid submission."},400);
     const name=clean(data.fullName,120), email=clean(data.email,180).toLowerCase(), message=clean(data.message,2000);
@@ -81,6 +103,7 @@ async function handleApi(request, env) {
 
   if (path === "/api/admin/login" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"admin-login",5,15*60*1000))) return json({error:"Too many login attempts. Please try again in 15 minutes."},429);
     if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD || !env.SESSION_SECRET) return json({error:"Administrator credentials are not configured."},503);
     const data=await request.json().catch(()=>null);
     const email=clean(data?.email,180).toLowerCase(), password=String(data?.password||"");
@@ -92,7 +115,10 @@ async function handleApi(request, env) {
       "set-cookie":`sr_admin=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`
     }});
   }
-  if (path === "/api/admin/logout" && method === "POST") return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","set-cookie":"sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
+  if (path === "/api/admin/logout" && method === "POST") {
+    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","set-cookie":"sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
+  }
   if (path.startsWith("/api/admin/")) {
     const session=await readSession(request,env.SESSION_SECRET);
     if (!session) return json({error:"Authentication required."},401);
