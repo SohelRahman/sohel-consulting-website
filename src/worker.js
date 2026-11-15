@@ -308,10 +308,11 @@ async function handleApi(request, env) {
       if(next.length<12||next.length>256)return json({error:"Your new password must contain at least 12 characters."},400);
       const account=await env.DB.prepare("SELECT password_hash FROM admin_users WHERE id=?").bind(user.id).first();
       if(!account || !(await passwordVerify(current,account.password_hash)))return json({error:"Current password is incorrect."},401);
-      const hash=await passwordHash(next);
-      await env.DB.prepare("UPDATE admin_users SET password_hash=?,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(hash,user.id).run();
+      const hash=await passwordHash(next),nextVersion=Number(user.session_version)+1;
+      await env.DB.prepare("UPDATE admin_users SET password_hash=?,session_version=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(hash,nextVersion,user.id).run();
       await audit(env,user.email,"password_changed","admin_user",user.id,"Self-service password change");
-      return json({ok:true});
+      const renewed=await makeSession(user.id,user.email,nextVersion,env.SESSION_SECRET);
+      return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","cache-control":"no-store","set-cookie":`sr_admin=${renewed}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`}});
     }
     if(path==="/api/admin/users" || path.startsWith("/api/admin/users/")){
       if(!isAdmin)return json({error:"Only administrators can manage dashboard accounts."},403);
