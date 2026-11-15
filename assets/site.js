@@ -48,7 +48,7 @@ const toggle=document.querySelector('.menu-toggle');const nav=document.querySele
  const device=matchMedia("(max-width: 640px)").matches?"mobile":matchMedia("(max-width: 1024px)").matches?"tablet":"desktop";
  const send=(event)=>{
   fetch("/api/analytics/event",{method:"POST",headers:{"content-type":"application/json"},keepalive:true,
-   body:JSON.stringify({visitorId,event,page:location.pathname.slice(0,160),referrer:document.referrer,device})}).catch(()=>{});
+   body:JSON.stringify({visitorId,event,page:location.pathname.slice(0,160),referrer:document.referrer?"https://"+new URL(document.referrer).hostname:"",device})}).catch(()=>{});
  };
  send("page_view");
  document.addEventListener("click",e=>{
