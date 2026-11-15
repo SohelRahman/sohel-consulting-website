@@ -2,7 +2,8 @@
 
 > **Purpose:** This is the canonical handover prompt for continuing work on this repository in a new ChatGPT conversation. Read this file and the linked source documents before making project changes. Keep this file current as implementation, decisions, and release status change.
 >
-> **Last maintained:** 2026-11-16  
+> **Last maintained:** 2026-11-16
+> **Latest status update:** User reports roadmap workstreams 2–6 (privacy/analytics, security, UI/UX, SEO/performance, business content) complete; full Preview QA and release administration remain open.  
 > **Repository:** `SohelRahman/sohel-consulting-website`  
 > **Active development branch:** `current-focus-development`
 
@@ -117,7 +118,7 @@ Always inspect current UI and Worker route implementation before assuming a part
 - Analytics deliberately excludes chat message contents, names, emails, phone numbers and full referrer URLs; referrer hostname only is sent.
 - Analytics visitor identifiers are intended to be removed when optional consent is rejected/withdrawn.
 - Analytics records older than 90 days are deleted during analytics event writes according to the recorded Worker implementation. Verify code before relying on or changing this behavior.
-- Consent and analytics behavior is not yet fully browser-QA verified.
+- **Project status update (2026-11-16):** The user reports that the privacy/analytics workstream is now complete. The prior consent re-enable concern is considered resolved by the user; do not continue listing it as an active defect. Verify current code and QA evidence before making a technical assurance or reopening the issue.
 
 ## 5. Technical architecture
 
@@ -343,21 +344,21 @@ The following work is recorded as implemented in the development branch. Verify 
 - `docs/VERSION_CONTROL_RELEASE.md`
 - `CHANGELOG.md`
 
-## 11. Known issues, incomplete verification and pending work
+## 11. Current status, known issues and pending work
 
-Treat these as open until verified and resolved.
+### Workstreams reported complete by the user (2026-11-16)
+The user has confirmed that the following workstreams from the project roadmap are complete:
+- Privacy preferences and consent-gated analytics (including the previously noted re-consent concern).
+- Security review/hardening.
+- UI/UX and accessibility improvements.
+- SEO and frontend performance work.
+- Business content and branding review/finalization.
 
-### Priority 1 — analytics consent re-enable behavior
-A possible issue was identified in `assets/site.js`: analytics initialization uses a persistent `started` boolean. After a visitor rejects or withdraws consent and later re-enables analytics in the same page session, initialization may not restart correctly and may retain stale visitor state. Inspect the current implementation, reproduce the behavior, implement a safe correction and add regression coverage. Do not assume the issue is fixed.
+This is a user-provided project status update. The assistant has not independently re-audited every implementation, external setting, business claim or browser test in this update. Do not misrepresent this status as an independently verified security audit or complete cross-browser QA. If a future code change affects one of these areas, inspect the implementation and relevant test evidence.
 
-Expected acceptance checks:
-- No optional analytics identifier or event before opt-in.
-- Accept starts analytics once.
-- Reject/withdraw stops future event transmission and clears the analytics visitor identifier as intended.
-- Re-consent in the same tab/session restarts analytics correctly without duplicate listeners/events.
-- Essential site features and chat continue working regardless of optional analytics choice.
+### Remaining verification and development work
 
-### Priority 2 — full Preview browser QA
+### Priority 1 — full Preview browser QA
 Full browser-based Preview QA has not been confirmed complete. Execute and record:
 - English and Bangla public pages.
 - Navigation, language switching, links, page metadata and images.
@@ -375,7 +376,7 @@ Full browser-based Preview QA has not been confirmed complete. Execute and recor
 
 Record actual evidence, browser/device, commit SHA, result and defects in the QA record. Do not mark manual tests passed because syntax CI is green.
 
-### Priority 3 — test automation depth
+### Priority 2 — test automation depth
 Current CI checks:
 ```sh
 node --input-type=module --check < src/worker.js
@@ -384,23 +385,13 @@ node scripts/validate-site.mjs
 ```
 These checks syntax and static site structure. They do not execute Worker routes or real browser flows. Assess and add practical tests for API payload validation, Worker route behavior, consent state transitions and core user journeys without introducing paid services.
 
-### Priority 4 — API documentation
+### Priority 3 — API documentation
 `docs/API.md` is only a route inventory. Gradually document exact request and response contracts from the actual Worker implementation, especially for registration, inquiry, admin, chat, analytics, media and custom-page routes.
 
-### Priority 5 — business content and launch readiness
-Before public launch, verify and obtain approval for:
-- Actual LinkedIn profile URL (placeholder recorded).
-- Biography, degree titles, employment history and case-study details.
-- Course titles, schedules, delivery availability and fees.
-- Consulting service descriptions and claims.
-- Privacy, terms and refund policies against actual business operations and applicable law.
-- Any client names, project outcomes, logos, testimonials or metrics.
-Never invent credentials, client approvals, project results, fees or legal compliance.
-
-### Priority 6 — payments (deferred)
+### Priority 4 — payments (deferred)
 No payment gateway is connected. Do not implement a gateway or imply payment functionality without explicit scope approval. Future payment work requires provider selection, merchant onboarding, payment initiation, server-side verification, reconciliation, failure/refund handling, security review and updated policies.
 
-### Priority 7 — release administration
+### Priority 5 — release administration
 An authorized repository administrator still needs to verify/configure:
 - `main` branch protection/ruleset.
 - Development branch force-push/deletion protection.
@@ -412,15 +403,11 @@ These are external administrative settings, not source-code changes. Do not clai
 ## 12. Recommended next sequence
 
 1. Check current branch head, open PRs, workflow runs and repository status.
-2. Inspect and fix the analytics consent re-enable behavior; add regression tests where practical.
-3. Run all repository validation and inspect the diff.
-4. Update this context document, relevant technical documentation and changelog in the same development change.
-5. Complete Preview deployment/configuration only if available and authorized; do not touch Production.
-6. Execute manual Preview QA and record evidence.
-7. Expand Worker/API automated tests and API contracts.
-8. Resolve business-content and legal review items.
-9. Complete GitHub branch/environment governance with an authorized administrator.
-10. Prepare a reviewed release candidate only after all applicable gates pass. Obtain explicit Production authorization before any Production action.
+2. Complete full Preview browser QA and record evidence for public pages, responsive layouts, forms, chat, admin, media and consent flows.
+3. Expand automated tests for core frontend behavior and Worker routes without changing API/database scope unless separately approved.
+4. Improve API contract documentation when API work is in scope.
+5. Complete remaining release administration with an authorized administrator.
+6. Prepare a reviewed release candidate only after all applicable gates pass. Obtain explicit Production authorization before any Production action.
 
 ## 13. Definition of done for every project change
 
