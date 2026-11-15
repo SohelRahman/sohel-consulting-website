@@ -5,7 +5,7 @@
 - Replaced the single shared administrator login path with salted PBKDF2 password hashes and signed user-bound sessions; configured Worker administrator credentials provision the initial Admin account on first successful login after migration.
 - Added server-side permission enforcement for dashboard API modules, account management endpoints, account disable/password reset/role updates and protection against removing the last active Admin.
 - Added an Admin-only User Access section to the dashboard with account creation, role assignment, module permissions, activation and password reset controls.
-- Added self-service password changes for authenticated dashboard accounts.
+- Added self-service password changes for authenticated dashboard accounts, with session renewal; administrator password resets revoke the target account's existing sessions using a database-backed session version.
 - Added migration `0009_admin_rbac.sql`. It must be applied to the dedicated Preview D1 database before testing the new login flow. Existing sessions must sign in again.
 - Production database, Production secrets and Production deployment were not changed.
 
