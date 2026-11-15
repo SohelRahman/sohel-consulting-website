@@ -58,6 +58,11 @@ async function handleApi(request, env) {
   if (!env.DB) return json({error:"Database is not configured."},503);
 
   if (path === "/api/health" && method === "GET") return json({ok:true, database:"connected", payments:"not_configured"});
+  if (path === "/api/page-styles" && method === "GET") {
+    try { const {results=[]}=await env.DB.prepare("SELECT element_key,style_json FROM page_styles WHERE published_json IS NOT NULL").all(); return json({styles:Object.fromEntries(results.map(row=>[row.element_key,JSON.parse(row.published_json)]))}); }
+    catch { return json({error:"Page styles are not initialized."},503); }
+  }
+
   if (path === "/api/site-content" && method === "GET") {
     try {
       const {results=[]}=await env.DB.prepare("SELECT content_key,content_value FROM site_content WHERE published=1").all();
@@ -210,6 +215,21 @@ async function handleApi(request, env) {
       if (!result.meta.changes) return json({error:"Content item not found."},404);
       await audit(env,session.email,"site_content_deleted","site_content",key,"");
       return json({ok:true});
+    }
+    if (path === "/api/admin/page-styles" && method === "GET") {
+      const {results=[]}=await env.DB.prepare("SELECT element_key,draft_json,published_json,updated_at FROM page_styles ORDER BY element_key").all();
+      return json({styles:results.map(row=>({...row,draft:row.draft_json?JSON.parse(row.draft_json):null,published:row.published_json?JSON.parse(row.published_json):null}))});
+    }
+    if (path === "/api/admin/page-styles" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null), key=clean(data?.key,100);
+      if (!["home.hero.eyebrow","home.hero.title","home.hero.lead","home.hero.note"].includes(key)) return json({error:"Select a supported homepage element."},400);
+      const input=data?.style||{}, validColor=v=>typeof v==="string" && /^#[0-9a-fA-F]{6}$/.test(v), validSize=v=>typeof v==="string" && /^(1[0-9]|[2-9][0-9]|1[0-2][0-9])px$/.test(v);
+      const style={color:validColor(input.color)?input.color:"#eef4fb",backgroundColor:validColor(input.backgroundColor)?input.backgroundColor:"transparent",fontSize:validSize(input.fontSize)?input.fontSize:"16px",mobileFontSize:validSize(input.mobileFontSize)?input.mobileFontSize:"16px",fontWeight:["400","500","600","700","800"].includes(String(input.fontWeight))?String(input.fontWeight):"400",textAlign:["left","center","right"].includes(input.textAlign)?input.textAlign:"left",maxWidth:["100%","90%","80%","70%","60%"].includes(input.maxWidth)?input.maxWidth:"100%"};
+      await env.DB.prepare("INSERT INTO page_styles (element_key,draft_json,updated_at) VALUES (?,?,CURRENT_TIMESTAMP) ON CONFLICT(element_key) DO UPDATE SET draft_json=excluded.draft_json,updated_at=CURRENT_TIMESTAMP").bind(key,JSON.stringify(style)).run();
+      await audit(env,session.email,"page_style_draft_saved","page_style",key,"draft");
+      if(data?.publish===true){await env.DB.prepare("UPDATE page_styles SET published_json=draft_json,published_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE element_key=?").bind(key).run();await audit(env,session.email,"page_style_published","page_style",key,"published");}
+      return json({ok:true,key,published:data?.publish===true});
     }
     if (path === "/api/admin/summary" && method === "GET") {
       const queries=await Promise.all([
