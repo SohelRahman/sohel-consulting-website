@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-16 — Project status update
+- Updated the master ChatGPT context to record the user's confirmation that privacy/analytics, security, UI/UX/accessibility, SEO/performance and business-content workstreams are complete.
+- Reprioritized remaining work around full Preview browser QA, test automation, API contract documentation and release administration.
+- Recorded that these completion statuses are user-reported and have not been independently re-audited in this documentation update; no Production deployment or environment change was performed.
+
 ## 2026-11-16
 
 ### Master project context prompt
