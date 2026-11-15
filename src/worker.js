@@ -58,6 +58,13 @@ async function handleApi(request, env) {
   if (!env.DB) return json({error:"Database is not configured."},503);
 
   if (path === "/api/health" && method === "GET") return json({ok:true, database:"connected", payments:"not_configured"});
+  if (path === "/api/site-content" && method === "GET") {
+    try {
+      const {results=[]}=await env.DB.prepare("SELECT content_key,content_value FROM site_content WHERE published=1").all();
+      return json({content:Object.fromEntries(results.map(row=>[row.content_key,row.content_value]))});
+    } catch { return json({error:"Website content is not initialized."},503); }
+  }
+
   if (path === "/api/courses" && method === "GET") {
     const {results=[]} = await env.DB.prepare("SELECT id,slug,title_en,title_bn,summary_en,summary_bn,level,delivery_modes,languages,pricing_type,fixed_fee_minor,currency FROM courses WHERE active=1 ORDER BY title_en").all();
     return json({courses:results});
@@ -179,6 +186,29 @@ async function handleApi(request, env) {
       const result=await env.DB.prepare("UPDATE courses SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(data.active,courseMatch[1]).run();
       if (!result.meta.changes) return json({error:"Course not found."},404);
       await audit(env,session.email,"course_status_changed","course",courseMatch[1],String(data.active));
+      return json({ok:true});
+    }
+    if (path === "/api/admin/site-content" && method === "GET") {
+      const {results=[]}=await env.DB.prepare("SELECT content_key,content_value,content_type,published,updated_at FROM site_content ORDER BY content_key").all();
+      return json({content:results});
+    }
+    if (path === "/api/admin/site-content" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const key=clean(data?.key,100).toLowerCase().replace(/[^a-z0-9._-]/g,"");
+      const value=clean(data?.value,5000);
+      const type=["text","textarea","url"].includes(data?.type)?data.type:"text";
+      if (!key || !value) return json({error:"Content key and value are required."},400);
+      await env.DB.prepare("INSERT INTO site_content (content_key,content_value,content_type,published,updated_at) VALUES (?,?,?,1,CURRENT_TIMESTAMP) ON CONFLICT(content_key) DO UPDATE SET content_value=excluded.content_value,content_type=excluded.content_type,updated_at=CURRENT_TIMESTAMP").bind(key,value,type).run();
+      await audit(env,session.email,"site_content_saved","site_content",key,type);
+      return json({ok:true,key});
+    }
+    if (path.startsWith("/api/admin/site-content/") && method === "DELETE") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const key=decodeURIComponent(path.slice("/api/admin/site-content/".length));
+      const result=await env.DB.prepare("DELETE FROM site_content WHERE content_key=?").bind(key).run();
+      if (!result.meta.changes) return json({error:"Content item not found."},404);
+      await audit(env,session.email,"site_content_deleted","site_content",key,"");
       return json({ok:true});
     }
     if (path === "/api/admin/summary" && method === "GET") {
