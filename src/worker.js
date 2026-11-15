@@ -58,6 +58,35 @@ async function cloudinarySignature(params, secret) {
   const digest=await crypto.subtle.digest("SHA-1",new TextEncoder().encode(canonical));
   return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
 }
+
+async function chatTokenHash(token) {
+  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function chatAnswer(env,message,language) {
+  const q=message.toLowerCase();
+  const bn=language==="bn";
+  if (/^(hi|hello|hey|good morning|good afternoon|good evening|হ্যালো|আসসালামু আলাইকুম|সালাম)/i.test(q.trim()))
+    return bn?"স্বাগতম। প্রজেক্ট ম্যানেজমেন্ট, SAP S/4HANA, বিজনেস অ্যানালাইসিস বা পরামর্শ সেবা সম্পর্কে জানতে চাইতে পারেন।":"Welcome. Ask me about Project Management, SAP S/4HANA, Business Analysis, training or consulting services.";
+  if (/(course|training|প্রশিক্ষণ|কোর্স|ট্রেনিং)/i.test(q)) {
+    const {results=[]}=await env.DB.prepare("SELECT title_en,title_bn,summary_en,summary_bn,pricing_type,fixed_fee_minor,currency FROM courses WHERE active=1 ORDER BY title_en").all();
+    if (!results.length) return bn?"বর্তমানে প্রকাশিত কোনো প্রশিক্ষণ কোর্সের তথ্য পাওয়া যায়নি।":"I couldn't find any currently active courses.";
+    const list=results.map(x=>bn?(x.title_bn||x.title_en)+" — "+(x.summary_bn||x.summary_en||""):(x.title_en+" — "+(x.summary_en||""))).join("\n");
+    return (bn?"বর্তমানে চালু কোর্সসমূহ:\n":"Currently available courses:\n")+list+(bn?"\nফি ও ব্যাচের তথ্য নিশ্চিত করতে যোগাযোগ করুন।":"\nContact us to confirm fees and batch availability.");
+  }
+  if (/(fee|price|cost|charge|ফি|মূল্য|খরচ)/i.test(q)) {
+    const {results=[]}=await env.DB.prepare("SELECT title_en,title_bn,pricing_type,fixed_fee_minor,currency FROM courses WHERE active=1 ORDER BY title_en").all();
+    if (!results.length) return bn?"কোর্স ফি সম্পর্কে নিশ্চিত তথ্য নেই। অনুগ্রহ করে যোগাযোগ করুন।":"I don't have confirmed fee information. Please contact the administrator.";
+    const lines=results.map(x=>{const title=bn?(x.title_bn||x.title_en):x.title_en;return x.fixed_fee_minor?title+": "+(x.fixed_fee_minor/100).toLocaleString("en-US")+" "+x.currency:(title+": "+(bn?"কাস্টম কোটেশন":"custom quotation"));});
+    return (bn?"প্রকাশিত কোর্স ফি:\n":"Published course pricing:\n")+lines.join("\n")+(bn?"\nচূড়ান্ত ফি নিশ্চিত করতে সরাসরি যোগাযোগ করুন।":"\nPlease contact us to confirm the final fee.");
+  }
+  if (/(sap|এসএপি)/i.test(q)) return bn?"SAP S/4HANA, SAP MM এবং procurement process বিষয়ে প্রশিক্ষণ ও সহায়তা দেওয়া হয়। নির্দিষ্ট প্রয়োজন জানাতে যোগাযোগ করুন।":"The website lists training in SAP S/4HANA, SAP MM and procurement processes. Contact us with your specific requirements.";
+  if (/(project management|pmp|প্রজেক্ট ম্যানেজমেন্ট)/i.test(q)) return bn?"প্রজেক্ট ম্যানেজমেন্ট প্রশিক্ষণে পরিকল্পনা, সময়সূচি, পর্যবেক্ষণ ও প্রকল্প বাস্তবায়নের মৌলিক বিষয় অন্তর্ভুক্ত।":"Project Management training covers practical planning, scheduling, monitoring and delivery fundamentals.";
+  if (/(business analysis|বিজনেস অ্যানালাইসিস)/i.test(q)) return bn?"বিজনেস অ্যানালাইসিসে requirements, stakeholder analysis, process mapping এবং UAT-এর মৌলিক বিষয় অন্তর্ভুক্ত।":"Business Analysis training covers requirements, stakeholder analysis, process mapping and UAT fundamentals.";
+  if (/(contact|email|phone|যোগাযোগ|ইমেইল)/i.test(q)) return bn?"ইমেইল: sohelrahman118@gmail.com। বিস্তারিত আলোচনার জন্য যোগাযোগ পাতার inquiry form ব্যবহার করতে পারেন।":"Email: sohelrahman118@gmail.com. You can also use the inquiry form on the Contact page.";
+  if (/(service|consult|পরামর্শ|সেবা)/i.test(q)) return bn?"ওয়েবসাইটে Project Management, SAP-সম্পর্কিত business process এবং Business Analysis বিষয়ে পরামর্শ সেবার তথ্য রয়েছে। আপনার প্রয়োজন জানাতে যোগাযোগ করুন।":"The website describes consulting support in Project Management, SAP-related business processes and Business Analysis. Contact us with your requirements.";
+  return bn?"এই বিষয়ে আমার কাছে নিশ্চিত প্রকাশিত তথ্য নেই। অনুগ্রহ করে অন্যভাবে প্রশ্ন করুন অথবা মানব সহায়তার জন্য 'মানব সহায়তা' লিখুন।":"I don't have confirmed published information about that. Please rephrase your question or type 'human support' to request a response from the administrator.";
+}
 async function handleApi(request, env) {
   const url = new URL(request.url), path = url.pathname, method = request.method;
   if (!env.DB) return json({error:"Database is not configured."},503);
@@ -85,6 +114,47 @@ async function handleApi(request, env) {
   if (path === "/api/courses" && method === "GET") {
     const {results=[]} = await env.DB.prepare("SELECT id,slug,title_en,title_bn,summary_en,summary_bn,level,delivery_modes,languages,pricing_type,fixed_fee_minor,currency FROM courses WHERE active=1 ORDER BY title_en").all();
     return json({courses:results});
+  }
+
+
+  if (path === "/api/chat/session" && method === "POST") {
+    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"chat-session",12,60*60*1000))) return json({error:"Chat limit reached. Please try again later."},429);
+    const data=await request.json().catch(()=>null), token=clean(data?.token,80);
+    if (!/^[a-f0-9]{64}$/i.test(token)) return json({error:"Invalid chat session."},400);
+    const tokenHash=await chatTokenHash(token), language=data?.language==="bn"?"bn":"en";
+    let conversation=await env.DB.prepare("SELECT id,status FROM chat_conversations WHERE visitor_token_hash=?").bind(tokenHash).first();
+    if (!conversation) {
+      const conversationId=id();
+      await env.DB.prepare("INSERT INTO chat_conversations (id,visitor_token_hash,language) VALUES (?,?,?)").bind(conversationId,tokenHash,language).run();
+      conversation={id:conversationId,status:"open"};
+    } else if (conversation.status==="closed") {
+      await env.DB.prepare("UPDATE chat_conversations SET status='open',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(conversation.id).run();
+    }
+    const {results=[]}=await env.DB.prepare("SELECT sender,message,created_at FROM chat_messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT 60").bind(conversation.id).all();
+    return json({conversationId:conversation.id,messages:results});
+  }
+  if (path === "/api/chat/messages" && method === "POST") {
+    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"chat-message",30,15*60*1000))) return json({error:"Too many chat messages. Please wait and try again."},429);
+    const data=await request.json().catch(()=>null), conversationId=clean(data?.conversationId,80), token=clean(data?.token,80), message=clean(data?.message,1000);
+    if (!/^[a-f0-9-]{36}$/i.test(conversationId) || !/^[a-f0-9]{64}$/i.test(token) || !message) return json({error:"Enter a valid message."},400);
+    const tokenHash=await chatTokenHash(token);
+    const conversation=await env.DB.prepare("SELECT id,language,status FROM chat_conversations WHERE id=? AND visitor_token_hash=?").bind(conversationId,tokenHash).first();
+    if (!conversation) return json({error:"Chat session not found. Refresh the chat and try again."},404);
+    if (conversation.status==="closed") return json({error:"This conversation is closed. Refresh to start a new conversation."},409);
+    await env.DB.prepare("INSERT INTO chat_messages (id,conversation_id,sender,message) VALUES (?,?,?,?)").bind(id(),conversationId,"visitor",message).run();
+    const wantsHuman=/(human support|talk to human|administrator|admin|মানব সহায়তা|মানুষের সাথে কথা|অ্যাডমিন)/i.test(message);
+    let reply;
+    if (wantsHuman) {
+      await env.DB.prepare("UPDATE chat_conversations SET status='needs_human',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(conversationId).run();
+      reply=conversation.language==="bn"?"আপনার অনুরোধটি প্রশাসকের কাছে পাঠানো হয়েছে। প্রশাসক অনলাইনে থাকলে উত্তর দেবেন।":"Your request has been flagged for administrator follow-up. An administrator can review this conversation and reply.";
+    } else {
+      reply=await chatAnswer(env,message,conversation.language);
+      await env.DB.prepare("UPDATE chat_conversations SET updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(conversationId).run();
+    }
+    await env.DB.prepare("INSERT INTO chat_messages (id,conversation_id,sender,message) VALUES (?,?,?,?)").bind(id(),conversationId,"bot",reply).run();
+    return json({reply,status:wantsHuman?"needs_human":"open"});
   }
 
   if (path === "/api/registrations" && method === "POST") {
@@ -352,6 +422,33 @@ async function handleApi(request, env) {
       await audit(env,session.email,"page_style_draft_saved","page_style",key,"draft");
       if(data?.publish===true){await env.DB.prepare("UPDATE page_styles SET published_json=draft_json,published_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE element_key=?").bind(key).run();await audit(env,session.email,"page_style_published","page_style",key,"published");}
       return json({ok:true,key,published:data?.publish===true});
+    }
+
+    if (path === "/api/admin/chat/conversations" && method === "GET") {
+      const {results=[]}=await env.DB.prepare(`SELECT c.id,c.status,c.language,c.created_at,c.updated_at,
+        (SELECT message FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+        (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id=c.id) AS message_count
+        FROM chat_conversations c ORDER BY CASE c.status WHEN 'needs_human' THEN 0 WHEN 'open' THEN 1 ELSE 2 END,c.updated_at DESC LIMIT 200`).all();
+      return json({conversations:results});
+    }
+    const chatAdminMatch=path.match(/^\/api\/admin\/chat\/conversations\/([a-f0-9-]+)$/);
+    if (chatAdminMatch && method === "GET") {
+      const conversation=await env.DB.prepare("SELECT id,status,language,created_at,updated_at FROM chat_conversations WHERE id=?").bind(chatAdminMatch[1]).first();
+      if (!conversation) return json({error:"Conversation not found."},404);
+      const {results=[]}=await env.DB.prepare("SELECT sender,message,created_at FROM chat_messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT 200").bind(chatAdminMatch[1]).all();
+      return json({conversation,messages:results});
+    }
+    if (chatAdminMatch && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null), message=clean(data?.message,2000);
+      if (!message) return json({error:"Enter a reply."},400);
+      const exists=await env.DB.prepare("SELECT id FROM chat_conversations WHERE id=?").bind(chatAdminMatch[1]).first();
+      if (!exists) return json({error:"Conversation not found."},404);
+      await env.DB.prepare("INSERT INTO chat_messages (id,conversation_id,sender,message) VALUES (?,?,?,?)").bind(id(),chatAdminMatch[1],"admin",message).run();
+      const status=data?.status==="closed"?"closed":"open";
+      await env.DB.prepare("UPDATE chat_conversations SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,chatAdminMatch[1]).run();
+      await audit(env,session.email,"chat_admin_reply","chat_conversation",chatAdminMatch[1],status);
+      return json({ok:true,status});
     }
     if (path === "/api/admin/summary" && method === "GET") {
       const queries=await Promise.all([
