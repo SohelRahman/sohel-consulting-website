@@ -201,6 +201,12 @@ async function handleApi(request, env) {
       return json({ok:true});
     }
 
+    const pagePreviewMatch=path.match(/^\\/api\\/admin\\/pages\\/([a-z0-9-]+)\\/preview$/);
+    if (pagePreviewMatch && method === "GET") {
+      const page=await env.DB.prepare("SELECT slug,title,language,seo_title,seo_description,draft_json FROM pages WHERE slug=?").bind(pagePreviewMatch[1]).first();
+      if (!page) return json({error:"Page not found."},404);
+      return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.draft_json)}});
+    }
     if (path === "/api/admin/pages" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT id,slug,title,language,status,seo_title,seo_description,updated_at,published_at,draft_json FROM pages ORDER BY updated_at DESC").all();
       return json({pages:results.map(p=>({...p,draft:JSON.parse(p.draft_json)}))});
