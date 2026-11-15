@@ -109,3 +109,13 @@ html[lang='bn'] h1, html[lang='bn'] h2, html[lang='bn'] h3, html[lang='bn'] .bra
 .menu-toggle:focus-visible,.nav a:focus-visible{outline:3px solid #8fd5ff;outline-offset:3px;border-radius:4px}
 .nav a{min-height:36px;display:inline-flex;align-items:center}
 @media(max-width:960px){.nav.open{max-height:calc(100vh - 74px);overflow-y:auto;overscroll-behavior:contain}.nav a{min-height:42px}}
+
+/* Form and admin interaction states */
+.contact-form input:focus-visible,.contact-form textarea:focus-visible,.contact-form select:focus-visible,
+.admin-form input:focus-visible,.admin-form textarea:focus-visible,.admin-form select:focus-visible,
+.admin-nav button:focus-visible,.admin-action:focus-visible{outline:3px solid #8fd5ff;outline-offset:2px}
+.contact-form button:disabled,.admin-form button:disabled{opacity:.6;cursor:wait}
+.form-status,.training-note[role="status"],#inquiry-status{overflow-wrap:anywhere}
+#sr-chat-launcher:focus-visible,#sr-chat-close:focus-visible,#sr-chat-send:focus-visible,#sr-chat-human:focus-visible{outline:3px solid #8fd5ff;outline-offset:3px}
+#sr-chat-launcher,#sr-chat-close,#sr-chat-send,#sr-chat-human{min-height:40px}
+@media(max-width:520px){#sr-chat-form{flex-wrap:wrap}#sr-chat-input{flex-basis:100%;min-height:44px}#sr-chat-send{flex:1;min-height:44px}#sr-chat-human{min-height:44px}}
