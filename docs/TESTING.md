@@ -42,7 +42,14 @@ These checks do not execute the application in a real browser.
 - [ ] Start a chat, send messages, reload and verify expected continuity.
 - [ ] Test request for human support and conversation status handling.
 
-### Administrator
+### Administrator and role-based access
+- [ ] Verify bootstrap Admin provisioning after migration 0009 is applied to Preview.
+- [ ] Verify Admin has full access and only Admin can access User Access management.
+- [ ] Create User accounts with different permission combinations; verify navigation and controls match the assigned permissions.
+- [ ] Attempt unauthorized API reads and writes directly; verify server-side 403 responses (including unknown admin routes).
+- [ ] Verify a manage permission includes read access for its module and chat.reply includes chat.view.
+- [ ] Verify disabling a user revokes access on the next request; verify password reset and self-service password change.
+- [ ] Verify an Admin cannot disable/demote their own account and the last active Admin cannot be disabled/demoted.
 - [ ] Verify login, invalid login, session expiry and logout.
 - [ ] Test course create/edit/activate/deactivate/delete as supported.
 - [ ] Test registration review, quotation and enrollment updates.
