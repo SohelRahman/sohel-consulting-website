@@ -67,6 +67,24 @@ For Worker Previews, configure the secrets separately under **Previews Base** (o
 
 Use a unique administrator password and a long random session secret. Do not put these values in GitHub source files or share them in chat. These secrets are required for administrator login.
 
+### Configure Preview secrets through GitHub Actions
+
+The workflow `.github/workflows/configure-preview-secrets.yml` configures both the shared Previews Base and the existing `current-focus-development` Preview. It only runs when manually started from `current-focus-development`; it cannot run from `main`.
+
+In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets:
+
+- `CLOUDFLARE_API_TOKEN` — a Cloudflare API token with permission to manage Worker Preview secrets.
+- `CLOUDFLARE_ACCOUNT_ID` — the Cloudflare account ID.
+- `PREVIEW_ADMIN_EMAIL` — the administrator email to use in Preview.
+- `PREVIEW_ADMIN_PASSWORD` — a unique Preview-only password.
+- `PREVIEW_SESSION_SECRET` — a long, randomly generated Preview-only session secret.
+
+Do not reuse Production administrator credentials for Preview. Never place secret values in source code, workflow YAML, commit messages, or chat.
+
+Then open **Actions → Configure Cloudflare Preview runtime secrets → Run workflow** and select `current-focus-development`. Review the run logs for success. The workflow sends secret values to Wrangler through standard input; it does not print them in the workflow commands.
+
+This workflow requires the Cloudflare API token and account ID to be configured as GitHub Actions secrets. It does not change Production Worker secrets or deploy to Production.
+
 ## Database migration
 
 The initial D1 migration `0001_initial_schema.sql` was applied to `consulting-db`. Migration `0002_rate_limits.sql` is included in this branch. Confirm the migration status separately for both the production and Preview databases before deploying updated Worker code. Do not apply Preview migrations to the production database or vice versa.
