@@ -25,8 +25,3 @@ ENVIRONMENT = "preview"
 binding = "DB"
 database_id = "e0317397-77cb-4f36-9d19-2594ff75b0c2"
 migrations_dir = "migrations"
-
-# Isolated object storage for Preview media uploads. Production has no MEDIA binding yet.
-[[previews.r2_buckets]]
-binding = "MEDIA"
-bucket_name = "consulting-media-preview"
