@@ -14,6 +14,8 @@ jobs:
   deploy:
     # Production deployments are allowed only from the main branch.
     if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
