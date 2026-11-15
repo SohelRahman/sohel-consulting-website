@@ -59,7 +59,7 @@ async function handleApi(request, env) {
 
   if (path === "/api/health" && method === "GET") return json({ok:true, database:"connected", payments:"not_configured"});
   if (path === "/api/page-styles" && method === "GET") {
-    try { const {results=[]}=await env.DB.prepare("SELECT element_key,style_json FROM page_styles WHERE published_json IS NOT NULL").all(); return json({styles:Object.fromEntries(results.map(row=>[row.element_key,JSON.parse(row.published_json)]))}); }
+    try { const {results=[]}=await env.DB.prepare("SELECT element_key,published_json FROM page_styles WHERE published_json IS NOT NULL").all(); return json({styles:Object.fromEntries(results.map(row=>[row.element_key,JSON.parse(row.published_json)]))}); }
     catch { return json({error:"Page styles are not initialized."},503); }
   }
 
