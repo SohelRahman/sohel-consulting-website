@@ -15,7 +15,7 @@
 <header class="site-header">
 <a class="brand" href="index.html"><span class="brand-mark">SR</span><span>সোহেল রহমান<small>পরামর্শ · প্রশিক্ষণ · পেশাগত উন্নয়ন</small></span></a>
 <button class="menu-toggle" aria-label="মেনু খুলুন" aria-expanded="false">☰</button>
-<nav class="nav"><a href="index.html">হোম</a><a href="services.html">পরামর্শ</a><a href="training.html">প্রশিক্ষণ</a><a href="register.html">নিবন্ধন</a><a href="about.html">পরিচিতি</a><a href="contact.html">যোগাযোগ</a><a href="../course.html">English</a></nav>
+<nav class="nav"><a href="index.html">হোম</a><a href="services.html">পরামর্শ</a><a href="training.html">প্রশিক্ষণ</a><a href="register.html">নিবন্ধন</a><a href="about.html">পরিচিতি</a><a href="contact.html">যোগাযোগ</a><a id="language-switch" href="../course.html">English</a></nav>
 </header>
 <main>
 <section class="page-hero wrap">
@@ -33,6 +33,7 @@
 <script src="../assets/site.js"></script>
 <script>
 const params=new URLSearchParams(location.search),slug=params.get('slug'),title=document.getElementById('course-title');
+document.getElementById('language-switch').href='../course.html'+(slug?'?slug='+encodeURIComponent(slug):'');
 const deliveryNames={online:'অনলাইন',classroom:'শ্রেণিকক্ষে',either:'অনলাইন অথবা শ্রেণিকক্ষে'};
 const languageNames={en:'ইংরেজি',bn:'বাংলা'};
 fetch('/api/courses').then(response=>{if(!response.ok)throw new Error('Course request failed');return response.json();}).then(data=>{
