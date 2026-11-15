@@ -47,7 +47,7 @@ These checks do not execute the application in a real browser.
 - [ ] Verify Admin has full access and only Admin can access User Access management.
 - [ ] Create User accounts with different permission combinations; verify navigation and controls match the assigned permissions.
 - [ ] Attempt unauthorized API reads and writes directly; verify server-side 403 responses (including unknown admin routes).
-- [ ] Verify a manage permission includes read access for its module and chat.reply includes chat.view.
+- [ ] Verify a manage permission includes read access for its module and chat.reply includes chat.view. Verify account password resets invalidate other active sessions and self-service password changes renew the current session.
 - [ ] Verify disabling a user revokes access on the next request; verify password reset and self-service password change.
 - [ ] Verify an Admin cannot disable/demote their own account and the last active Admin cannot be disabled/demoted.
 - [ ] Verify login, invalid login, session expiry and logout.
