@@ -27,7 +27,7 @@ function check(name, condition) {
 check("All documented RBAC permissions are defined", permissions.every(p => worker.includes('"'+p+'"')));
 check("Admin role receives the complete permission set", /if\(user\?\.role==="admin"\)return ADMIN_PERMISSIONS/.test(worker));
 check("Unknown admin API routes fail closed for User accounts", /const allowed=Boolean\(required &&/.test(worker) && /if\(!isAdmin && !allowed\)return json\(\{error:"You do not have permission/.test(worker));
-check("Manage permissions imply view permissions", /required\.endsWith\("\.view"\).*required\.replace\(/\\\.view\$/, "\.manage"\)/.test(worker));
+check("Manage permissions imply view permissions", worker.includes('required.endsWith(".view")') && worker.includes('required.replace(/\\.view$/, ".manage")'));
 check("Chat reply permission implies chat view", /required==="chat\.view" && permissions\.includes\("chat\.reply"\)/.test(worker));
 check("User-management endpoints are Admin-only", /if\(!isAdmin\)return json\(\{error:"Only administrators can manage dashboard accounts\."\},403\)/.test(worker));
 check("Self-service password changes require a 12-character minimum", /next\.length<12/.test(worker));
