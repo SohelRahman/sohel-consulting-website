@@ -330,7 +330,7 @@ async function handleApi(request, env) {
         const target=await env.DB.prepare("SELECT id,email,role,is_active,permissions_json FROM admin_users WHERE id=?").bind(userMatch[1]).first();
         if(!target)return json({error:"User account not found."},404);
         const data=await request.json().catch(()=>null);
-        if(target.id===user.id && data?.is_active===false)return json({error:"You cannot disable your own account."},400);
+        if(target.id===user.id && (data?.is_active===false || data?.role==="user"))return json({error:"You cannot disable or demote your own account."},400);
         const role=data?.role==="admin"?"admin":data?.role==="user"?"user":target.role;
         const active=typeof data?.is_active==="boolean"?Number(data.is_active):Number(target.is_active);
         if(target.role==="admin" && (role!=="admin"||!active)){
@@ -343,7 +343,7 @@ async function handleApi(request, env) {
         if(password!==null&&(password.length<12||password.length>256))return json({error:"A new password must contain at least 12 characters."},400);
         const hash=password?await passwordHash(password):null;
         await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),updated_at=CURRENT_TIMESTAMP WHERE id=?")
-          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||permissionsFor(target))),hash,userMatch[1]).run();
+          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||(target.role==="admin"?[]:permissionsFor(target)))),hash,userMatch[1]).run();
         await audit(env,session.email,"admin_user_updated","admin_user",userMatch[1],JSON.stringify({role,is_active:!!active,password_reset:!!password}));
         return json({ok:true});
       }
