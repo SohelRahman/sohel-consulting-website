@@ -17,10 +17,10 @@ const toggle=document.querySelector('.menu-toggle');const nav=document.querySele
  @media(max-width:520px){#sr-chat-launcher{right:14px;bottom:14px}#sr-chat-panel{right:10px;bottom:70px;width:calc(100vw - 20px);height:min(520px,calc(100vh - 90px))}}
  `;
  document.head.append(style);
- const launcher=document.createElement("button");launcher.id="sr-chat-launcher";launcher.type="button";launcher.textContent=words.open;launcher.setAttribute("aria-expanded","false");
- const panel=document.createElement("section");panel.id="sr-chat-panel";panel.setAttribute("aria-label",words.title);
+ const launcher=document.createElement("button");launcher.id="sr-chat-launcher";launcher.type="button";launcher.textContent=words.open;launcher.setAttribute("aria-expanded","false");launcher.setAttribute("aria-controls","sr-chat-panel");
+ const panel=document.createElement("section");panel.id="sr-chat-panel";panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","false");panel.setAttribute("aria-hidden","true");panel.setAttribute("aria-label",words.title);
  const head=document.createElement("div");head.id="sr-chat-head";const title=document.createElement("span");title.textContent=words.title;const close=document.createElement("button");close.id="sr-chat-close";close.type="button";close.textContent="×";close.setAttribute("aria-label",bn?"বন্ধ করুন":"Close");head.append(title,close);
- const log=document.createElement("div");log.id="sr-chat-log";log.setAttribute("aria-live","polite");
+ const log=document.createElement("div");log.id="sr-chat-log";log.setAttribute("role","log");log.setAttribute("aria-live","polite");log.setAttribute("aria-relevant","additions");
  const note=document.createElement("div");note.id="sr-chat-note";note.textContent=bn?"স্বয়ংক্রিয় উত্তর প্রকাশিত ওয়েবসাইট তথ্যের ভিত্তিতে দেওয়া হয়। কথোপকথন সংরক্ষণ করা হয়।":"Automated replies use published website information. Chat messages are stored for support.";
  const human=document.createElement("button");human.id="sr-chat-human";human.type="button";human.textContent=words.human;
  const form=document.createElement("form");form.id="sr-chat-form";const input=document.createElement("input");input.id="sr-chat-input";input.maxLength=1000;input.required=true;input.placeholder=words.placeholder;input.autocomplete="off";input.setAttribute("aria-label",words.placeholder);
