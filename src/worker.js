@@ -210,7 +210,7 @@ async function handleApi(request, env) {
       const data=await request.json().catch(()=>null);
       const slug=clean(data?.slug,80).toLowerCase().replace(/[^a-z0-9-]/g,"-").replace(/^-+|-+$/g,"");
       const title=clean(data?.title,140), language=["en","bn"].includes(data?.language)?data.language:"en";
-      if (!slug || !title || ["admin","api","assets","bn","src","migrations"].includes(slug)) return json({error:"Enter a valid page title and URL slug."},400);
+      if (!slug || !title || ["admin","api","assets","bn","src","migrations","index","services","training","register","case-studies","about","faq","contact","privacy","terms","refund","404","page"].includes(slug)) return json({error:"Enter a valid page title and URL slug."},400);
       const pageId=id();
       try { await env.DB.prepare("INSERT INTO pages (id,slug,title,language,draft_json,seo_title,seo_description) VALUES (?,?,?,?,?,?,?)").bind(pageId,slug,title,language,JSON.stringify({sections:[]}),clean(data?.seoTitle,160),clean(data?.seoDescription,300)).run(); }
       catch { return json({error:"That page URL already exists."},409); }
