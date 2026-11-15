@@ -23,10 +23,21 @@ This document is an inventory of routes identified in `src/worker.js`. It is not
 | --- | --- | --- |
 | POST | `/api/admin/login` | Authenticate administrator |
 | POST | `/api/admin/logout` | End administrator session |
+| GET | `/api/admin/me` | Return current account role and effective permissions |
 
 Administrator routes require a valid signed session unless explicitly handled otherwise in the Worker.
 
 ## Administrator endpoints
+
+### Account and role administration (Admin role only)
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET, POST | `/api/admin/users` | List dashboard accounts and create an account |
+| PATCH, DELETE | `/api/admin/users/:id` | Update role, permissions, status or password; disable an account |
+
+User accounts can be assigned granular module permissions. A manage permission also grants read access for that module. Admin accounts receive all permissions. Public website visitors remain separate from dashboard accounts.
+
 
 | Method | Path | Purpose |
 | --- | --- | --- |
