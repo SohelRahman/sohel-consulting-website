@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-16 — Role-based dashboard access
+- Added a database-backed `admin_users` account model with Admin and User roles and granular module permissions.
+- Replaced the single shared administrator login path with salted PBKDF2 password hashes and signed user-bound sessions; configured Worker administrator credentials provision the initial Admin account on first successful login after migration.
+- Added server-side permission enforcement for dashboard API modules, account management endpoints, account disable/password reset/role updates and protection against removing the last active Admin.
+- Added an Admin-only User Access section to the dashboard with account creation, role assignment, module permissions, activation and password reset controls.
+- Added migration `0009_admin_rbac.sql`. It must be applied to the dedicated Preview D1 database before testing the new login flow. Existing sessions must sign in again.
+- Production database, Production secrets and Production deployment were not changed.
+
 ## 2026-11-16 — Project status update
 - Updated the master ChatGPT context to record the user's confirmation that privacy/analytics, security, UI/UX/accessibility, SEO/performance and business-content workstreams are complete.
 - Reprioritized remaining work around full Preview browser QA, test automation, API contract documentation and release administration.
