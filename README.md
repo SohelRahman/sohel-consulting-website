@@ -123,3 +123,20 @@ No payment gateway is connected. Registration records use a `not_configured` pay
 - Run end-to-end tests in English and Bangla, including registration, inquiry intake and administrator actions.
 
 Never publish unconfirmed client names, project outcomes, prices or credentials.
+
+
+## Developer documentation
+
+The maintained technical documentation is in [`docs/`](docs/):
+
+- [Architecture](docs/ARCHITECTURE.md) — application components, request flow and security boundaries.
+- [Development guide](docs/DEVELOPMENT.md) — repository structure, local setup and development workflow.
+- [Database reference](docs/DATABASE.md) — D1 environments, migration history and table responsibilities.
+- [API reference](docs/API.md) — public and administrator route inventory.
+- [Configuration and secrets](docs/CONFIGURATION.md) — bindings, runtime secrets and environment isolation.
+- [Deployment guide](docs/DEPLOYMENT.md) — Preview validation and Production release controls.
+- [Testing and QA](docs/TESTING.md) — automated checks and manual test cases.
+- [Maintenance runbook](docs/MAINTENANCE.md) — troubleshooting, data protection and incident response.
+- [Changelog](CHANGELOG.md) — significant development and maintenance history.
+
+**Maintenance requirement:** Update the relevant documentation and changelog in the same development change whenever code, APIs, database schema, configuration, security behavior, testing or deployment procedures change. Documentation must describe verified implementation; unresolved details must be marked as pending verification.
