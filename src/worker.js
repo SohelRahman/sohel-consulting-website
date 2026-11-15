@@ -57,6 +57,13 @@ async function handleApi(request, env) {
   const url = new URL(request.url), path = url.pathname, method = request.method;
   if (!env.DB) return json({error:"Database is not configured."},503);
 
+
+  const pagePublicMatch=path.match(/^\\/api\\/pages\\/([a-z0-9-]+)$/);
+  if (pagePublicMatch && method === "GET") {
+    const page=await env.DB.prepare("SELECT slug,title,language,published_json,seo_title,seo_description FROM pages WHERE slug=? AND status='published' AND published_json IS NOT NULL").bind(pagePublicMatch[1]).first();
+    if (!page) return json({error:"Page not found."},404);
+    return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.published_json)}});
+  }
   if (path === "/api/health" && method === "GET") return json({ok:true, database:"connected", payments:"not_configured"});
   if (path === "/api/page-styles" && method === "GET") {
     try { const {results=[]}=await env.DB.prepare("SELECT element_key,published_json FROM page_styles WHERE published_json IS NOT NULL").all(); return json({styles:Object.fromEntries(results.map(row=>[row.element_key,JSON.parse(row.published_json)]))}); }
@@ -193,6 +200,58 @@ async function handleApi(request, env) {
       await audit(env,session.email,"course_status_changed","course",courseMatch[1],String(data.active));
       return json({ok:true});
     }
+
+    if (path === "/api/admin/pages" && method === "GET") {
+      const {results=[]}=await env.DB.prepare("SELECT id,slug,title,language,status,seo_title,seo_description,updated_at,published_at,draft_json FROM pages ORDER BY updated_at DESC").all();
+      return json({pages:results.map(p=>({...p,draft:JSON.parse(p.draft_json)}))});
+    }
+    if (path === "/api/admin/pages" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const slug=clean(data?.slug,80).toLowerCase().replace(/[^a-z0-9-]/g,"-").replace(/^-+|-+$/g,"");
+      const title=clean(data?.title,140), language=["en","bn"].includes(data?.language)?data.language:"en";
+      if (!slug || !title || ["admin","api","assets","bn","src","migrations"].includes(slug)) return json({error:"Enter a valid page title and URL slug."},400);
+      const pageId=id();
+      try { await env.DB.prepare("INSERT INTO pages (id,slug,title,language,draft_json,seo_title,seo_description) VALUES (?,?,?,?,?,?,?)").bind(pageId,slug,title,language,JSON.stringify({sections:[]}),clean(data?.seoTitle,160),clean(data?.seoDescription,300)).run(); }
+      catch { return json({error:"That page URL already exists."},409); }
+      await audit(env,session.email,"page_created","page",pageId,slug);
+      return json({ok:true,id:pageId,slug},201);
+    }
+    const pageMatch=path.match(/^\\/api\\/admin\\/pages\\/([a-z0-9-]+)$/);
+    if (pageMatch && method === "PUT") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const title=clean(data?.title,140), language=["en","bn"].includes(data?.language)?data.language:"en";
+      const sections=Array.isArray(data?.sections)?data.sections.slice(0,30):null;
+      if (!title || !sections) return json({error:"Page title and a valid section list are required."},400);
+      const allowedTypes=["hero","text","split","cards","cta"];
+      const safeText=(v,max=3000)=>clean(v,max);
+      const safeSections=[];
+      for (const section of sections) {
+        if (!section || !allowedTypes.includes(section.type)) return json({error:"Unsupported page section type."},400);
+        const layout=section.layout||{};
+        const color=v=>typeof v==="string" && /^#[0-9a-fA-F]{6}$/.test(v)?v:"";
+        const size=v=>Number.isInteger(Number(v))?Math.max(0,Math.min(160,Number(v))):64;
+        const item={id:clean(section.id,60),type:section.type,heading:safeText(section.heading,180),body:safeText(section.body,5000),buttonText:safeText(section.buttonText,80),buttonUrl:safeText(section.buttonUrl,300),layout:{backgroundColor:color(layout.backgroundColor),textColor:color(layout.textColor),textAlign:["left","center","right"].includes(layout.textAlign)?layout.textAlign:"left",maxWidth:["720","900","1100","1280"].includes(String(layout.maxWidth))?String(layout.maxWidth):"1100",paddingTop:size(layout.paddingTop),paddingBottom:size(layout.paddingBottom)}};
+        if(section.type==="split"){item.left={heading:safeText(section.left?.heading,180),body:safeText(section.left?.body,3000)};item.right={heading:safeText(section.right?.heading,180),body:safeText(section.right?.body,3000)};}
+        if(section.type==="cards")item.items=Array.isArray(section.items)?section.items.slice(0,6).map(x=>({heading:safeText(x?.heading,180),body:safeText(x?.body,1200),buttonText:safeText(x?.buttonText,80),buttonUrl:safeText(x?.buttonUrl,300)})):[];
+        safeSections.push(item);
+      }
+      const draft={sections:safeSections};
+      const publish=data?.publish===true;
+      const result=await env.DB.prepare("UPDATE pages SET title=?,language=?,seo_title=?,seo_description=?,draft_json=?,published_json=CASE WHEN ?=1 THEN ? ELSE published_json END,status=CASE WHEN ?=1 THEN 'published' ELSE status END,published_at=CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE published_at END,updated_at=CURRENT_TIMESTAMP WHERE slug=?")
+        .bind(title,language,clean(data?.seoTitle,160),clean(data?.seoDescription,300),JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageMatch[1]).run();
+      if(!result.meta.changes)return json({error:"Page not found."},404);
+      await audit(env,session.email,publish?"page_published":"page_draft_saved","page",pageMatch[1],String(safeSections.length)+" sections");
+      return json({ok:true,published:publish});
+    }
+    if (pageMatch && method === "DELETE") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const result=await env.DB.prepare("DELETE FROM pages WHERE slug=?").bind(pageMatch[1]).run();
+      if(!result.meta.changes)return json({error:"Page not found."},404);
+      await audit(env,session.email,"page_deleted","page",pageMatch[1],"");
+      return json({ok:true});
+    }
     if (path === "/api/admin/site-content" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT content_key,content_value,content_type,published,updated_at FROM site_content ORDER BY content_key").all();
       return json({content:results});
@@ -305,6 +364,14 @@ export default {
       catch (error) { console.error("API error",error); return json({error:"The request could not be completed."},500); }
     }
     if (url.pathname.startsWith("/src/") || url.pathname.startsWith("/migrations/") || url.pathname === "/wrangler.toml") return new Response("Not found",{status:404});
+
+    const pagePath=url.pathname.match(/^\\/([a-z0-9-]+)\\.html$/);
+    if (pagePath && !["index","admin","404"].includes(pagePath[1])) {
+      try {
+        const page=await env.DB.prepare("SELECT id FROM pages WHERE slug=? AND status='published'").bind(pagePath[1]).first();
+        if(page)return env.ASSETS.fetch(new Request(new URL("/page.html?slug="+encodeURIComponent(pagePath[1]),url),request));
+      } catch(error) { console.error("Page lookup failed",error); }
+    }
     if (url.pathname === "/admin") return Response.redirect(new URL("/admin.html",url),302);
     return env.ASSETS.fetch(request);
   }
