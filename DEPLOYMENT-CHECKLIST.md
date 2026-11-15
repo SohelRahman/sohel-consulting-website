@@ -11,6 +11,21 @@ This project runs as a Cloudflare Worker with static assets and a D1 database. U
 - [ ] Confirm the latest GitHub Actions validation run passes after the final change
 - [ ] Confirm the Preview Worker is reachable and serves all public pages
 
+## Version control and release controls
+
+- [ ] Protect `main` with PR-only changes; block direct and force pushes
+- [ ] Require at least one approval and dismiss stale approvals
+- [ ] Require the development validation workflow before merging to `main`
+- [ ] Require conversation resolution and restrict branch deletion
+- [ ] Protect `current-focus-development` against force pushes and deletion
+- [ ] Create GitHub Environment `production` and configure required reviewers
+- [ ] Verify Production deployment workflow uses the protected environment
+- [ ] Agree on commit message convention and release owner
+- [ ] Select a release version and create an annotated tag for each approved Production release
+- [ ] Retain PR, CI, Preview QA, migration, approval and deployment evidence
+
+See [Version Control and Release Management Policy](docs/VERSION_CONTROL_RELEASE.md).
+
 ## Preview environment
 
 - [ ] Confirm Preview D1 binding points to `consulting-preview-db`, not Production
