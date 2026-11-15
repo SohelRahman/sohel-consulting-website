@@ -58,6 +58,21 @@ async function handleApi(request, env) {
   if (!env.DB) return json({error:"Database is not configured."},503);
 
 
+  if (path.startsWith("/api/media/") && method === "GET") {
+    if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
+    let key="";
+    try { key=decodeURIComponent(path.slice("/api/media/".length)); } catch { return json({error:"Invalid media path."},400); }
+    if (!/^images\\/[a-f0-9-]+\\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Media file not found."},404);
+    const object=await env.MEDIA.get(key);
+    if (!object) return json({error:"Media file not found."},404);
+    const headers=new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set("etag",object.httpEtag);
+    headers.set("cache-control","public, max-age=31536000, immutable");
+    headers.set("x-content-type-options","nosniff");
+    return new Response(object.body,{headers});
+  }
+
   const pagePublicSlug=path.startsWith("/api/pages/")?path.slice("/api/pages/".length):"";
   if (/^[a-z0-9-]+$/.test(pagePublicSlug) && method === "GET") {
     const page=await env.DB.prepare("SELECT slug,title,language,published_json,seo_title,seo_description FROM pages WHERE slug=? AND status='published' AND published_json IS NOT NULL").bind(pagePublicSlug).first();
@@ -139,6 +154,45 @@ async function handleApi(request, env) {
     return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","set-cookie":"sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
   }
   if (path.startsWith("/api/admin/")) {
+    if (path === "/api/admin/media" && method === "GET") {
+      if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
+      const cursor=url.searchParams.get("cursor")||undefined;
+      const listed=await env.MEDIA.list({prefix:"images/",limit:100,...(cursor?{cursor}:{})});
+      return json({items:listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,contentType:o.httpMetadata?.contentType||"",url:"/api/media/"+encodeURIComponent(o.key)})),cursor:listed.truncated?listed.cursor:null});
+    }
+    if (path === "/api/admin/media" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
+      const form=await request.formData();
+      const file=form.get("file");
+      if (!file || typeof file.arrayBuffer!=="function") return json({error:"Choose an image to upload."},400);
+      if (file.size<1 || file.size>5*1024*1024) return json({error:"Image must be smaller than 5 MB."},400);
+      const mime=String(file.type||"").toLowerCase();
+      const extensions={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"};
+      const ext=extensions[mime];
+      if (!ext) return json({error:"Use JPG, PNG, WebP or GIF images."},415);
+      const bytes=new Uint8Array(await file.arrayBuffer());
+      const valid=(mime==="image/jpeg"&&bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff)
+        ||(mime==="image/png"&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47)
+        ||(mime==="image/webp"&&String.fromCharCode(...bytes.slice(0,4))==="RIFF"&&String.fromCharCode(...bytes.slice(8,12))==="WEBP")
+        ||(mime==="image/gif"&&["GIF87a","GIF89a"].includes(String.fromCharCode(...bytes.slice(0,6))));
+      if (!valid) return json({error:"The file content does not match its image type."},415);
+      const key="images/"+crypto.randomUUID()+"."+ext;
+      await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime,cacheControl:"public, max-age=31536000, immutable"}});
+      await audit(env,session.email,"media_uploaded","media",key,String(file.size)+" bytes");
+      return json({ok:true,item:{key,size:file.size,contentType:mime,url:"/api/media/"+encodeURIComponent(key)}},201);
+    }
+    if (path.startsWith("/api/admin/media/") && method === "DELETE") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
+      let key="";
+      try { key=decodeURIComponent(path.slice("/api/admin/media/".length)); } catch { return json({error:"Invalid media path."},400); }
+      if (!/^images\\/[a-f0-9-]+\\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Invalid media file."},400);
+      await env.MEDIA.delete(key);
+      await audit(env,session.email,"media_deleted","media",key,"");
+      return json({ok:true});
+    }
+
     const session=await readSession(request,env.SESSION_SECRET);
     if (!session) return json({error:"Authentication required."},401);
     if (path === "/api/admin/courses" && method === "GET") {
