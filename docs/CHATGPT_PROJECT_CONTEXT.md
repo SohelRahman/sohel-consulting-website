@@ -190,6 +190,7 @@ D1 migration files recorded in the development branch:
 | `0006_cloudinary_media.sql` | `media_assets` and creation-date index |
 | `0007_chat.sql` | `chat_conversations`, `chat_messages` and indexes |
 | `0008_analytics.sql` | `analytics_events` and reporting indexes |
+| `0009_admin_rbac.sql` | `admin_users`, account roles, password hashes and per-user permission assignments |
 
 The files present in Git do not prove that all migrations have been applied in either D1 environment. Check each environment independently before deployment.
 
@@ -324,6 +325,7 @@ The following work is recorded as implemented in the development branch. Verify 
 - Cloudinary-backed media management.
 - Deterministic chatbot, persistent chat conversations and human-support workflow.
 - First-party analytics event collection and dashboard.
+- Role-based dashboard access with Admin and User roles, granular per-module permissions, account activation/deactivation and administrator-managed password resets.
 - Bilingual cookie/privacy preferences with optional analytics consent gating.
 - Responsive navigation and accessibility improvements.
 - SEO metadata and frontend performance-related improvements.
@@ -358,7 +360,15 @@ This is a user-provided project status update. The assistant has not independent
 
 ### Remaining verification and development work
 
-### Priority 1 — full Preview browser QA
+### Priority 1 — RBAC migration and role-based access verification
+- Apply migration `0009_admin_rbac.sql` to the dedicated Preview D1 database only.
+- Sign in using the configured bootstrap `ADMIN_EMAIL` / `ADMIN_PASSWORD`; first successful login provisions the initial Admin account in `admin_users`.
+- Create a restricted User account and test every granted and denied module/action at both UI and API levels.
+- Verify disabling an account revokes access on the next request, password reset takes effect, and the last active Admin cannot be disabled or demoted.
+- Verify Admin accounts receive full permissions and only Admin accounts can manage users/roles.
+- Existing signed-in sessions from the previous email-only session format must sign in again after this change.
+
+### Priority 2 — full Preview browser QA
 Full browser-based Preview QA has not been confirmed complete. Execute and record:
 - English and Bangla public pages.
 - Navigation, language switching, links, page metadata and images.
@@ -376,7 +386,7 @@ Full browser-based Preview QA has not been confirmed complete. Execute and recor
 
 Record actual evidence, browser/device, commit SHA, result and defects in the QA record. Do not mark manual tests passed because syntax CI is green.
 
-### Priority 2 — test automation depth
+### Priority 3 — test automation depth
 Current CI checks:
 ```sh
 node --input-type=module --check < src/worker.js
@@ -385,13 +395,13 @@ node scripts/validate-site.mjs
 ```
 These checks syntax and static site structure. They do not execute Worker routes or real browser flows. Assess and add practical tests for API payload validation, Worker route behavior, consent state transitions and core user journeys without introducing paid services.
 
-### Priority 3 — API documentation
+### Priority 4 — API documentation
 `docs/API.md` is only a route inventory. Gradually document exact request and response contracts from the actual Worker implementation, especially for registration, inquiry, admin, chat, analytics, media and custom-page routes.
 
-### Priority 4 — payments (deferred)
+### Priority 5 — payments (deferred)
 No payment gateway is connected. Do not implement a gateway or imply payment functionality without explicit scope approval. Future payment work requires provider selection, merchant onboarding, payment initiation, server-side verification, reconciliation, failure/refund handling, security review and updated policies.
 
-### Priority 5 — release administration
+### Priority 6 — release administration
 An authorized repository administrator still needs to verify/configure:
 - `main` branch protection/ruleset.
 - Development branch force-push/deletion protection.
@@ -403,11 +413,12 @@ These are external administrative settings, not source-code changes. Do not clai
 ## 12. Recommended next sequence
 
 1. Check current branch head, open PRs, workflow runs and repository status.
-2. Complete full Preview browser QA and record evidence for public pages, responsive layouts, forms, chat, admin, media and consent flows.
-3. Expand automated tests for core frontend behavior and Worker routes without changing API/database scope unless separately approved.
-4. Improve API contract documentation when API work is in scope.
-5. Complete remaining release administration with an authorized administrator.
-6. Prepare a reviewed release candidate only after all applicable gates pass. Obtain explicit Production authorization before any Production action.
+2. Apply and verify migration `0009_admin_rbac.sql` in Preview, then test Admin/User permission enforcement end to end.
+3. Complete full Preview browser QA and record evidence for public pages, responsive layouts, forms, chat, admin, media and consent flows.
+4. Expand automated tests for core frontend behavior and Worker routes.
+5. Improve API contract documentation.
+6. Complete remaining release administration with an authorized administrator.
+7. Prepare a reviewed release candidate only after all applicable gates pass. Obtain explicit Production authorization before any Production action.
 
 ## 13. Definition of done for every project change
 
