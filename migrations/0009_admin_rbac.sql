@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   password_hash TEXT NOT NULL,
   permissions_json TEXT NOT NULL DEFAULT '[]',
   is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
+  session_version INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_login_at TEXT
