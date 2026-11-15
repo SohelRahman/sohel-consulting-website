@@ -189,7 +189,7 @@ async function handleApi(request, env) {
       if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
       let key="";
       try { key=decodeURIComponent(path.slice("/api/admin/media/".length)); } catch { return json({error:"Invalid media path."},400); }
-      if (!/^images\\/[a-f0-9-]+\\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Invalid media file."},400);
+      if (!/^images\/[a-f0-9-]+\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Invalid media file."},400);
       await env.MEDIA.delete(key);
       await audit(env,session.email,"media_deleted","media",key,"");
       return json({ok:true});
