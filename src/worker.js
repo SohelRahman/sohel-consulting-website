@@ -63,21 +63,6 @@ async function handleApi(request, env) {
   if (!env.DB) return json({error:"Database is not configured."},503);
 
 
-  if (path.startsWith("/api/media/") && method === "GET") {
-    if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
-    let key="";
-    try { key=decodeURIComponent(path.slice("/api/media/".length)); } catch { return json({error:"Invalid media path."},400); }
-    if (!/^images\/[a-f0-9-]+\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Media file not found."},404);
-    const object=await env.MEDIA.get(key);
-    if (!object) return json({error:"Media file not found."},404);
-    const headers=new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set("etag",object.httpEtag);
-    headers.set("cache-control","public, max-age=31536000, immutable");
-    headers.set("x-content-type-options","nosniff");
-    return new Response(object.body,{headers});
-  }
-
   const pagePublicSlug=path.startsWith("/api/pages/")?path.slice("/api/pages/".length):"";
   if (/^[a-z0-9-]+$/.test(pagePublicSlug) && method === "GET") {
     const page=await env.DB.prepare("SELECT slug,title,language,published_json,seo_title,seo_description FROM pages WHERE slug=? AND status='published' AND published_json IS NOT NULL").bind(pagePublicSlug).first();
