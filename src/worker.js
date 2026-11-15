@@ -146,14 +146,30 @@ async function handleApi(request, env) {
     if (courseEditMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
+      const title=clean(data?.title,140);
       const slug=clean(data?.slug,100).toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"");
-      if (!slug) return json({error:"Enter a valid URL slug using lowercase letters, numbers and hyphens."},400);
+      const fixedFee=data?.fixedFee===""||data?.fixedFee==null?null:Math.round(Number(data.fixedFee)*100);
+      const pricingType=["fixed","custom","both"].includes(data?.pricingType)?data.pricingType:null;
+      if (!title || !slug || !pricingType) return json({error:"Course title, valid URL slug and pricing model are required."},400);
+      if (fixedFee!==null && (!Number.isFinite(fixedFee)||fixedFee<1)) return json({error:"Enter a valid positive fixed fee."},400);
+      if (pricingType==="fixed" && fixedFee===null) return json({error:"A fixed-fee course needs a fee amount."},400);
       try {
-        const result=await env.DB.prepare("UPDATE courses SET slug=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(slug,courseEditMatch[1]).run();
+        const result=await env.DB.prepare("UPDATE courses SET slug=?,title_en=?,title_bn=?,summary_en=?,summary_bn=?,pricing_type=?,fixed_fee_minor=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind(slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),pricingType,fixedFee,courseEditMatch[1]).run();
         if (!result.meta.changes) return json({error:"Course not found."},404);
-      } catch { return json({error:"That URL slug is already in use. Choose another slug."},409); }
-      await audit(env,session.email,"course_slug_updated","course",courseEditMatch[1],slug);
-      return json({ok:true,slug});
+      } catch { return json({error:"Could not update course. Check whether the URL slug is already in use."},409); }
+      await audit(env,session.email,"course_updated","course",courseEditMatch[1],slug);
+      return json({ok:true});
+    }
+    if (courseEditMatch && method === "DELETE") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const course=await env.DB.prepare("SELECT id FROM courses WHERE id=?").bind(courseEditMatch[1]).first();
+      if (!course) return json({error:"Course not found."},404);
+      const linked=await env.DB.prepare("SELECT COUNT(*) AS total FROM registrations WHERE course_id=?").bind(courseEditMatch[1]).first();
+      if (linked.total>0) return json({error:"This course has registrations and cannot be permanently deleted. Deactivate it instead to preserve registration history."},409);
+      await env.DB.prepare("DELETE FROM courses WHERE id=?").bind(courseEditMatch[1]).run();
+      await audit(env,session.email,"course_deleted","course",courseEditMatch[1],"");
+      return json({ok:true});
     }
     const courseMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)\/status$/);
     if (courseMatch && method === "PATCH") {
