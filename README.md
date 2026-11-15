@@ -127,6 +127,8 @@ Never publish unconfirmed client names, project outcomes, prices or credentials.
 
 ## Developer documentation
 
+- [Master ChatGPT project context](docs/CHATGPT_PROJECT_CONTEXT.md) — reusable project handover prompt covering objectives, architecture, features, status, pending work and working/release rules. Keep this document current; use it to start new project chats.
+
 The maintained technical documentation is in [`docs/`](docs/):
 
 - [Architecture](docs/ARCHITECTURE.md) — application components, request flow and security boundaries.
