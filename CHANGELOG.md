@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-16
+
+### Master project context prompt
+- Added `docs/CHATGPT_PROJECT_CONTEXT.md` as the canonical reusable context and handover prompt for new ChatGPT sessions.
+- Consolidated business objectives, feature scope, architecture, environment boundaries, database/API inventory, completed capabilities, open verification gaps, pending work and release controls.
+- Added an explicit maintenance rule to keep the prompt synchronized with future project changes.
+
 All notable project changes should be recorded here. Entries describe repository changes and verification status; they do not imply Production deployment.
 
 ## 2026-11-15
