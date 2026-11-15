@@ -62,7 +62,7 @@ async function handleApi(request, env) {
     if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
     let key="";
     try { key=decodeURIComponent(path.slice("/api/media/".length)); } catch { return json({error:"Invalid media path."},400); }
-    if (!/^images\\/[a-f0-9-]+\\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Media file not found."},404);
+    if (!/^images\/[a-f0-9-]+\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Media file not found."},404);
     const object=await env.MEDIA.get(key);
     if (!object) return json({error:"Media file not found."},404);
     const headers=new Headers();
@@ -154,6 +154,8 @@ async function handleApi(request, env) {
     return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","set-cookie":"sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
   }
   if (path.startsWith("/api/admin/")) {
+    const session=await readSession(request,env.SESSION_SECRET);
+    if (!session) return json({error:"Authentication required."},401);
     if (path === "/api/admin/media" && method === "GET") {
       if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
       const cursor=url.searchParams.get("cursor")||undefined;
@@ -193,8 +195,6 @@ async function handleApi(request, env) {
       return json({ok:true});
     }
 
-    const session=await readSession(request,env.SESSION_SECRET);
-    if (!session) return json({error:"Authentication required."},401);
     if (path === "/api/admin/courses" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT * FROM courses ORDER BY title_en").all();
       return json({courses:results});
