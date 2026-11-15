@@ -24,5 +24,7 @@ jobs:
           node-version: '22'
       - name: Check Worker JavaScript syntax
         run: node --input-type=module --check < src/worker.js
+      - name: Check shared website JavaScript syntax
+        run: node --check assets/site.js
       - name: Validate HTML, local links and inline scripts
         run: node scripts/validate-site.mjs
