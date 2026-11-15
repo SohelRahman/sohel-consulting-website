@@ -142,6 +142,19 @@ async function handleApi(request, env) {
       await audit(env,session.email,"course_created","course",courseId,slug);
       return json({ok:true,id:courseId},201);
     }
+    const courseEditMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)$/);
+    if (courseEditMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const slug=clean(data?.slug,100).toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"");
+      if (!slug) return json({error:"Enter a valid URL slug using lowercase letters, numbers and hyphens."},400);
+      try {
+        const result=await env.DB.prepare("UPDATE courses SET slug=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(slug,courseEditMatch[1]).run();
+        if (!result.meta.changes) return json({error:"Course not found."},404);
+      } catch { return json({error:"That URL slug is already in use. Choose another slug."},409); }
+      await audit(env,session.email,"course_slug_updated","course",courseEditMatch[1],slug);
+      return json({ok:true,slug});
+    }
     const courseMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)\/status$/);
     if (courseMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
