@@ -363,7 +363,8 @@ async function handleApi(request, env) {
       return json({error:"Not found."},404);
     }
     const required=requiredPermission(path,method);
-    if(!isAdmin && (!required || (!permissions.includes(required) && !(required.endsWith(".view") && permissions.includes(required.replace(/\.view$/, ".manage"))) && !(required==="chat.view" && permissions.includes("chat.reply"))))return json({error:"You do not have permission to perform this action."},403);
+    const allowed=Boolean(required && (permissions.includes(required) || (required.endsWith(".view") && permissions.includes(required.replace(/\.view$/, ".manage"))) || (required==="chat.view" && permissions.includes("chat.reply"))));
+    if(!isAdmin && !allowed)return json({error:"You do not have permission to perform this action."},403);
     if (path === "/api/admin/media" && method === "GET") {
       try {
         const {results=[]}=await env.DB.prepare("SELECT public_id AS key,secure_url AS url,bytes AS size,format,created_at AS uploaded FROM media_assets ORDER BY created_at DESC LIMIT 200").all();
