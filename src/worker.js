@@ -165,10 +165,12 @@ async function handleApi(request, env) {
     if (path === "/api/admin/media" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
+      if (!(await rateLimit(env,request,"media-upload-hour",10,60*60*1000))) return json({error:"Upload limit reached: maximum 10 images per hour. Try again later."},429);
+      if (!(await rateLimit(env,request,"media-upload-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached: maximum 40 images per day. Try again tomorrow."},429);
       const form=await request.formData();
       const file=form.get("file");
       if (!file || typeof file.arrayBuffer!=="function") return json({error:"Choose an image to upload."},400);
-      if (file.size<1 || file.size>5*1024*1024) return json({error:"Image must be smaller than 5 MB."},400);
+      if (file.size<1 || file.size>3*1024*1024) return json({error:"Image must be smaller than 3 MB. Compress it before uploading."},400);
       const mime=String(file.type||"").toLowerCase();
       const extensions={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"};
       const ext=extensions[mime];
