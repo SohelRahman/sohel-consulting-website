@@ -36,26 +36,54 @@ const toggle=document.querySelector('.menu-toggle');const nav=document.querySele
  human.addEventListener("click",()=>sendMessage(bn?"মানব সহায়তা":"human support"));
 })();
 
-/* Anonymous first-party traffic metrics. No names, emails, message text or full referrer URLs are sent. */
+
+/* Bilingual privacy preferences. Essential chat storage remains independent of optional analytics. */
+(()=>{
+ const bn=document.documentElement.lang.toLowerCase().startsWith("bn");
+ const key="sr_privacy_preferences_v1";
+ const w=bn?{title:"আপনার গোপনীয়তা পছন্দ",body:"প্রয়োজনীয় স্টোরেজ ওয়েবসাইটের মৌলিক কাজ ও চ্যাট চালায়। ঐচ্ছিক অ্যানালিটিক্স চালু হবে শুধু আপনার অনুমতি দিলে।",essential:"প্রয়োজনীয়",essentialNote:"ওয়েবসাইট ও চ্যাট চালাতে প্রয়োজনীয়; বন্ধ করা যায় না।",analytics:"ঐচ্ছিক অ্যানালিটিক্স",analyticsNote:"সাইটের ব্যবহার বোঝার জন্য বেনামী পরিসংখ্যান।",accept:"সব গ্রহণ করুন",reject:"ঐচ্ছিক প্রত্যাখ্যান",settings:"সেটিংস",save:"পছন্দ সংরক্ষণ",manage:"গোপনীয়তা সেটিংস"}:{title:"Your privacy choices",body:"Essential storage supports core website features and chat. Optional analytics runs only if you allow it.",essential:"Essential",essentialNote:"Required for the website and chat; cannot be switched off.",analytics:"Optional analytics",analyticsNote:"Anonymous usage measurement to understand site activity.",accept:"Accept all",reject:"Reject optional",settings:"Cookie settings",save:"Save choices",manage:"Privacy settings"};
+ const read=()=>{try{return JSON.parse(localStorage.getItem(key)||"null");}catch{return null;}};
+ const save=a=>{try{localStorage.setItem(key,JSON.stringify({essential:true,analytics:!!a,updatedAt:new Date().toISOString(),version:1}));}catch{}};
+ let banner=null;
+ const manage=document.createElement("button");manage.id="sr-consent-manage";manage.type="button";manage.textContent=w.manage;manage.addEventListener("click",()=>render(true));document.body.append(manage);
+ function render(options){
+  if(banner)banner.remove();
+  banner=document.createElement("section");banner.id="sr-consent-banner";banner.setAttribute("role","dialog");banner.setAttribute("aria-labelledby","sr-consent-title");
+  const h=document.createElement("h2");h.id="sr-consent-title";h.textContent=w.title;
+  const p=document.createElement("p");p.textContent=w.body;banner.append(h,p);
+  let checkbox=null;
+  if(options){
+   const list=document.createElement("div");list.className="sr-consent-options";
+   const essential=document.createElement("label");const fixed=document.createElement("input");fixed.type="checkbox";fixed.checked=true;fixed.disabled=true;const fixedText=document.createElement("span");fixedText.textContent=w.essential;const fixedNote=document.createElement("small");fixedNote.textContent=w.essentialNote;fixedText.append(fixedNote);essential.append(fixed,fixedText);
+   const optional=document.createElement("label");checkbox=document.createElement("input");checkbox.type="checkbox";checkbox.checked=!!read()?.analytics;const optionalText=document.createElement("span");optionalText.textContent=w.analytics;const optionalNote=document.createElement("small");optionalNote.textContent=w.analyticsNote;optionalText.append(optionalNote);optional.append(checkbox,optionalText);
+   list.append(essential,optional);banner.append(list);
+  }
+  const actions=document.createElement("div");actions.className="sr-consent-actions";
+  const add=(label,cls,fn)=>{const btn=document.createElement("button");btn.type="button";btn.textContent=label;if(cls)btn.className=cls;btn.addEventListener("click",fn);actions.append(btn);};
+  const choose=a=>{save(a);if(banner)banner.remove();banner=null;if(a)window.dispatchEvent(new CustomEvent("sr:analytics-consent"));};
+  add(w.accept,"primary",()=>choose(true));add(w.reject,"",()=>choose(false));add(options?w.save:w.settings,"",()=>options?choose(checkbox.checked):render(true));
+  banner.append(actions);document.body.append(banner);
+ }
+ const existing=read();
+ if(!existing||existing.version!==1)render(false);
+ else if(existing.analytics)window.dispatchEvent(new CustomEvent("sr:analytics-consent"));
+})();
+
+/* Anonymous first-party traffic metrics. Nothing is created or sent before analytics consent. */
 (()=>{
  if(location.pathname==="/admin"||location.pathname.startsWith("/admin.")||location.pathname.startsWith("/api/"))return;
- let visitorId="";
- try{visitorId=localStorage.getItem("sr_analytics_visitor")||"";}catch{}
- if(!/^[a-f0-9-]{32,36}$/i.test(visitorId)){
-  visitorId=crypto.randomUUID();
-  try{localStorage.setItem("sr_analytics_visitor",visitorId);}catch{}
+ const key="sr_privacy_preferences_v1";
+ const allowed=()=>{try{return JSON.parse(localStorage.getItem(key)||"null")?.analytics===true;}catch{return false;}};
+ let started=false;
+ function start(){
+  if(started||!allowed())return;started=true;
+  let visitorId="";try{visitorId=localStorage.getItem("sr_analytics_visitor")||"";}catch{}
+  if(!/^[a-f0-9-]{32,36}$/i.test(visitorId)){visitorId=crypto.randomUUID();try{localStorage.setItem("sr_analytics_visitor",visitorId);}catch{}}
+  const device=matchMedia("(max-width: 640px)").matches?"mobile":matchMedia("(max-width: 1024px)").matches?"tablet":"desktop";
+  const send=event=>{if(!allowed())return;fetch("/api/analytics/event",{method:"POST",headers:{"content-type":"application/json"},keepalive:true,body:JSON.stringify({visitorId,event,page:location.pathname.slice(0,160),referrer:document.referrer?"https://"+new URL(document.referrer).hostname:"",device})}).catch(()=>{});};
+  send("page_view");
+  document.addEventListener("click",e=>{if(e.target.closest("#sr-chat-launcher"))send("chat_open");if(e.target.closest("#sr-chat-human"))send("human_support_request");});
+  document.addEventListener("submit",e=>{if(e.target?.id==="sr-chat-form")send("chat_message");},true);
  }
- const device=matchMedia("(max-width: 640px)").matches?"mobile":matchMedia("(max-width: 1024px)").matches?"tablet":"desktop";
- const send=(event)=>{
-  fetch("/api/analytics/event",{method:"POST",headers:{"content-type":"application/json"},keepalive:true,
-   body:JSON.stringify({visitorId,event,page:location.pathname.slice(0,160),referrer:document.referrer?"https://"+new URL(document.referrer).hostname:"",device})}).catch(()=>{});
- };
- send("page_view");
- document.addEventListener("click",e=>{
-  const launcher=e.target.closest("#sr-chat-launcher");
-  if(launcher)send("chat_open");
-  const human=e.target.closest("#sr-chat-human");
-  if(human)send("human_support_request");
- });
- document.addEventListener("submit",e=>{if(e.target?.id==="sr-chat-form")send("chat_message");},true);
+ window.addEventListener("sr:analytics-consent",start);if(allowed())start();
 })();
