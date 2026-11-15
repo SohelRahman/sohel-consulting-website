@@ -176,6 +176,7 @@ async function handleApi(request, env) {
     const visitorHash=await analyticsVisitorHash(visitorId);
     await env.DB.prepare("INSERT INTO analytics_events (id,visitor_hash,event_name,page_path,referrer_host,device_type) VALUES (?,?,?,?,?,?)")
       .bind(id(),visitorHash,event,page,referrer,device).run();
+    await env.DB.prepare("DELETE FROM analytics_events WHERE created_at < datetime('now','-90 days')").run();
     return json({ok:true},202);
   }
 
