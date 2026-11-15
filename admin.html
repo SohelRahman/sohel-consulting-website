@@ -192,6 +192,7 @@ $('#registrations').innerHTML=rows.length?'<table class="admin-table"><thead><tr
 document.querySelectorAll('[data-id][data-status]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Change registration status to '+b.dataset.status+'?'))return;try{await api('/api/admin/registrations/'+b.dataset.id,{method:'PATCH',body:JSON.stringify({registrationStatus:b.dataset.status})});await loadDashboard();}catch(e){alert(e.message);}}));
 document.querySelectorAll('[data-quote]').forEach(b=>b.addEventListener('click',async()=>{const amount=prompt('Enter the customized course fee in BDT:');if(amount===null)return;if(!Number.isFinite(Number(amount))||Number(amount)<=0){alert('Enter a valid amount.');return;}try{await api('/api/admin/registrations/'+b.dataset.quote+'/quote',{method:'PATCH',body:JSON.stringify({amount:Number(amount)})});await loadDashboard();}catch(e){alert(e.message);}}));
 document.querySelectorAll('[data-enroll]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('Confirm this learner enrollment?'))return;try{await api('/api/admin/registrations/'+b.dataset.enroll+'/enrollment',{method:'PATCH',body:JSON.stringify({enrollmentStatus:'confirmed'})});await loadDashboard();}catch(e){alert(e.message);}}));
+}
 
 let selectedChatId=null;
 async function loadChatConversations(){
