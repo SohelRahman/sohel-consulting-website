@@ -24,6 +24,7 @@ This document is an inventory of routes identified in `src/worker.js`. It is not
 | POST | `/api/admin/login` | Authenticate administrator |
 | POST | `/api/admin/logout` | End administrator session |
 | GET | `/api/admin/me` | Return current account role and effective permissions |
+| POST | `/api/admin/password` | Change the authenticated account password after verifying the current password |
 
 Administrator routes require a valid signed session unless explicitly handled otherwise in the Worker.
 
