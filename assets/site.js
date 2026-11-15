@@ -35,3 +35,27 @@ const toggle=document.querySelector('.menu-toggle');const nav=document.querySele
  form.addEventListener("submit",e=>{e.preventDefault();const value=input.value.trim();if(!value)return;input.value="";sendMessage(value);});
  human.addEventListener("click",()=>sendMessage(bn?"মানব সহায়তা":"human support"));
 })();
+
+/* Anonymous first-party traffic metrics. No names, emails, message text or full referrer URLs are sent. */
+(()=>{
+ if(location.pathname==="/admin"||location.pathname.startsWith("/admin.")||location.pathname.startsWith("/api/"))return;
+ let visitorId="";
+ try{visitorId=localStorage.getItem("sr_analytics_visitor")||"";}catch{}
+ if(!/^[a-f0-9-]{32,36}$/i.test(visitorId)){
+  visitorId=crypto.randomUUID();
+  try{localStorage.setItem("sr_analytics_visitor",visitorId);}catch{}
+ }
+ const device=matchMedia("(max-width: 640px)").matches?"mobile":matchMedia("(max-width: 1024px)").matches?"tablet":"desktop";
+ const send=(event)=>{
+  fetch("/api/analytics/event",{method:"POST",headers:{"content-type":"application/json"},keepalive:true,
+   body:JSON.stringify({visitorId,event,page:location.pathname.slice(0,160),referrer:document.referrer,device})}).catch(()=>{});
+ };
+ send("page_view");
+ document.addEventListener("click",e=>{
+  const launcher=e.target.closest("#sr-chat-launcher");
+  if(launcher)send("chat_open");
+  const human=e.target.closest("#sr-chat-human");
+  if(human)send("human_support_request");
+ });
+ document.addEventListener("submit",e=>{if(e.target?.id==="sr-chat-form")send("chat_message");},true);
+})();
