@@ -28,3 +28,5 @@ jobs:
         run: node --check assets/site.js
       - name: Validate HTML, local links and inline scripts
         run: node scripts/validate-site.mjs
+      - name: Check RBAC security contract
+        run: node scripts/test-rbac-contract.mjs
