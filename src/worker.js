@@ -221,7 +221,7 @@ async function handleApi(request, env) {
       return json({ok:true});
     }
 
-    const pagePreviewMatch=path.match(/^\\/api\\/admin\\/pages\\/([a-z0-9-]+)\\/preview$/);
+    const pagePreviewMatch=path.match(/^\/api\/admin\/pages\/([a-z0-9-]+)\/preview$/);
     if (pagePreviewMatch && method === "GET") {
       const page=await env.DB.prepare("SELECT slug,title,language,seo_title,seo_description,draft_json FROM pages WHERE slug=?").bind(pagePreviewMatch[1]).first();
       if (!page) return json({error:"Page not found."},404);
