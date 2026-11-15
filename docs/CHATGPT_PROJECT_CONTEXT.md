@@ -364,7 +364,7 @@ This is a user-provided project status update. The assistant has not independent
 - Apply migration `0009_admin_rbac.sql` to the dedicated Preview D1 database only.
 - Sign in using the configured bootstrap `ADMIN_EMAIL` / `ADMIN_PASSWORD`; first successful login provisions the initial Admin account in `admin_users`.
 - Create a restricted User account and test every granted and denied module/action at both UI and API levels.
-- Verify disabling an account revokes access on the next request, password reset takes effect, and the last active Admin cannot be disabled or demoted.
+- Verify disabling an account revokes access on the next request, administrator password reset revokes existing sessions, self-service password change renews the current session, and the last active Admin cannot be disabled or demoted.
 - Verify Admin accounts receive full permissions and only Admin accounts can manage users/roles.
 - Existing signed-in sessions from the previous email-only session format must sign in again after this change.
 
