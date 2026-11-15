@@ -1,5 +1,7 @@
 # Deployment Guide
 
+Read the [Version Control and Release Management Policy](VERSION_CONTROL_RELEASE.md) before preparing a release. It defines branch protection, PR approvals, version tags, Production release gates and rollback records.
+
 ## Environment policy
 
 - Development branch: `current-focus-development`
@@ -29,6 +31,8 @@ A passing workflow is not proof of full browser QA.
 The repository includes a manually triggered Preview secrets workflow. Review its YAML and required GitHub secrets before running it. It is intended to configure Preview, not Production.
 
 ## Production deployment (approval required)
+
+The Production deployment job references the GitHub Environment named `production`. An authorized repository administrator must create/configure this environment in **Settings → Environments** and add required reviewers and any deployment restrictions. Without those environment protection rules, the environment reference alone does not enforce a human approval gate.
 
 The workflow `.github/workflows/deploy-cloudflare.yml` is manually triggered and contains a branch guard requiring `main`. It deploys the Worker and static assets using Wrangler.
 
