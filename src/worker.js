@@ -59,6 +59,10 @@ async function cloudinarySignature(params, secret) {
   return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+async function analyticsVisitorHash(visitorId) {
+  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(visitorId));
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
 async function chatTokenHash(token) {
   const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
   return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
@@ -155,6 +159,24 @@ async function handleApi(request, env) {
     }
     await env.DB.prepare("INSERT INTO chat_messages (id,conversation_id,sender,message) VALUES (?,?,?,?)").bind(id(),conversationId,"bot",reply).run();
     return json({reply,status:wantsHuman?"needs_human":"open"});
+  }
+
+  if (path === "/api/analytics/event" && method === "POST") {
+    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"analytics-event",180,15*60*1000))) return json({error:"Analytics event limit reached."},429);
+    const data=await request.json().catch(()=>null);
+    const visitorId=clean(data?.visitorId,80), event=clean(data?.event,40);
+    const allowedEvents=["page_view","chat_open","chat_message","human_support_request"];
+    if (!/^[a-f0-9-]{32,36}$/i.test(visitorId) || !allowedEvents.includes(event)) return json({error:"Invalid analytics event."},400);
+    const page=clean(data?.page,160);
+    if (!page.startsWith("/") || page.startsWith("/api/") || page.startsWith("/admin")) return json({ok:true,ignored:true});
+    const device=["mobile","tablet","desktop"].includes(data?.device)?data.device:"unknown";
+    let referrer="";
+    try { const host=new URL(clean(data?.referrer,500)).hostname.toLowerCase(); if(host && host!==url.hostname)referrer=host.slice(0,120); } catch {}
+    const visitorHash=await analyticsVisitorHash(visitorId);
+    await env.DB.prepare("INSERT INTO analytics_events (id,visitor_hash,event_name,page_path,referrer_host,device_type) VALUES (?,?,?,?,?,?)")
+      .bind(id(),visitorHash,event,page,referrer,device).run();
+    return json({ok:true},202);
   }
 
   if (path === "/api/registrations" && method === "POST") {
@@ -449,6 +471,25 @@ async function handleApi(request, env) {
       await env.DB.prepare("UPDATE chat_conversations SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,chatAdminMatch[1]).run();
       await audit(env,session.email,"chat_admin_reply","chat_conversation",chatAdminMatch[1],status);
       return json({ok:true,status});
+    }
+    if (path === "/api/admin/analytics" && method === "GET") {
+      const [summary,pages,devices,events,daily]=await Promise.all([
+        env.DB.prepare(`SELECT
+          COUNT(*) AS pageViews,
+          COUNT(DISTINCT visitor_hash) AS uniqueBrowsers,
+          SUM(CASE WHEN created_at >= datetime('now','-7 days') THEN 1 ELSE 0 END) AS pageViews7d,
+          COUNT(DISTINCT CASE WHEN created_at >= datetime('now','-7 days') THEN visitor_hash END) AS uniqueBrowsers7d
+          FROM analytics_events WHERE event_name='page_view' AND created_at >= datetime('now','-30 days')`).first(),
+        env.DB.prepare(`SELECT page_path,COUNT(*) AS views,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_events
+          WHERE event_name='page_view' AND created_at >= datetime('now','-30 days') GROUP BY page_path ORDER BY views DESC LIMIT 10`).all(),
+        env.DB.prepare(`SELECT device_type,COUNT(*) AS views FROM analytics_events
+          WHERE event_name='page_view' AND created_at >= datetime('now','-30 days') GROUP BY device_type ORDER BY views DESC`).all(),
+        env.DB.prepare(`SELECT event_name,COUNT(*) AS total FROM analytics_events
+          WHERE created_at >= datetime('now','-30 days') GROUP BY event_name ORDER BY total DESC`).all(),
+        env.DB.prepare(`SELECT date(created_at) AS day,COUNT(*) AS views FROM analytics_events
+          WHERE event_name='page_view' AND created_at >= datetime('now','-6 days') GROUP BY date(created_at) ORDER BY day`).all()
+      ]);
+      return json({summary:summary||{},pages:pages.results||[],devices:devices.results||[],events:events.results||[],daily:daily.results||[]});
     }
     if (path === "/api/admin/summary" && method === "GET") {
       const queries=await Promise.all([
