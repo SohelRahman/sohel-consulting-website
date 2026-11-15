@@ -53,6 +53,11 @@ async function audit(env, email, action, entityType, entityId, details = "") {
   await env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES (?,?,?,?,?,?)")
     .bind(id(),email,action,entityType,entityId,details).run();
 }
+async function cloudinarySignature(params, secret) {
+  const canonical=Object.keys(params).sort().map(key=>key+"="+params[key]).join("&")+secret;
+  const digest=await crypto.subtle.digest("SHA-1",new TextEncoder().encode(canonical));
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+}
 async function handleApi(request, env) {
   const url = new URL(request.url), path = url.pathname, method = request.method;
   if (!env.DB) return json({error:"Database is not configured."},503);
@@ -157,46 +162,20 @@ async function handleApi(request, env) {
     const session=await readSession(request,env.SESSION_SECRET);
     if (!session) return json({error:"Authentication required."},401);
     if (path === "/api/admin/media" && method === "GET") {
-      if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
-      const cursor=url.searchParams.get("cursor")||undefined;
-      const listed=await env.MEDIA.list({prefix:"images/",limit:100,...(cursor?{cursor}:{})});
-      return json({items:listed.objects.map(o=>({key:o.key,size:o.size,uploaded:o.uploaded,contentType:o.httpMetadata?.contentType||"",url:"/api/media/"+encodeURIComponent(o.key)})),cursor:listed.truncated?listed.cursor:null});
+      try {
+        const {results=[]}=await env.DB.prepare("SELECT public_id AS key,secure_url AS url,bytes AS size,format,created_at AS uploaded FROM media_assets ORDER BY created_at DESC LIMIT 200").all();
+        return json({items:results,cursor:null});
+      } catch { return json({error:"Media library is not initialized. Apply migration 0006_cloudinary_media.sql to the Preview database."},503); }
     }
-    if (path === "/api/admin/media" && method === "POST") {
+    if (path === "/api/admin/media/signature" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
-      if (!(await rateLimit(env,request,"media-upload-hour",10,60*60*1000))) return json({error:"Upload limit reached: maximum 10 images per hour. Try again later."},429);
-      if (!(await rateLimit(env,request,"media-upload-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached: maximum 40 images per day. Try again tomorrow."},429);
-      const form=await request.formData();
-      const file=form.get("file");
-      if (!file || typeof file.arrayBuffer!=="function") return json({error:"Choose an image to upload."},400);
-      if (file.size<1 || file.size>3*1024*1024) return json({error:"Image must be smaller than 3 MB. Compress it before uploading."},400);
-      const mime=String(file.type||"").toLowerCase();
-      const extensions={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"};
-      const ext=extensions[mime];
-      if (!ext) return json({error:"Use JPG, PNG, WebP or GIF images."},415);
-      const bytes=new Uint8Array(await file.arrayBuffer());
-      const valid=(mime==="image/jpeg"&&bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff)
-        ||(mime==="image/png"&&bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4e&&bytes[3]===0x47)
-        ||(mime==="image/webp"&&String.fromCharCode(...bytes.slice(0,4))==="RIFF"&&String.fromCharCode(...bytes.slice(8,12))==="WEBP")
-        ||(mime==="image/gif"&&["GIF87a","GIF89a"].includes(String.fromCharCode(...bytes.slice(0,6))));
-      if (!valid) return json({error:"The file content does not match its image type."},415);
-      const key="images/"+crypto.randomUUID()+"."+ext;
-      await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime,cacheControl:"public, max-age=31536000, immutable"}});
-      await audit(env,session.email,"media_uploaded","media",key,String(file.size)+" bytes");
-      return json({ok:true,item:{key,size:file.size,contentType:mime,url:"/api/media/"+encodeURIComponent(key)}},201);
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured. Add the three Cloudinary secrets to the Preview Worker."},503);
+      if (!(await rateLimit(env,request,"media-upload-hour",10,60*60*1000))) return json({error:"Upload limit reached: maximum 10 images per hour."},429);
+      if (!(await rateLimit(env,request,"media-upload-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached: maximum 40 images per day."},429);
+      const timestamp=Math.floor(Date.now()/1000), folder="sohel-consulting";
+      const signature=await cloudinarySignature({folder,timestamp},env.CLOUDINARY_API_SECRET);
+      return json({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,timestamp,folder,signature});
     }
-    if (path.startsWith("/api/admin/media/") && method === "DELETE") {
-      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      if (!env.MEDIA) return json({error:"Media storage is not configured."},503);
-      let key="";
-      try { key=decodeURIComponent(path.slice("/api/admin/media/".length)); } catch { return json({error:"Invalid media path."},400); }
-      if (!/^images\/[a-f0-9-]+\.(jpg|png|webp|gif)$/.test(key)) return json({error:"Invalid media file."},400);
-      await env.MEDIA.delete(key);
-      await audit(env,session.email,"media_deleted","media",key,"");
-      return json({ok:true});
-    }
-
     if (path === "/api/admin/courses" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT * FROM courses ORDER BY title_en").all();
       return json({courses:results});
