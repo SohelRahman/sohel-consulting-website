@@ -25,6 +25,7 @@ Apply migrations in ascending order using Wrangler D1 migration commands with th
 | `0006_cloudinary_media.sql` | `media_assets` and creation-date index |
 | `0007_chat.sql` | `chat_conversations`, `chat_messages` and indexes |
 | `0008_analytics.sql` | `analytics_events` and reporting indexes |
+| `0009_admin_rbac.sql` | `admin_users`, account roles, password hashes and per-user permission assignments |
 
 This list reflects migration files present in the development branch. The actual applied migration state must be checked independently in each D1 environment before deployment.
 
@@ -44,6 +45,7 @@ This list reflects migration files present in the development branch. The actual
 - **chat_conversations:** Conversation token hash, language and support status.
 - **chat_messages:** Visitor, bot and administrator messages.
 - **analytics_events:** Limited analytics event metadata and visitor hash.
+- **admin_users:** Dashboard accounts, role, salted password hash, assigned permissions and account status.
 
 ## Important status constraints
 
