@@ -283,6 +283,7 @@ async function handleApi(request, env) {
       await audit(env,email,"bootstrap_admin_created","admin_user",userId,"Initial administrator account provisioned");
     }
     if(!user || !user.is_active || !(await passwordVerify(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
+    await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(user.id).run();
     const token=await makeSession(user.id,user.email,env.SESSION_SECRET);
     return new Response(JSON.stringify({ok:true}),{headers:{
       "content-type":"application/json","cache-control":"no-store",
@@ -326,7 +327,7 @@ async function handleApi(request, env) {
       const userMatch=path.match(/^\/api\/admin\/users\/([a-f0-9-]+)$/);
       if(userMatch && method==="PATCH"){
         if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
-        const target=await env.DB.prepare("SELECT id,email,role,is_active FROM admin_users WHERE id=?").bind(userMatch[1]).first();
+        const target=await env.DB.prepare("SELECT id,email,role,is_active,permissions_json FROM admin_users WHERE id=?").bind(userMatch[1]).first();
         if(!target)return json({error:"User account not found."},404);
         const data=await request.json().catch(()=>null);
         if(target.id===user.id && data?.is_active===false)return json({error:"You cannot disable your own account."},400);
@@ -362,7 +363,7 @@ async function handleApi(request, env) {
       return json({error:"Not found."},404);
     }
     const required=requiredPermission(path,method);
-    if(required && !isAdmin && !permissions.includes(required))return json({error:"You do not have permission to perform this action."},403);
+    if(required && !isAdmin && !permissions.includes(required) && !(required.endsWith(".view") && permissions.includes(required.replace(/\.view$/, ".manage"))))return json({error:"You do not have permission to perform this action."},403);
     if (path === "/api/admin/media" && method === "GET") {
       try {
         const {results=[]}=await env.DB.prepare("SELECT public_id AS key,secure_url AS url,bytes AS size,format,created_at AS uploaded FROM media_assets ORDER BY created_at DESC LIMIT 200").all();
