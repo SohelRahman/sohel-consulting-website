@@ -152,6 +152,41 @@ async function handleApi(request, env) {
         return json({items:results,cursor:null});
       } catch { return json({error:"Media library is not initialized. Apply migration 0006_cloudinary_media.sql to the Preview database."},503); }
     }
+    if (path === "/api/admin/media" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      if (!data || typeof data !== "object") return json({error:"Invalid media metadata."},400);
+      const publicId=clean(data.public_id,255);
+      const secureUrl=clean(data.secure_url,2048);
+      const bytes=Number(data.bytes);
+      const format=clean(data.format,10).toLowerCase();
+      const width=Number(data.width), height=Number(data.height);
+      const allowedFormats=["jpg","jpeg","png","webp","gif"];
+      let parsedUrl;
+      try { parsedUrl=new URL(secureUrl); } catch { return json({error:"Invalid Cloudinary image URL."},400); }
+      const expectedPathPrefix=env.CLOUDINARY_CLOUD_NAME
+        ? "/"+env.CLOUDINARY_CLOUD_NAME+"/image/upload/"
+        : "";
+      if (!env.CLOUDINARY_CLOUD_NAME || parsedUrl.protocol!=="https:" ||
+          parsedUrl.hostname!=="res.cloudinary.com" ||
+          !parsedUrl.pathname.includes(expectedPathPrefix) ||
+          !publicId.startsWith("sohel-consulting/") ||
+          !/^[a-zA-Z0-9_./-]+$/.test(publicId) ||
+          !Number.isInteger(bytes) || bytes<1 || bytes>3*1024*1024 ||
+          !allowedFormats.includes(format) ||
+          !Number.isInteger(width) || width<1 || width>10000 ||
+          !Number.isInteger(height) || height<1 || height>10000) {
+        return json({error:"Cloudinary returned invalid or unsupported image metadata."},400);
+      }
+      try {
+        await env.DB.prepare("INSERT INTO media_assets (public_id,secure_url,bytes,format,width,height) VALUES (?,?,?,?,?,?)")
+          .bind(publicId,secureUrl,bytes,format,width,height).run();
+      } catch {
+        return json({error:"Could not save the image to the media library. Confirm that migration 0006 is applied to the Preview database."},503);
+      }
+      await audit(env,session.email,"media_uploaded","media_asset",publicId,format+" "+bytes+" bytes");
+      return json({ok:true,public_id:publicId},201);
+    }
     if (path === "/api/admin/media/signature" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured. Add the three Cloudinary secrets to the Preview Worker."},503);
