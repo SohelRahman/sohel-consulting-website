@@ -135,6 +135,7 @@ The maintained technical documentation is in [`docs/`](docs/):
 - [API reference](docs/API.md) — public and administrator route inventory.
 - [Configuration and secrets](docs/CONFIGURATION.md) — bindings, runtime secrets and environment isolation.
 - [Deployment guide](docs/DEPLOYMENT.md) — Preview validation and Production release controls.
+- [Version control and release policy](docs/VERSION_CONTROL_RELEASE.md) — branch rules, pull requests, semantic versioning, approvals, release gates and rollback.
 - [Testing and QA](docs/TESTING.md) — automated checks and manual test cases.
 - [Maintenance runbook](docs/MAINTENANCE.md) — troubleshooting, data protection and incident response.
 - [Changelog](CHANGELOG.md) — significant development and maintenance history.
