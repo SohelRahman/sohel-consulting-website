@@ -119,3 +119,7 @@ html[lang='bn'] h1, html[lang='bn'] h2, html[lang='bn'] h3, html[lang='bn'] .bra
 #sr-chat-launcher:focus-visible,#sr-chat-close:focus-visible,#sr-chat-send:focus-visible,#sr-chat-human:focus-visible{outline:3px solid #8fd5ff;outline-offset:3px}
 #sr-chat-launcher,#sr-chat-close,#sr-chat-send,#sr-chat-human{min-height:40px}
 @media(max-width:520px){#sr-chat-form{flex-wrap:wrap}#sr-chat-input{flex-basis:100%;min-height:44px}#sr-chat-send{flex:1;min-height:44px}#sr-chat-human{min-height:44px}}
+
+/* Skip navigation for keyboard and assistive-technology users */
+.skip-link{position:fixed;z-index:10010;top:8px;left:8px;transform:translateY(-160%);padding:10px 14px;background:#f5f9ff;color:#10243a;border:2px solid #2879c9;border-radius:4px;font-weight:700}
+.skip-link:focus{transform:translateY(0);outline:3px solid #8fd5ff;outline-offset:2px}
