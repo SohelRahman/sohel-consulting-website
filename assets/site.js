@@ -43,7 +43,7 @@ const toggle=document.querySelector('.menu-toggle');const nav=document.querySele
  const key="sr_privacy_preferences_v1";
  const w=bn?{title:"আপনার গোপনীয়তা পছন্দ",body:"প্রয়োজনীয় স্টোরেজ ওয়েবসাইটের মৌলিক কাজ ও চ্যাট চালায়। ঐচ্ছিক অ্যানালিটিক্স চালু হবে শুধু আপনার অনুমতি দিলে।",essential:"প্রয়োজনীয়",essentialNote:"ওয়েবসাইট ও চ্যাট চালাতে প্রয়োজনীয়; বন্ধ করা যায় না।",analytics:"ঐচ্ছিক অ্যানালিটিক্স",analyticsNote:"সাইটের ব্যবহার বোঝার জন্য বেনামী পরিসংখ্যান।",accept:"সব গ্রহণ করুন",reject:"ঐচ্ছিক প্রত্যাখ্যান",settings:"সেটিংস",save:"পছন্দ সংরক্ষণ",manage:"গোপনীয়তা সেটিংস"}:{title:"Your privacy choices",body:"Essential storage supports core website features and chat. Optional analytics runs only if you allow it.",essential:"Essential",essentialNote:"Required for the website and chat; cannot be switched off.",analytics:"Optional analytics",analyticsNote:"Anonymous usage measurement to understand site activity.",accept:"Accept all",reject:"Reject optional",settings:"Cookie settings",save:"Save choices",manage:"Privacy settings"};
  const read=()=>{try{return JSON.parse(localStorage.getItem(key)||"null");}catch{return null;}};
- const save=a=>{try{localStorage.setItem(key,JSON.stringify({essential:true,analytics:!!a,updatedAt:new Date().toISOString(),version:1}));}catch{}};
+ const save=a=>{try{localStorage.setItem(key,JSON.stringify({essential:true,analytics:!!a,updatedAt:new Date().toISOString(),version:1}));if(!a)localStorage.removeItem("sr_analytics_visitor");}catch{}};
  let banner=null;
  const manage=document.createElement("button");manage.id="sr-consent-manage";manage.type="button";manage.textContent=w.manage;manage.addEventListener("click",()=>render(true));document.body.append(manage);
  function render(options){
