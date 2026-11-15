@@ -18,11 +18,28 @@ Bilingual English/Bangla website with consulting pages, course registration, inq
 - Bangla pages are provided under `/bn/`.
 - `404.html` provides the not-found page.
 
-## Cloudflare resources
+## Cloudflare resources and environment isolation
 
-The D1 database `consulting-db` is configured in `wrangler.toml` with binding `DB`. Its initial schema migration is applied to the remote database.
+The production D1 database `consulting-db` is configured in `wrangler.toml` with binding `DB`. The production database ID is configured only in the top-level `d1_databases` binding.
 
-The Worker uses the static assets binding `ASSETS` and the D1 binding `DB`.
+Worker Previews use the separate `consulting-preview-db` database ID under the `previews.d1_databases` binding. Do not point a Preview at the production database.
+
+The Worker uses the static assets binding `ASSETS` and the D1 binding `DB`. The `previews.vars.ENVIRONMENT` value marks Preview requests for diagnostics; it is not a secret.
+
+### One-time Cloudflare Worker Previews setup
+
+This repository is prepared for Cloudflare Worker Previews, but the Cloudflare dashboard still needs the one-time migration for this existing Git-connected Worker:
+
+1. In Cloudflare, open **Workers & Pages → consulting → Settings → Builds**.
+2. Find the **Set up Worker Previews** banner and start the setup.
+3. Review the Preview configuration. The Preview command must be `npx wrangler preview`.
+4. Complete **Switch to Worker Previews** only after confirming that the Preview D1 binding points to `consulting-preview-db`, not the production database.
+5. After the switch, configure Preview runtime secrets in **Settings → Variables and Secrets → Previews Base**. Add `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and `SESSION_SECRET` as encrypted secrets. Re-enter secret values; build-time secrets are not runtime secrets.
+6. Re-deploy/update the Preview branch so the new Preview receives its runtime configuration.
+
+Cloudflare documents that the legacy-to-Worker-Previews switch cannot be reversed. Do not switch until the Preview database binding and secret plan have been checked. Production settings remain separate; do not edit or remove Production secrets as part of Preview setup.
+
+Preview secrets cannot be stored in `wrangler.toml` or committed to Git. Cloudflare's Wrangler CLI also supports setting them with `npx wrangler preview base-config secret put SECRET_NAME`, but never put secret values in source files, commit history, issue comments or chat.
 
 ## Manual production deployment through GitHub Actions
 
@@ -36,21 +53,23 @@ Before using it:
 4. Merge the reviewed development pull request into `main` only after the application has passed review and testing.
 5. In GitHub, open **Actions → Deploy Cloudflare Worker → Run workflow**. Select `main` and start the workflow. The workflow will deploy the Worker and static assets to the existing `consulting` Worker.
 
-The deployment token is for GitHub Actions deployment only. It is not the same as the application's runtime secrets.
+The deployment token is for GitHub Actions deployment only. It is not the application's runtime secrets.
 
 ## Worker runtime secrets
 
-After the Worker script has been deployed, configure these three encrypted secrets in Cloudflare under the `consulting` Worker:
+After the Worker script has been deployed, configure these three encrypted secrets in Cloudflare under the Worker's **Runtime → Variables and Secrets** settings:
 
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `SESSION_SECRET`
 
+For Worker Previews, configure the secrets separately under **Previews Base** (or for one specific Preview). Build-time secrets under **Builds → Variables and secrets** are only available during the build and are not available to the Worker at runtime.
+
 Use a unique administrator password and a long random session secret. Do not put these values in GitHub source files or share them in chat. These secrets are required for administrator login.
 
 ## Database migration
 
-The initial D1 migration `0001_initial_schema.sql` was applied to `consulting-db`. The development branch now includes `0002_rate_limits.sql`; this second migration must be applied to the remote database before deploying the updated Worker. Check migration status before applying it.
+The initial D1 migration `0001_initial_schema.sql` was applied to `consulting-db`. Migration `0002_rate_limits.sql` is included in this branch. Confirm the migration status separately for both the production and Preview databases before deploying updated Worker code. Do not apply Preview migrations to the production database or vice versa.
 
 ## Current API routes
 
@@ -81,8 +100,8 @@ No payment gateway is connected. Registration records use a `not_configured` pay
 - Confirm biography, exact degree titles, employment history and case-study details.
 - Review privacy, terms and refund drafts for the actual business and applicable legal requirements.
 - Confirm course titles, schedules, delivery availability and fee amounts.
-- Apply any pending D1 migrations, including `0002_rate_limits.sql`.
-- Configure the three Worker runtime secrets.
+- Confirm migrations are applied to the intended database only.
+- Configure Worker runtime secrets in Production and separately in Previews.
 - Run end-to-end tests in English and Bangla, including registration, inquiry intake and administrator actions.
 
 Never publish unconfirmed client names, project outcomes, prices or credentials.
