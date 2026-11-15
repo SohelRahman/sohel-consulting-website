@@ -58,9 +58,9 @@ async function handleApi(request, env) {
   if (!env.DB) return json({error:"Database is not configured."},503);
 
 
-  const pagePublicMatch=path.match(/^\\/api\\/pages\\/([a-z0-9-]+)$/);
-  if (pagePublicMatch && method === "GET") {
-    const page=await env.DB.prepare("SELECT slug,title,language,published_json,seo_title,seo_description FROM pages WHERE slug=? AND status='published' AND published_json IS NOT NULL").bind(pagePublicMatch[1]).first();
+  const pagePublicSlug=path.startsWith("/api/pages/")?path.slice("/api/pages/".length):"";
+  if (/^[a-z0-9-]+$/.test(pagePublicSlug) && method === "GET") {
+    const page=await env.DB.prepare("SELECT slug,title,language,published_json,seo_title,seo_description FROM pages WHERE slug=? AND status='published' AND published_json IS NOT NULL").bind(pagePublicSlug).first();
     if (!page) return json({error:"Page not found."},404);
     return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.published_json)}});
   }
@@ -217,8 +217,8 @@ async function handleApi(request, env) {
       await audit(env,session.email,"page_created","page",pageId,slug);
       return json({ok:true,id:pageId,slug},201);
     }
-    const pageMatch=path.match(/^\\/api\\/admin\\/pages\\/([a-z0-9-]+)$/);
-    if (pageMatch && method === "PUT") {
+    const pageAdminSlug=path.startsWith("/api/admin/pages/")?path.slice("/api/admin/pages/".length):"";
+    if (/^[a-z0-9-]+$/.test(pageAdminSlug) && method === "PUT") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
       const title=clean(data?.title,140), language=["en","bn"].includes(data?.language)?data.language:"en";
@@ -240,16 +240,16 @@ async function handleApi(request, env) {
       const draft={sections:safeSections};
       const publish=data?.publish===true;
       const result=await env.DB.prepare("UPDATE pages SET title=?,language=?,seo_title=?,seo_description=?,draft_json=?,published_json=CASE WHEN ?=1 THEN ? ELSE published_json END,status=CASE WHEN ?=1 THEN 'published' ELSE status END,published_at=CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE published_at END,updated_at=CURRENT_TIMESTAMP WHERE slug=?")
-        .bind(title,language,clean(data?.seoTitle,160),clean(data?.seoDescription,300),JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageMatch[1]).run();
+        .bind(title,language,clean(data?.seoTitle,160),clean(data?.seoDescription,300),JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageAdminSlug).run();
       if(!result.meta.changes)return json({error:"Page not found."},404);
-      await audit(env,session.email,publish?"page_published":"page_draft_saved","page",pageMatch[1],String(safeSections.length)+" sections");
+      await audit(env,session.email,publish?"page_published":"page_draft_saved","page",pageAdminSlug,String(safeSections.length)+" sections");
       return json({ok:true,published:publish});
     }
-    if (pageMatch && method === "DELETE") {
+    if (/^[a-z0-9-]+$/.test(pageAdminSlug) && method === "DELETE") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      const result=await env.DB.prepare("DELETE FROM pages WHERE slug=?").bind(pageMatch[1]).run();
+      const result=await env.DB.prepare("DELETE FROM pages WHERE slug=?").bind(pageAdminSlug).run();
       if(!result.meta.changes)return json({error:"Page not found."},404);
-      await audit(env,session.email,"page_deleted","page",pageMatch[1],"");
+      await audit(env,session.email,"page_deleted","page",pageAdminSlug,"");
       return json({ok:true});
     }
     if (path === "/api/admin/site-content" && method === "GET") {
@@ -365,11 +365,11 @@ export default {
     }
     if (url.pathname.startsWith("/src/") || url.pathname.startsWith("/migrations/") || url.pathname === "/wrangler.toml") return new Response("Not found",{status:404});
 
-    const pagePath=url.pathname.match(/^\\/([a-z0-9-]+)\\.html$/);
-    if (pagePath && !["index","admin","404"].includes(pagePath[1])) {
+    const pageSlug=url.pathname.endsWith(".html")?url.pathname.slice(1,-5):"";
+    if (/^[a-z0-9-]+$/.test(pageSlug) && !["index","admin","404"].includes(pageSlug)) {
       try {
-        const page=await env.DB.prepare("SELECT id FROM pages WHERE slug=? AND status='published'").bind(pagePath[1]).first();
-        if(page)return env.ASSETS.fetch(new Request(new URL("/page.html?slug="+encodeURIComponent(pagePath[1]),url),request));
+        const page=await env.DB.prepare("SELECT id FROM pages WHERE slug=? AND status='published'").bind(pageSlug).first();
+        if(page)return env.ASSETS.fetch(new Request(new URL("/page.html?slug="+encodeURIComponent(pageSlug),url),request));
       } catch(error) { console.error("Page lookup failed",error); }
     }
     if (url.pathname === "/admin") return Response.redirect(new URL("/admin.html",url),302);
