@@ -24,3 +24,9 @@ All notable project changes should be recorded here. Entries describe repository
 - Consent reject/withdraw/re-accept behavior needs manual verification; a possible analytics re-consent restart issue was identified for follow-up.
 - Cross-browser, responsive, form, chat, admin and Cloudinary end-to-end checks remain outstanding.
 - Production deployment has not been authorized.
+
+## 2026-11-15 — Version control and release governance
+- Added branch, pull-request, commit-message and Semantic Versioning guidance.
+- Documented Production release gates, database migration controls, rollback and hotfix procedures.
+- Added release governance checks to the deployment checklist and README index.
+- Updated the Production deployment workflow to target the GitHub Environment named `production`; required reviewers and branch restrictions still need to be configured in repository settings.
