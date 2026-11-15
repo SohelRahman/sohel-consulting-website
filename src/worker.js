@@ -30,10 +30,59 @@ async function rateLimit(env, request, scope, maxRequests, windowMs) {
     .bind(key,now,now+windowMs,windowMs,now,windowMs,now,now,now+windowMs).first();
   return (row?.request_count || 0) <= maxRequests;
 }
-async function makeSession(email, secret) {
-  const payload = b64url(new TextEncoder().encode(JSON.stringify({email, exp:Date.now()+8*60*60*1000})));
-  return payload + "." + await sign(payload, secret);
+const ADMIN_PERMISSIONS = [
+  "dashboard.view","courses.view","courses.manage","content.view","content.manage",
+  "styles.view","styles.manage","pages.view","pages.manage","media.view","media.manage",
+  "registrations.view","registrations.manage","inquiries.view","inquiries.manage",
+  "analytics.view","chat.view","chat.reply"
+];
+const ALL_ADMIN_PERMISSIONS = new Set(ADMIN_PERMISSIONS);
+async function passwordHash(password, saltValue) {
+  const salt=saltValue||b64url(crypto.getRandomValues(new Uint8Array(16)));
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:fromB64url(salt),iterations:210000,hash:"SHA-256"},key,256);
+  return "pbkdf2$210000$"+salt+"$"+b64url(bits);
 }
+async function passwordVerify(password, stored) {
+  try {
+    const [scheme,rounds,salt,expected]=String(stored||"").split("$");
+    if(scheme!=="pbkdf2" || Number(rounds)!==210000 || !salt || !expected)return false;
+    const actual=await passwordHash(password,salt);
+    return actual===stored;
+  } catch { return false; }
+}
+function permissionsFor(user) {
+  if(user?.role==="admin")return ADMIN_PERMISSIONS;
+  try {
+    const value=JSON.parse(user?.permissions_json||"[]");
+    return Array.isArray(value)?value.filter(x=>ALL_ADMIN_PERMISSIONS.has(x)):[];
+  } catch { return []; }
+}
+function requiredPermission(path, method) {
+  if(path==="/api/admin/me" || path==="/api/admin/users" || path.startsWith("/api/admin/users/"))return null;
+  if(path==="/api/admin/summary")return "dashboard.view";
+  if(path==="/api/admin/courses")return method==="GET"?"courses.view":"courses.manage";
+  if(path.startsWith("/api/admin/courses/"))return method==="GET"?"courses.view":"courses.manage";
+  if(path==="/api/admin/registrations")return "registrations.view";
+  if(path.startsWith("/api/admin/registrations/"))return method==="GET"?"registrations.view":"registrations.manage";
+  if(path==="/api/admin/inquiries")return "inquiries.view";
+  if(path.startsWith("/api/admin/inquiries/"))return method==="GET"?"inquiries.view":"inquiries.manage";
+  if(path==="/api/admin/site-content")return method==="GET"?"content.view":"content.manage";
+  if(path.startsWith("/api/admin/site-content/"))return "content.manage";
+  if(path==="/api/admin/page-styles")return method==="GET"?"styles.view":"styles.manage";
+  if(path==="/api/admin/pages" || path.startsWith("/api/admin/pages/"))return method==="GET"?"pages.view":"pages.manage";
+  if(path==="/api/admin/media")return method==="GET"?"media.view":"media.manage";
+  if(path.startsWith("/api/admin/media/"))return "media.manage";
+  if(path==="/api/admin/analytics")return "analytics.view";
+  if(path==="/api/admin/chat/conversations")return "chat.view";
+  if(path.startsWith("/api/admin/chat/conversations/"))return method==="GET"?"chat.view":"chat.reply";
+  return null;
+}
+async function makeSession(userId,email,secret) {
+  const payload=b64url(new TextEncoder().encode(JSON.stringify({userId,email,exp:Date.now()+8*60*60*1000})));
+  return payload+"."+await sign(payload,secret);
+}
+
 async function readSession(request, secret) {
   const cookie = request.headers.get("cookie") || "";
   const token = cookie.split(";").map(x=>x.trim()).find(x=>x.startsWith("sr_admin="))?.slice(9);
@@ -221,14 +270,22 @@ async function handleApi(request, env) {
   if (path === "/api/admin/login" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
     if (!(await rateLimit(env,request,"admin-login",5,15*60*1000))) return json({error:"Too many login attempts. Please try again in 15 minutes."},429);
-    if (!env.ADMIN_EMAIL || !env.ADMIN_PASSWORD || !env.SESSION_SECRET) return json({error:"Administrator credentials are not configured."},503);
+    if (!env.SESSION_SECRET) return json({error:"Administrator session security is not configured."},503);
     const data=await request.json().catch(()=>null);
     const email=clean(data?.email,180).toLowerCase(), password=String(data?.password||"");
-    if (email !== env.ADMIN_EMAIL.toLowerCase() || password !== env.ADMIN_PASSWORD) return json({error:"Invalid email or password."},401);
-    const token=await makeSession(email,env.SESSION_SECRET);
+    if(!emailOk(email)||password.length<1||password.length>256)return json({error:"Enter a valid email and password."},400);
+    let user=await env.DB.prepare("SELECT id,email,full_name,role,password_hash,permissions_json,is_active FROM admin_users WHERE email=?").bind(email).first();
+    if(!user && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && email===env.ADMIN_EMAIL.toLowerCase() && password===env.ADMIN_PASSWORD){
+      const userId=id(), hash=await passwordHash(password);
+      await env.DB.prepare("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES (?,?,?,'admin',?,'[]',1)")
+        .bind(userId,email,"Primary Administrator",hash).run();
+      user=await env.DB.prepare("SELECT id,email,full_name,role,password_hash,permissions_json,is_active FROM admin_users WHERE id=?").bind(userId).first();
+      await audit(env,email,"bootstrap_admin_created","admin_user",userId,"Initial administrator account provisioned");
+    }
+    if(!user || !user.is_active || !(await passwordVerify(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
+    const token=await makeSession(user.id,user.email,env.SESSION_SECRET);
     return new Response(JSON.stringify({ok:true}),{headers:{
-      "content-type":"application/json",
-      "cache-control":"no-store",
+      "content-type":"application/json","cache-control":"no-store",
       "set-cookie":`sr_admin=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`
     }});
   }
@@ -238,7 +295,74 @@ async function handleApi(request, env) {
   }
   if (path.startsWith("/api/admin/")) {
     const session=await readSession(request,env.SESSION_SECRET);
-    if (!session) return json({error:"Authentication required."},401);
+    if (!session?.userId) return json({error:"Authentication required. Please sign in again."},401);
+    const user=await env.DB.prepare("SELECT id,email,full_name,role,permissions_json,is_active FROM admin_users WHERE id=?").bind(session.userId).first();
+    if(!user || !user.is_active || user.email!==session.email)return json({error:"Account is disabled or no longer available."},401);
+    const permissions=permissionsFor(user);
+    const isAdmin=user.role==="admin";
+    if(path==="/api/admin/me" && method==="GET")return json({user:{id:user.id,email:user.email,name:user.full_name,role:user.role,permissions}});
+    if(path==="/api/admin/users" || path.startsWith("/api/admin/users/")){
+      if(!isAdmin)return json({error:"Only administrators can manage dashboard accounts."},403);
+      if(path==="/api/admin/users" && method==="GET"){
+        const {results=[]}=await env.DB.prepare("SELECT id,email,full_name,role,permissions_json,is_active,created_at,updated_at,last_login_at FROM admin_users ORDER BY role,email").all();
+        return json({users:results.map(x=>({...x,permissions:permissionsFor(x),password_hash:undefined}))});
+      }
+      if(path==="/api/admin/users" && method==="POST"){
+        if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+        const data=await request.json().catch(()=>null);
+        const email=clean(data?.email,180).toLowerCase(),name=clean(data?.name,120),password=String(data?.password||"");
+        const role=data?.role==="admin"?"admin":"user";
+        const selected=Array.isArray(data?.permissions)?[...new Set(data.permissions.filter(x=>ALL_ADMIN_PERMISSIONS.has(x)))]:[];
+        if(!emailOk(email)||!name||password.length<12||password.length>256)return json({error:"Provide a valid email, name and password of at least 12 characters."},400);
+        if(role==="admin" && !isAdmin)return json({error:"Only an administrator can create an administrator account."},403);
+        try{
+          const newId=id(),hash=await passwordHash(password);
+          await env.DB.prepare("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES (?,?,?,?,?,?,1)")
+            .bind(newId,email,name,role,hash,JSON.stringify(role==="admin"?[]:selected)).run();
+          await audit(env,session.email,"admin_user_created","admin_user",newId,role);
+          return json({ok:true,id:newId},201);
+        }catch{return json({error:"An account with this email may already exist."},409);}
+      }
+      const userMatch=path.match(/^\/api\/admin\/users\/([a-f0-9-]+)$/);
+      if(userMatch && method==="PATCH"){
+        if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+        const target=await env.DB.prepare("SELECT id,email,role,is_active FROM admin_users WHERE id=?").bind(userMatch[1]).first();
+        if(!target)return json({error:"User account not found."},404);
+        const data=await request.json().catch(()=>null);
+        if(target.id===user.id && data?.is_active===false)return json({error:"You cannot disable your own account."},400);
+        const role=data?.role==="admin"?"admin":data?.role==="user"?"user":target.role;
+        const active=typeof data?.is_active==="boolean"?Number(data.is_active):Number(target.is_active);
+        if(target.role==="admin" && (role!=="admin"||!active)){
+          const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM admin_users WHERE role='admin' AND is_active=1").first();
+          if(Number(count?.n||0)<=1)return json({error:"At least one active administrator must remain."},409);
+        }
+        const selected=Array.isArray(data?.permissions)?[...new Set(data.permissions.filter(x=>ALL_ADMIN_PERMISSIONS.has(x)))]:null;
+        const name=typeof data?.name==="string"?clean(data.name,120):null;
+        const password=typeof data?.password==="string"?data.password:null;
+        if(password!==null&&(password.length<12||password.length>256))return json({error:"A new password must contain at least 12 characters."},400);
+        const hash=password?await passwordHash(password):null;
+        await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||permissionsFor(target))),hash,userMatch[1]).run();
+        await audit(env,session.email,"admin_user_updated","admin_user",userMatch[1],JSON.stringify({role,is_active:!!active,password_reset:!!password}));
+        return json({ok:true});
+      }
+      if(userMatch && method==="DELETE"){
+        if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+        if(userMatch[1]===user.id)return json({error:"You cannot remove your own account."},400);
+        const target=await env.DB.prepare("SELECT id,role,is_active FROM admin_users WHERE id=?").bind(userMatch[1]).first();
+        if(!target)return json({error:"User account not found."},404);
+        if(target.role==="admin"&&target.is_active){
+          const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM admin_users WHERE role='admin' AND is_active=1").first();
+          if(Number(count?.n||0)<=1)return json({error:"At least one active administrator must remain."},409);
+        }
+        await env.DB.prepare("UPDATE admin_users SET is_active=0,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(userMatch[1]).run();
+        await audit(env,session.email,"admin_user_disabled","admin_user",userMatch[1],"Account disabled");
+        return json({ok:true});
+      }
+      return json({error:"Not found."},404);
+    }
+    const required=requiredPermission(path,method);
+    if(required && !isAdmin && !permissions.includes(required))return json({error:"You do not have permission to perform this action."},403);
     if (path === "/api/admin/media" && method === "GET") {
       try {
         const {results=[]}=await env.DB.prepare("SELECT public_id AS key,secure_url AS url,bytes AS size,format,created_at AS uploaded FROM media_assets ORDER BY created_at DESC LIMIT 200").all();
