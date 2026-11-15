@@ -88,3 +88,18 @@ body { overflow-x: hidden; }
 /* Bengali text rendering */
 html[lang='bn'], html[lang='bn'] body { font-family: 'Noto Sans Bengali', 'Nirmala UI', sans-serif; }
 html[lang='bn'] h1, html[lang='bn'] h2, html[lang='bn'] h3, html[lang='bn'] .brand { font-family: 'Noto Sans Bengali', 'Nirmala UI', sans-serif; }
+
+/* Privacy consent controls */
+#sr-consent-banner{position:fixed;z-index:10001;left:18px;right:18px;bottom:18px;max-width:760px;margin:auto;padding:20px;background:#102944;color:#eef4fb;border:1px solid #42617e;border-radius:10px;box-shadow:0 12px 42px #0009;font:14px/1.55 system-ui}
+#sr-consent-banner h2{font-size:18px;margin:0 0 8px;color:#fff}
+#sr-consent-banner p{margin:0 0 14px;color:#c3d1df}
+#sr-consent-banner .sr-consent-actions{display:flex;gap:9px;flex-wrap:wrap}
+#sr-consent-banner button,#sr-consent-manage{border:1px solid #5c7c9c;border-radius:5px;padding:9px 13px;background:#173a5b;color:#fff;font:600 13px system-ui;cursor:pointer;min-height:40px}
+#sr-consent-banner button.primary{background:#2879c9;border-color:#2879c9}
+#sr-consent-banner button:focus-visible,#sr-consent-manage:focus-visible{outline:3px solid #8fd5ff;outline-offset:2px}
+#sr-consent-banner .sr-consent-options{display:grid;gap:12px;margin:15px 0}
+#sr-consent-banner label{display:flex;gap:10px;align-items:flex-start;color:#fff;font-weight:600}
+#sr-consent-banner label small{display:block;color:#aebfd0;font-weight:400}
+#sr-consent-banner input{width:18px;height:18px;accent-color:#2879c9;margin-top:2px}
+#sr-consent-manage{position:fixed;z-index:9997;left:12px;bottom:12px;font-size:11px;padding:7px 10px;opacity:.92}
+@media(max-width:520px){#sr-consent-banner{left:9px;right:9px;bottom:9px;padding:16px}#sr-consent-banner .sr-consent-actions{display:grid;grid-template-columns:1fr 1fr}#sr-consent-banner button{padding:10px 7px}}
