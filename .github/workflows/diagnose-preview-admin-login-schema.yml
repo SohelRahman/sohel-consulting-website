@@ -1,0 +1,75 @@
+name: Diagnose Preview Admin login schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-admin-login-schema
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/current-focus-development'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out development branch
+        uses: actions/checkout@v4
+
+      - name: Verify Preview D1 target
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from "node:fs";
+          const cfg=readFileSync("wrangler.toml","utf8");
+          const section=cfg.split("[[previews.d1_databases]]")[1]||"";
+          const line=section.split(String.fromCharCode(10)).find(x=>x.trim().startsWith("database_id"));
+          const id=line?.split("=")[1]?.trim().slice(1,-1);
+          const expected="e0317397-77cb-4f36-9d19-2594ff75b0c2";
+          const production="3a4f765a-46c2-4040-9753-36e9483893a4";
+          if(id!==expected||id===production) throw new Error("Preview database ID guard failed.");
+          const token=(process.env.CLOUDFLARE_API_TOKEN||"").replace(/\\s+/g,"");
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID;
+          if(!token||!account) throw new Error("Cloudflare credentials missing.");
+          const res=await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/d1/database/${expected}`,{headers:{Authorization:`Bearer ${token}`,Accept:"application/json"}});
+          const data=await res.json().catch(()=>({}));
+          if(!res.ok||data.success!==true||(data.result?.uuid||data.result?.id)!==expected) throw new Error("Preview D1 verification failed.");
+          writeFileSync("wrangler.preview-schema.jsonc",JSON.stringify({name:"preview-admin-schema-check",d1_databases:[{binding:"PREVIEW_DB",database_name:data.result.name,database_id:expected}]},null,2));
+          console.log("Verified Preview D1 only; Production database excluded.");
+          NODE
+
+      - name: Inspect actual table columns
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "PRAGMA table_info(rate_limits);"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "PRAGMA table_info(admin_users);"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "PRAGMA table_info(audit_logs);"
+
+      - name: Validate rate-limit SQL without executing writes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN DELETE FROM rate_limits WHERE expires_at < 1700000000000;"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN INSERT INTO rate_limits (rate_key,window_started_at,request_count,expires_at) VALUES ('diag-key',1700000000000,1,1700000900000) ON CONFLICT(rate_key) DO UPDATE SET request_count=CASE WHEN rate_limits.window_started_at + 900000 <= 1700000000000 THEN 1 ELSE rate_limits.request_count + 1 END,window_started_at=CASE WHEN rate_limits.window_started_at + 900000 <= 1700000000000 THEN 1700000000000 ELSE rate_limits.window_started_at END,expires_at=1700000900000 RETURNING request_count;"
+
+      - name: Validate Admin account and audit SQL without executing writes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN SELECT id,email,full_name,role,password_hash,permissions_json,is_active,session_version FROM admin_users WHERE email='diagnostic@example.invalid';"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES ('diag-id','diagnostic@example.invalid','Diagnostic','admin','placeholder','[]',1);"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN SELECT id,email,full_name,role,password_hash,permissions_json,is_active,session_version FROM admin_users WHERE id='diagnostic-id';"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id='diagnostic-id';"
+          npx --yes wrangler@4.160.1 d1 execute PREVIEW_DB --remote --config wrangler.preview-schema.jsonc --command "EXPLAIN INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES ('diag-id','diagnostic@example.invalid','diagnostic','admin_user','diag-id','schema check');"
