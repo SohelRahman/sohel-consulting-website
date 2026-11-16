@@ -705,6 +705,9 @@ export default {
     }
     if (url.pathname.startsWith("/src/") || url.pathname.startsWith("/migrations/") || url.pathname === "/wrangler.toml") return new Response("Not found",{status:404});
 
+    // Serve the static homepage explicitly because html_handling is disabled.
+    if (url.pathname === "/") return env.ASSETS.fetch(new Request(new URL("/index.html",url),request));
+
     const pageSlug=url.pathname.endsWith(".html")?url.pathname.slice(1,-5):"";
     if (/^[a-z0-9-]+$/.test(pageSlug) && !["index","admin","404"].includes(pageSlug)) {
       try {
