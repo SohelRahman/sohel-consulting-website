@@ -1,3 +1,9 @@
+## 2026-11-16 — Preview D1 migration workflow
+- Added a manually triggered GitHub Actions workflow restricted to `current-focus-development` for Preview D1 migration listing, application and post-application verification.
+- Added a guard that checks the configured Preview D1 UUID before any migration command; Wrangler runs in Preview D1 mode.
+- Documented the required Cloudflare GitHub Actions secrets and manual execution procedure.
+- This workflow has been committed but has not yet been run. Migration state and application remain unverified; Production was not targeted.
+
 # Changelog
 
 ## 2026-11-16 — Role-based dashboard access
