@@ -35,8 +35,8 @@ jobs:
           import { readFileSync, writeFileSync } from "node:fs";
           const config = readFileSync("wrangler.toml", "utf8");
           const previewSection = config.split("[previews.d1_databases]")[1] || "";
-          const previewLine = previewSection.split("\\n").find(line => line.trim().startsWith("database_id"));
-          const previewId = previewLine?.split("=")[1]?.trim().replaceAll("\\"", "");
+          const previewLine = previewSection.split(String.fromCharCode(10)).find(line => line.trim().startsWith("database_id"));
+          const previewId = previewLine?.split("=")[1]?.trim().slice(1, -1);
           const expectedPreviewId = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
           const productionId = "3a4f765a-46c2-4040-9753-36e9483893a4";
           if (previewId !== expectedPreviewId || previewId === productionId) {
@@ -63,7 +63,7 @@ jobs:
               database_id: expectedPreviewId,
               migrations_dir: "migrations"
             }]
-          }, null, 2) + "\\n");
+          }, null, 2) + String.fromCharCode(10));
           console.log("Verified dedicated Preview D1 database:", expectedPreviewId);
           NODE
 
