@@ -44,7 +44,7 @@ jobs:
           }
 
           const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-          const token = process.env.CLOUDFLARE_API_TOKEN;
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\\s+/g, "");
           if (!accountId || !token) throw new Error("Cloudflare API credentials are not configured.");
           const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${expectedPreviewId}`, {
             headers: { Authorization: `Bearer ${token}` }
