@@ -18,6 +18,8 @@ The GitHub Actions workflow `.github/workflows/validate-development.yml` runs on
 
 A passing workflow is not proof of full browser QA.
 
+Before Preview deployment, apply D1 migrations using the manually triggered workflow `.github/workflows/migrate-preview-d1.yml` from `current-focus-development`. Confirm that the workflow verifies the dedicated Preview database ID and completes its post-migration listing. The workflow requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub Actions secrets. It must not be run from `main`.
+
 ## Preview setup and verification
 
 1. Confirm Cloudflare Worker Previews are enabled for the Worker.
