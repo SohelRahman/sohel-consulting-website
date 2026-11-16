@@ -53,6 +53,12 @@ The schema constrains registration, payment, enrollment, inquiry, quotation, pag
 
 Payments are not integrated. The initial schema uses `not_configured` as the payment status for new registrations.
 
+## Preview migration workflow
+
+The repository workflow `.github/workflows/migrate-preview-d1.yml` is manually triggered from `current-focus-development`. It verifies the Preview D1 UUID in the `[previews.d1_databases]` section, lists pending migrations, applies pending migrations using Wrangler's Preview D1 mode, and lists migration state again. The workflow requires the GitHub Actions secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+
+The workflow is restricted to the development branch and targets the configured Preview binding only. Do not run it from `main`. A successful workflow run is the evidence that migrations were applied; merely committing this workflow does not apply any migration.
+
 ## Migration procedure
 
 1. Review the SQL file and its compatibility with the current schema.
