@@ -1,0 +1,44 @@
+name: Verify Cloudflare API token
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-token:
+    if: github.ref == 'refs/heads/current-focus-development'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Cloudflare API token validity
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\\s+/g, "");
+          if (!token) throw new Error("CLOUDFLARE_API_TOKEN is not configured.");
+          const response = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+          });
+          const raw = await response.text();
+          let payload = {};
+          try { payload = JSON.parse(raw); } catch {}
+          const status = payload?.result?.status || "unknown";
+          const errors = (payload?.errors || []).map(e => ({
+            code: e.code ?? null,
+            message: String(e.message || "Unspecified Cloudflare API error").replaceAll(token, "[REDACTED]")
+          }));
+          console.log(JSON.stringify({
+            http_status: response.status,
+            success: payload?.success === true,
+            token_status: status,
+            errors
+          }, null, 2));
+          if (!response.ok || payload?.success !== true || status !== "active") {
+            throw new Error("Token verification did not confirm an active token. This workflow performs no account lookup and no database operations.");
+          }
+          console.log("Token is active. No account lookup or database operations were performed.");
+          NODE
