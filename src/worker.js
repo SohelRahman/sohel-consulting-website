@@ -241,15 +241,24 @@ async function handleApi(request, env) {
     const delivery=["online","classroom","either"].includes(data.delivery) ? data.delivery : "online";
     const message=clean(data.message,2000);
     if (!fullName || !emailOk(email) || !courseId) return json({error:"Please provide your name, valid email and course."},400);
-    const course=await env.DB.prepare("SELECT id,pricing_type,fixed_fee_minor,currency FROM courses WHERE id=? AND active=1").bind(courseId).first();
+    const course=await env.DB.prepare("SELECT id,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at FROM courses WHERE id=? AND active=1").bind(courseId).first();
     if (!course) return json({error:"Please select an available course."},400);
     if (pricingType==="fixed" && (course.pricing_type==="custom" || !course.fixed_fee_minor)) return json({error:"A fixed fee is not configured for this course. Please request a customized quotation."},400);
+    let registrationFee=course.fixed_fee_minor;
+    const today=new Date().toISOString().slice(0,10);
+    const discountActive=course.discount_type&&course.discount_type!=="none"&&Number(course.discount_value)>0&&(!course.discount_starts_at||today>=course.discount_starts_at)&&(!course.discount_ends_at||today<=course.discount_ends_at);
+    if(pricingType==="fixed"&&discountActive){
+      registrationFee=course.discount_type==="percentage"
+        ? Math.round(course.fixed_fee_minor*(1-course.discount_value/100))
+        : course.fixed_fee_minor-course.discount_value;
+      registrationFee=Math.max(0,registrationFee);
+    }
     const learnerId=id(), registrationId=id();
     const reference="SR-"+crypto.randomUUID().replace(/-/g,"").slice(0,10).toUpperCase();
     await env.DB.batch([
       env.DB.prepare("INSERT INTO learners (id,full_name,email,phone,organisation) VALUES (?,?,?,?,?)").bind(learnerId,fullName,email,phone,organisation),
       env.DB.prepare("INSERT INTO registrations (id,reference_code,learner_id,course_id,batch_preference,language_preference,delivery_preference,pricing_type,quoted_fee_minor,currency,learner_message) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-        .bind(registrationId,reference,learnerId,courseId,clean(data.batch,120),language,delivery,pricingType,pricingType==="fixed"?course.fixed_fee_minor:null,course.currency,message)
+        .bind(registrationId,reference,learnerId,courseId,clean(data.batch,120),language,delivery,pricingType,pricingType==="fixed"?registrationFee:null,course.currency,message)
     ]);
     return json({ok:true,reference,status:"pending_review",message:"Your request has been received. The administrator will review it and contact you."},201);
   }
