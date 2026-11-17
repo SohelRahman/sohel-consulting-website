@@ -40,13 +40,13 @@ const ALL_ADMIN_PERMISSIONS = new Set(ADMIN_PERMISSIONS);
 async function passwordHash(password, saltValue) {
   const salt=saltValue||b64url(crypto.getRandomValues(new Uint8Array(16)));
   const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
-  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:fromB64url(salt),iterations:210000,hash:"SHA-256"},key,256);
-  return "pbkdf2$210000$"+salt+"$"+b64url(bits);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:fromB64url(salt),iterations:100000,hash:"SHA-256"},key,256);
+  return "pbkdf2$100000$"+salt+"$"+b64url(bits);
 }
 async function passwordVerify(password, stored) {
   try {
     const [scheme,rounds,salt,expected]=String(stored||"").split("$");
-    if(scheme!=="pbkdf2" || Number(rounds)!==210000 || !salt || !expected)return false;
+    if(scheme!=="pbkdf2" || Number(rounds)!==100000 || !salt || !expected)return false;
     const actual=await passwordHash(password,salt);
     return actual===stored;
   } catch { return false; }
