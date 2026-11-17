@@ -31,7 +31,7 @@ check("Manage permissions imply view permissions", worker.includes('required.end
 check("Chat reply permission implies chat view", /required==="chat\.view" && permissions\.includes\("chat\.reply"\)/.test(worker));
 check("User-management endpoints are Admin-only", /if\(!isAdmin\)return json\(\{error:"Only administrators can manage dashboard accounts\."\},403\)/.test(worker));
 check("Self-service password changes require a 12-character minimum", /next\.length<12/.test(worker));
-check("Password storage uses PBKDF2 with 210,000 iterations", /iterations:210000,hash:"SHA-256"/.test(worker));
+check("Password storage uses Cloudflare Workers-compatible PBKDF2 with 100,000 iterations", /iterations:100000,hash:"SHA-256"/.test(worker));
 check("Sessions are bound to account session_version", /sessionVersion/.test(worker) && /session_version/.test(worker));
 check("Session version is incremented after password change", /nextVersion=Number\(user\.session_version\)\+1/.test(worker));
 check("Dashboard exposes role-based User Access controls", /User Access/i.test(adminHtml) && /permissions/i.test(adminHtml));
