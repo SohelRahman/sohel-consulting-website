@@ -701,7 +701,7 @@ export default {
     const url=new URL(request.url);
     if (url.pathname.startsWith("/api/")) {
       try { return await handleApi(request,env); }
-      catch (error) { console.error("API error",error); return json({error:"The request could not be completed."},500); }
+      catch (error) { console.error("API error",error); return json({error:"The request could not be completed.",...(env.ENVIRONMENT==="preview"?{diagnostic:String(error?.message||error).slice(0,240)}:{})},500); }
     }
     if (url.pathname.startsWith("/src/") || url.pathname.startsWith("/migrations/") || url.pathname === "/wrangler.toml") return new Response("Not found",{status:404});
 
