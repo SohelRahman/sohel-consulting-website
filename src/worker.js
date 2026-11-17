@@ -172,8 +172,8 @@ async function handleApi(request, env) {
 
   if (path === "/api/chat/session" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-    if (!(await rateLimit(env,request,"chat-session",12,60*60*1000))) return json({error:"Chat limit reached. Please try again later."},429);
-    const data=await request.json().catch(()=>null), token=clean(data?.token,80);
+    const data=await request.json().catch(()=>null), token=clean(data?.token,80), refresh=data?.refresh===true;
+    if (!(await rateLimit(env,request,refresh?"chat-session-refresh":"chat-session",refresh?150:12,60*60*1000))) return json({error:"Chat limit reached. Please try again later."},429);
     if (!/^[a-f0-9]{64}$/i.test(token)) return json({error:"Invalid chat session."},400);
     const tokenHash=await chatTokenHash(token), language=data?.language==="bn"?"bn":"en";
     let conversation=await env.DB.prepare("SELECT id,status FROM chat_conversations WHERE visitor_token_hash=?").bind(tokenHash).first();
@@ -181,11 +181,12 @@ async function handleApi(request, env) {
       const conversationId=id();
       await env.DB.prepare("INSERT INTO chat_conversations (id,visitor_token_hash,language) VALUES (?,?,?)").bind(conversationId,tokenHash,language).run();
       conversation={id:conversationId,status:"open"};
-    } else if (conversation.status==="closed") {
+    } else if (conversation.status==="closed" && !refresh) {
       await env.DB.prepare("UPDATE chat_conversations SET status='open',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(conversation.id).run();
+      conversation.status="open";
     }
     const {results=[]}=await env.DB.prepare("SELECT sender,message,created_at FROM chat_messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT 60").bind(conversation.id).all();
-    return json({conversationId:conversation.id,messages:results});
+    return json({conversationId:conversation.id,status:conversation.status,messages:results});
   }
   if (path === "/api/chat/messages" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
