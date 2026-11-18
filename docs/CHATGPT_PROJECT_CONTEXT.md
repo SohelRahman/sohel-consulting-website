@@ -8,6 +8,6 @@
 - Migration 0003 fully verified: four expected homepage hero seed keys, content types (including `home.hero.lead` as `textarea`), and `published = 1` were returned; supplied `sqlite_master` DDL matches the committed table definition.
 - Migration 0004 verified: user-created `page_styles` table DDL matches committed migration 0004.
 - Migration 0005 verified: supplied `pages` table DDL and `idx_pages_status_slug` index match committed migration 0005.
-- Migration 0006 table verified: supplied `media_assets` DDL matches committed migration 0006. Its `idx_media_assets_created` index remains pending.
-- Next action: create and verify that index on the disposable database, then proceed to migration 0007. Do not use the general Wrangler migration workflow.
+- Migration 0006 verified: supplied `media_assets` table DDL and `idx_media_assets_created` index match committed migration 0006.
+- Next action: inspect and apply migration 0007 (`chat`) in controlled chunks on the disposable database, verifying each object before proceeding. Do not use the general Wrangler migration workflow.
 - Progress is tracked in `docs/CMS_DISPOSABLE_D1_TEST_PROGRESS_STAGE_9A8.md`. Preview and Production remain out of scope; no migration 0004 onward, CMS test, application code change, or deployment has been performed.
