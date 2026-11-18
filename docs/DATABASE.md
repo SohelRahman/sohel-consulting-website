@@ -175,3 +175,18 @@ Outstanding gates:
 - Obtain explicit user approval in Stage 9A.5 before creating or applying a CMS migration.
 
 See [Stage 9A.4 Final CMS Schema Review](CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md). No CMS migration or implementation has been created; no D1 database or Production resource was modified.
+
+
+## Preview D1 evidence update — 2026-11-18 (partial)
+
+The user supplied read-only Preview query results showing:
+- `PRAGMA foreign_keys` returned `1`.
+- `PRAGMA foreign_key_check` displayed no violation rows.
+- Current row counts: `pages` = 1, `site_content` = 4, `page_styles` = 1.
+- All seven CMS table names already exist in Preview D1.
+
+Important discrepancy: the current development-branch `migrations/` directory contains `0001` through `0011` and no CMS migration file, while Preview D1 already contains the seven CMS tables. The `d1_migrations` query output was not included, so the applied migration history and origin of these tables are unknown.
+
+The observed Preview CMS schema is not the same as the proposed Stage 9A schema. Examples: `cms_sections` lacks `section_type` and `config_json`; `cms_content_elements.content_type` does not allow `textarea`; `cms_content_values` contains mutable `published_value`; and `cms_page_locales` lacks the proposed Draft/publication revision fields and current published-version pointer. Do not apply the proposed schema as a fresh-table migration or drop/replace existing CMS tables. Identify their provenance, existing data and Worker/API dependencies first.
+
+See [Stage 9A.4 Final CMS Schema Review](CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md) for the full comparison. Stage 9A.3 remains partially verified pending the `d1_migrations` result and CMS data/provenance review.
