@@ -111,3 +111,23 @@ Stage 6 proposed seven additive tables. This is a design proposal only; no CMS m
 Do not add these proposed tables to the applied migration inventory until a migration file exists and its application is verified independently in Preview and Production. Production migration requires separate explicit approval.
 
 See [CMS Admin UI and workflow specification](CMS_ADMIN_UI_WORKFLOW.md) for the editor workflow and [API Reference](API.md) for proposed endpoints.
+
+
+## Stage 9A schema review
+
+The Stage 6 seven-table proposal has been reviewed against the repository's existing migrations. The seven-table direction is acceptable as a starting point, but the current proposed SQL is **not approved for migration**.
+
+Required revisions:
+1. Preserve page-builder section types and renderer configuration.
+2. Make published structure independent of editable draft structure; public rendering must use an immutable published page snapshot.
+3. Add an explicit current published-version reference and atomic optimistic concurrency control.
+4. Reuse existing `audit_logs` for structural/admin actions; version tables remain for content recovery.
+5. Define safe section soft-delete/restore semantics, including child elements.
+6. Preserve existing `textarea` content-type semantics during migration.
+7. Finalize global-content publication as a separate scope.
+
+Additional checks include D1 JSON validation support, complete snapshot contents, indexes, route compatibility and source-to-target backfill mapping.
+
+Detailed findings and proposed migration gates: [Stage 9A CMS Schema Review](CMS_SCHEMA_REVIEW_STAGE_9A.md).
+
+**Approval state:** Pending revisions, user decision on global publication, and Preview D1 inspection. No CMS migration has been created or applied.
