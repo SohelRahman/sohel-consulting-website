@@ -112,17 +112,24 @@ Review whether `admin_email` is sufficient for actor attribution or whether a st
 - Define content-type mappings for all existing site-content keys and page-builder fields before migration.
 - Do not silently coerce URL, rich text, list or system content into plain text.
 
-### R7 — Define the global content publication scope
+**User decision confirmed (2026-11-18): Option A — independent global publication.** Global English and Bangla content each have their own Draft, Preview, Publish and Version History. Global publication is independent from page publication in both directions.
 
-**Finding:** A logical `global` page and EN/BN locale rows are proposed, but the exact publication contract for shared header/footer/navigation and other global content has not been finalized.
+### R7 — Define independent global content publication (decision confirmed)
 
-**Required change:**
-- Keep global content as a separate publication scope.
-- Define a dedicated global publish operation and version history.
-- Page publication must not publish global content.
-- Global publication must not unintentionally publish page-specific changes.
+**Required schema and service behaviour:**
+- Represent Global as one logical `cms_pages` record with `page_type='global'` and two independent `cms_page_locales` records (`en` and `bn`).
+- Each global locale has its own editable structure, draft revision, current published version pointer, publication revision and version history, following the same snapshot/version model as ordinary page locales.
+- Global EN and BN are published independently. Publishing EN must not publish BN, and vice versa.
+- Provide a dedicated global-locale publish operation. It snapshots and atomically advances only the selected global locale.
+- Publishing an ordinary page must not publish or modify Global.
+- Publishing Global must not publish or modify any ordinary page.
+- Public rendering composes the requested page's current published snapshot with the currently published Global snapshot for the matching language. If a global locale has never been published, use the defined safe baseline/fallback; never expose its draft.
+- Page snapshots must not copy or freeze global content. This avoids requiring every page to be republished after a global update.
+- Global changes become visible on all matching-language pages after the successful global publication, subject to the site's cache invalidation/revalidation policy.
+- Global history and restore are locale-scoped. Historical restore creates a Draft for that global language; publication remains a separate action.
+- Keep page and global publication transactions and concurrency checks independent.
 
-This is a design decision still requiring user confirmation.
+The user selected Option A. The decision is no longer pending. The revised schema remains subject to review and explicit approval; Preview D1 verification is still outstanding.
 
 ## 4. Additional technical safeguards
 
@@ -168,7 +175,7 @@ No data backfill should run until the source-to-target mapping is reviewed.
 | Structural audit coverage | Revision required; reuse `audit_logs` |
 | Section delete/restore semantics | Revision required |
 | `textarea` compatibility | Revision required |
-| Global publication contract | User decision pending |
+| Global publication contract | Option A confirmed; schema/service rules documented |
 | Preview D1 state verified | Pending |
 | Migration SQL ready | No |
 
@@ -176,13 +183,31 @@ No data backfill should run until the source-to-target mapping is reviewed.
 
 **Do not approve the current Stage 6 SQL for migration yet.**
 
-The seven-table model can be retained, subject to revisions R1–R7 and the additional safeguards above. This is a schema design review only; no SQL migration was created or applied, no database was modified and no deployment was performed.
+The seven-table model can be retained, subject to revisions R1–R6, the confirmed R7 global-publication rules and the additional safeguards above. This is a schema design review only; no SQL migration was created or applied, no database was modified and no deployment was performed.
 
-### Required user decision
+### Confirmed user decision
 
-Confirm the global-content publishing model:
+The user selected **Option A — independent global publication**. The schema and service contract must follow the R7 rules above. The next step is to produce the revised table-level schema definition and review it for explicit approval. Preview D1 inspection remains a separate mandatory gate before implementation.
 
-- **Option A (recommended):** Global content has its own EN/BN Draft, Preview, Publish and Version History workflow. It is published independently and never as a side effect of page publishing.
-- **Option B:** Global content is managed separately but is published together with every page.
 
-After that decision, revise the schema proposal, review the final table definitions and request explicit schema approval. Preview D1 inspection remains a separate mandatory gate before implementation.
+## 8. Revised schema contract — global scope (Option A)
+
+The seven-table design remains. Global content is not an eighth table and is not embedded into ordinary page snapshots.
+
+| Object | Revised responsibility |
+|---|---|
+| `cms_pages` | Includes one logical Global record with `page_type='global'`, alongside route pages |
+| `cms_page_locales` | Holds separate EN and BN Global locale records, each with independent draft and published version pointers/revisions |
+| `cms_sections` | Stores each global locale's editable shared sections using the same section model |
+| `cms_content_elements` | Stores shared element definitions and constraints |
+| `cms_content_values` | Stores defaults and locale-scoped editable values |
+| `cms_content_versions` | Stores element history, including global-locale changes |
+| `cms_page_versions` | Stores complete immutable snapshots for both ordinary page locales and each Global locale |
+
+**Public composition rule:** Resolve the published page snapshot for the requested page/language and independently resolve the currently published Global snapshot for the same language. Compose them at read/render time. Never read Global Draft values publicly. Do not embed Global content in a page snapshot.
+
+**Publication isolation:** A page publish advances only that page/language pointer. A Global publish advances only the selected Global language pointer. Neither operation changes the other scope. Global EN and BN are independently publishable.
+
+**Caching:** A successful Global publish must invalidate/revalidate cached public responses that include that Global language. Exact cache mechanism must be confirmed against the current Worker/Cloudflare delivery path before implementation.
+
+This is a schema contract revision, not final SQL. Key types, composite uniqueness, foreign-key shape and transaction statements still require the final table-level design review.
