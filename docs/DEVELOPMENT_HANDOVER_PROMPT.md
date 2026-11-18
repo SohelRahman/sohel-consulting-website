@@ -150,3 +150,33 @@ Before starting new implementation:
 7. Then proceed with the next development item.
 
 **Critical rule: develop on `current-focus-development` and protect `main` and Production unless the user explicitly authorizes a change.**
+
+
+## 11. Next development item — course discount and registration fee consistency
+
+**Status: Planned / investigation not yet started.**
+
+User identified this item for the next development cycle:
+- Test discount calculation, display, and registration fee consistency.
+
+### Scope to investigate
+1. Identify the supported discount model(s) from the existing schema and UI. Do not assume fixed-amount or percentage discounts are both supported.
+2. Trace the price calculation from course creation/editing through public course listing and detail pages.
+3. Trace registration submission and backend persistence to determine which amount is charged/stored.
+4. Check that the displayed original price, discount, discounted price, and registration fee are consistent wherever shown.
+5. Check server-side validation and ensure clients cannot manipulate the payable amount.
+6. Test boundary cases supported by the existing design: no discount, zero discount, valid discount, maximum allowed discount, invalid/negative discount, and rounding/currency formatting.
+7. Check existing registrations and historical fee records are not unintentionally changed by course price edits.
+
+### Acceptance criteria
+- One authoritative server-side calculation determines the payable course fee.
+- Public display and registration use the same documented calculation and currency/rounding rules.
+- Invalid discounts are rejected safely; payable fee cannot become negative.
+- Registration records store the correct amount according to the existing business rules.
+- Tests cover calculation, display data, registration persistence, and relevant edge cases.
+- No Production resources or data are changed.
+
+### Investigation notes
+- Actual supported discount fields, formula, currency, rounding rules, and registration fee behavior are **not yet verified**. Inspect the current development branch and migrations before deciding implementation details.
+- Do not change the pricing model or database schema unless the inspection shows it is necessary and the user approves any material business-rule decision.
+- Update this section with affected files, test cases/results, commits, Preview deployment status, and user verification as work progresses.
