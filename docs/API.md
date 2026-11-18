@@ -68,7 +68,7 @@ User accounts can be assigned granular module permissions. A manage permission a
 
 - The authenticated, same-origin `POST /api/admin/media/signature` endpoint accepts `{ "purpose": "syllabus", "resourceType": "raw" }` for PDF files or `{ "purpose": "syllabus", "resourceType": "image" }` for JPG/PNG/WebP images.
 - The response contains the Cloudinary cloud name, API key, timestamp, folder, signature, resource type and allowed formats. The browser uploads directly to Cloudinary using that signed response.
-- Syllabus files use the existing `sohel-consulting` folder and the Preview API key's folder permission. PDF uses Cloudinary `raw/upload`; images use `image/upload`.
+- Syllabus files use the existing `sohel-consulting` folder and the Preview API key's folder permission. Both standard PDFs and JPG/PNG/WebP images use Cloudinary `image/upload`; Cloudinary supports PDF files as image assets, allowing browser delivery and PDF transformations. Password-protected PDFs are outside this feature's scope.
 - The returned `secure_url` is saved to the course's existing `syllabus_url` field through `POST /api/admin/courses` or `PATCH /api/admin/courses/:id`. No additional D1 migration is required.
 - Syllabus upload limits: 10 MB for PDFs and 3 MB for images in the browser; server-side signing is rate-limited to 10/hour and 40/day per the existing rate-limit mechanism.
 
