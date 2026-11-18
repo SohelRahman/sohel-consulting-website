@@ -1,3 +1,9 @@
+## 2026-11-18 — Stage 9A.4 final CMS schema review
+- Added `docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md` with the final design review of the seven-table additive CMS model, publication/concurrency invariants, legacy compatibility conditions and remaining implementation gates.
+- Accepted the seven-table model as the design direction, subject to Preview D1 evidence review and final route, Global fallback/cache and D1 transaction/FK decisions. The schema is not approved for migration.
+- The user reported successful execution of all four Stage 9A.3 read-only queries, but the result sets have not been supplied; actual Preview migration history, table definitions, row counts and foreign-key integrity therefore remain unverified.
+- Documentation-only update on `current-focus-development`. No CMS code, migration SQL, D1 data, Preview deployment or Production resource was changed. Next gate: inspect Stage 9A.3 outputs and proceed to Stage 9A.5 explicit schema approval only after verification.
+
 ## 2026-11-18 — Stage 9A.1–9A.2 revised CMS schema and integrity review
 - Added `docs/CMS_SCHEMA_TABLE_SPEC_STAGE_9A.md` with a complete proposed table-level definition for all seven CMS tables, including column types, nullability, defaults, checks, primary/foreign/unique keys, indexes, snapshot requirements and relationships.
 - Documented immutable published snapshots, page/language-scoped optimistic concurrency, same-locale publication pointer integrity, soft-delete/restore rules, `textarea` preservation, page-builder section types/configuration, legacy mapping and reuse of `audit_logs`.
