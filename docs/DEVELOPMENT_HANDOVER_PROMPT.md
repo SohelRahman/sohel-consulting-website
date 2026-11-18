@@ -180,3 +180,41 @@ User identified this item for the next development cycle:
 - Actual supported discount fields, formula, currency, rounding rules, and registration fee behavior are **not yet verified**. Inspect the current development branch and migrations before deciding implementation details.
 - Do not change the pricing model or database schema unless the inspection shows it is necessary and the user approves any material business-rule decision.
 - Update this section with affected files, test cases/results, commits, Preview deployment status, and user verification as work progresses.
+
+
+### 11.1 Public course listing visibility — implementation update
+
+**Status: Committed; Preview deployment and user testing not yet verified.**
+
+User confirmed the newly created course is visible and Active in Admin, but could not find it on the public website.
+
+Repository inspection found:
+- `GET /api/courses` returns database courses where `active=1`.
+- The English `training.html` page showed only three hardcoded training-area cards and did not render the database course list.
+- The Bangla `bn/training.html` page also showed only three hardcoded cards and did not render database courses.
+- Registration pages already load their course options from `/api/courses`.
+
+Changes committed:
+- `training.html` now loads active courses from `/api/courses` and renders a dynamic “Current courses” section.
+- `bn/training.html` now loads the same active courses and renders localized titles, summaries, and detail links.
+- Existing hardcoded training-area sections were retained as general topic/category content.
+- Dynamic text is inserted with DOM `textContent`, and course slugs are URL-encoded in detail links.
+- Empty and API-error states are handled.
+
+Commits:
+- English page: `1de2aa4ed8608d2e73f6fac4797ac138a8f7178f`
+- Bangla page: `c8f7a20e6f26d8cfd7e143936fb0a1bfab468f3d`
+
+Validation at handover update:
+- GitHub Actions validation for the English commit was observed queued (run 364); no passing result was confirmed.
+- No workflow run or CI status was returned for the Bangla commit at the time checked.
+- Cloudflare Preview deployment and live API/page behavior have not yet been verified.
+- No database migration or Production change was made.
+
+Next actions:
+1. Wait for and inspect the GitHub validation run.
+2. Verify Cloudflare Preview has deployed both commits.
+3. Open the English and Bangla Training pages and confirm the newly created active course appears.
+4. Open its course detail link and confirm the correct course loads.
+5. Confirm the registration page still lists the course and preselects it when arriving from the course detail page.
+6. Record user testing and final status here.
