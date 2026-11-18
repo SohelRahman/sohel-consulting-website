@@ -141,7 +141,7 @@ $('#media-upload-form').addEventListener('submit',async e=>{
  try{
   const sr=await fetch('/api/admin/media/signature',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin'});
   const signed=await sr.json().catch(()=>({}));if(!sr.ok)throw new Error(signed.error||'Could not authorize upload.');
-  const data=new FormData();data.append('file',file);data.append('api_key',signed.apiKey);data.append('timestamp',String(signed.timestamp));data.append('signature',signed.signature);data.append('folder',signed.folder);
+  const data=new FormData();data.append('file',file);data.append('api_key',signed.apiKey);data.append('timestamp',String(signed.timestamp));data.append('signature',signed.signature);data.append('folder',signed.folder);data.append('allowed_formats',signed.allowedFormats);
   message.textContent='Uploading to Cloudinary…';
   const upload=await fetch('https://api.cloudinary.com/v1_1/'+encodeURIComponent(signed.cloudName)+'/image/upload',{method:'POST',body:data});
   const asset=await upload.json().catch(()=>({}));if(!upload.ok||!asset.public_id)throw new Error(asset.error?.message||'Cloudinary upload failed.');
