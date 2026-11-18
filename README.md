@@ -127,6 +127,7 @@ Never publish unconfirmed client names, project outcomes, prices or credentials.
 
 ## Developer documentation
 
+- [Stage 9A CMS schema review](docs/CMS_SCHEMA_REVIEW_STAGE_9A.md) — review findings and required schema revisions.
 - [CMS Admin UI and workflow specification](docs/CMS_ADMIN_UI_WORKFLOW.md) — Stage 8 planning baseline; CMS is not implemented yet.
 - [Master ChatGPT project context](docs/CHATGPT_PROJECT_CONTEXT.md) — reusable project handover prompt covering objectives, architecture, features, status, pending work and working/release rules. Keep this document current; use it to start new project chats.
 
