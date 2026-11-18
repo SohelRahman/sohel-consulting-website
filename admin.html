@@ -159,8 +159,8 @@ $('#course-syllabus-upload').addEventListener('click',async()=>{
  if(isImage&&file.size>3*1024*1024){message.textContent='Image files must be 3 MB or smaller.';return;}
  button.disabled=true;message.textContent='Preparing secure Cloudinary upload…';
  try{
-  const resourceType=isPdf?'raw':'image';
-  const sr=await fetch('/api/admin/media/signature',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({purpose:'syllabus',resourceType})});
+  const resourceType='image';
+  const sr=await fetch('/api/admin/media/signature',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({purpose:'syllabus',fileType:isPdf?'pdf':'image'})});
   const signed=await sr.json().catch(()=>({}));if(!sr.ok)throw new Error(signed.error||'Could not authorize syllabus upload.');
   const data=new FormData();data.append('file',file);data.append('api_key',signed.apiKey);data.append('timestamp',String(signed.timestamp));data.append('signature',signed.signature);data.append('folder',signed.folder);data.append('allowed_formats',signed.allowedFormats);
   message.textContent='Uploading syllabus to Cloudinary…';
