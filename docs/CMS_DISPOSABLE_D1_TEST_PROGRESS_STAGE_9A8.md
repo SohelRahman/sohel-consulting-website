@@ -94,7 +94,13 @@ The user created `chat_conversations` on the disposable D1 target. The supplied 
 
 **Checkpoint:** `chat_conversations` table DDL is verified from user-supplied D1 Console output. Migration 0007's `chat_messages` table DDL has also been supplied and matches the committed definition: `id` primary key; required `conversation_id` referencing `chat_conversations(id)` with `ON DELETE CASCADE`; `sender` constrained to `visitor`, `bot`, or `admin`; required `message`; and `created_at` defaulting to `CURRENT_TIMESTAMP. The user supplied the `idx_chat_conversations_status` definition, which matches the committed SQL (`chat_conversations(status, updated_at)`). The user supplied the `idx_chat_messages_conversation` definition, matching the committed SQL (`chat_messages(conversation_id, created_at)`). Both migration 0007 indexes are now verified.
 
-## 9. Current checkpoint
+## 9. Migration 0008 — table verified; three indexes pending
+
+The user supplied the `analytics_events` table DDL from the disposable D1 target. It matches committed `migrations/0008_analytics.sql` in columns, primary key, required fields, event-name CHECK values, `referrer_host` default, device-type CHECK values/default, and `created_at` default. Formatting/whitespace differs only.
+
+**Checkpoint:** Migration 0008 table DDL is verified from user-supplied D1 Console output. Three indexes remain pending: `idx_analytics_events_created`, `idx_analytics_events_page`, and `idx_analytics_events_visitor`.
+
+## 10. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -115,14 +121,30 @@ The user created `chat_conversations` on the disposable D1 target. The supplied 
 - [x] Create and verify migration 0007's `chat_messages` table and foreign key.
 - [x] Create and verify `idx_chat_conversations_status`.
 - [x] Create and verify `idx_chat_messages_conversation`.
-- [ ] Continue with migrations 0008–0009 in controlled, individually verified batches.
+- [x] Create and verify migration 0008's `analytics_events` table.
+- [ ] Create and verify migration 0008's three indexes individually.
+- [ ] Continue with migration 0009 in a controlled, individually verified batch.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 10. Next step — migration 0008
+## 11. Next step — migration 0008 indexes
 
-Both table definitions match the committed migration. Inspect committed `migrations/0008_analytics.sql` and apply its exact statements on the disposable target in manageable chunks. Verify every table, index, and constraint against the migration before continuing. Do not guess the schema.
+Both table definitions match the committed migration. The `analytics_events` table matches the committed migration. Create the first index on the disposable target only:
 
-This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+```sql
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created
+ON analytics_events(created_at);
+```
+
+Verify it:
+
+```sql
+SELECT name, tbl_name, sql
+FROM sqlite_master
+WHERE type = 'index'
+  AND name = 'idx_analytics_events_created';
+```
+
+Do not create the next index until this one is verified. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
 ## 10. Stop conditions
 
