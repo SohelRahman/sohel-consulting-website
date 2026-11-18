@@ -29,6 +29,10 @@ check("Admin role receives the complete permission set", /if\(user\?\.role==="ad
 check("Unknown admin API routes fail closed for User accounts", /const allowed=Boolean\(required &&/.test(worker) && /if\(!isAdmin && !allowed\)return json\(\{error:"You do not have permission/.test(worker));
 check("Manage permissions imply view permissions", worker.includes('required.endsWith(".view")') && worker.includes('required.replace(/\\.view$/, ".manage")'));
 check("Chat reply permission implies chat view", /required==="chat\.view" && permissions\.includes\("chat\.reply"\)/.test(worker));
+check("Media deletion endpoint requires same-origin POST and media.manage permission", /path === "\/api\/admin\/media\/delete" && method === "POST"/.test(worker) && /if \(!sameOrigin\(request\)\) return json\(\{error:"Invalid request origin\."\},403\);/.test(worker) && /if\(!isAdmin && !allowed\)/.test(worker));
+check("Media deletion validates folder-scoped public IDs and calls Cloudinary image destroy", /publicId\.startsWith\("sohel-consulting\/"\)/.test(worker) && /\/image\/destroy/.test(worker));
+check("Media deletion removes the D1 record only after Cloudinary confirms deletion", /!\["ok","not found"\]\.includes\(cloudinaryResult\?\.result\)/.test(worker) && /DELETE FROM media_assets WHERE public_id=\?/.test(worker));
+check("Media Library Delete button calls the deletion endpoint", /fetch\('\/api\/admin\/media\/delete'/.test(adminHtml));
 check("User-management endpoints are Admin-only", /if\(!isAdmin\)return json\(\{error:"Only administrators can manage dashboard accounts\."\},403\)/.test(worker));
 check("Self-service password changes require a 12-character minimum", /next\.length<12/.test(worker));
 check("Password storage uses Cloudflare Workers-compatible PBKDF2 with 100,000 iterations", /iterations:100000,hash:"SHA-256"/.test(worker));
