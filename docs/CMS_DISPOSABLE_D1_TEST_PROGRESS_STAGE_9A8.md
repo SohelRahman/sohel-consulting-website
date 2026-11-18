@@ -10,50 +10,75 @@
 - Use synthetic data only.
 - No Preview or Production migration, deployment, or mutation is part of this stage.
 
-## 2. Baseline setup evidence
+## 2. Migration 0001 — verified baseline
 
-The user initially queried `sqlite_master` and reported that the disposable database contained only the Cloudflare-managed `_cf_KV` table. No application baseline schema was present at that point.
+The user initially reported that the disposable database contained only the Cloudflare-managed `_cf_KV` table. The user then reconstructed the six application tables from committed `migrations/0001_initial_schema.sql`:
 
-The user created the `courses` table and supplied `PRAGMA table_info(courses)` output showing 15 columns matching the `courses` definition in committed migration 0001.
+- `courses`
+- `learners`
+- `registrations`
+- `inquiries`
+- `quotations`
+- `audit_logs`
 
-The user subsequently created `learners`, `registrations`, `inquiries`, `quotations`, and `audit_logs`. The user-supplied `sqlite_master` output showed all six application tables and their DDL. Comparison against committed `migrations/0001_initial_schema.sql` found the six table definitions consistent with the migration.
+The supplied `sqlite_master` output showed the DDL for all six tables. Comparison against the committed migration found the definitions consistent. The `courses` column metadata also matched the migration.
 
-## 3. Foreign-key evidence
+### Foreign keys
 
-The user reported:
+User-supplied results:
 
 - `PRAGMA foreign_keys;` returned `1`.
 - `PRAGMA foreign_key_check;` executed successfully and returned no violation rows.
 
-This is evidence that foreign-key enforcement is enabled in the tested D1 Console session and that the current database has no reported foreign-key violations.
+### Seed records
 
-## 4. Seed-data insertion
+The user executed migration 0001's three-course `INSERT OR IGNORE` statement. The subsequent SELECT returned exactly:
 
-The user executed the three-course `INSERT OR IGNORE` statement from migration 0001. The D1 Console reported: “This query successfully executed.”
+| ID | Slug | Title |
+|---|---|---|
+| `course-ba` | `business-analysis` | Business Analysis |
+| `course-pm` | `project-management` | Project Management |
+| `course-sap` | `sap-s4hana` | SAP S/4HANA |
 
-The follow-up `SELECT id, slug, title_en FROM courses ORDER BY id;` has not yet been supplied. Therefore the presence and exact contents of all three seed rows remain pending verification; successful execution alone is not treated as proof of the final row set.
+### Indexes
 
-## 5. Current checkpoint
+The user created the three indexes defined in migration 0001. The subsequent `sqlite_master` query returned exactly:
 
-- [x] Confirm initial disposable database had no application tables (user-reported).
-- [x] Create `courses`.
-- [x] Inspect `courses` columns with `PRAGMA table_info(courses)`; reported columns match migration 0001.
-- [x] Create `learners`, `registrations`, `inquiries`, `quotations`, and `audit_logs`.
-- [x] Confirm existence of all six tables and compare their reported DDL with migration 0001.
+- `idx_inquiries_status` on `inquiries`
+- `idx_registrations_learner` on `registrations`
+- `idx_registrations_status` on `registrations`
+
+**Checkpoint result:** The migration 0001 baseline is reconstructed and its six table definitions, three seed rows, three expected indexes, and reported foreign-key checks have been verified from user-supplied D1 Console outputs.
+
+## 3. Next migration — 0002
+
+The next file in repository order is `migrations/0002_rate_limits.sql`. Its committed SQL creates:
+
+- Table `rate_limits` with `rate_key`, `window_started_at`, `request_count`, and `expires_at`.
+- Index `idx_rate_limits_expiry` on `rate_limits(expires_at)`.
+
+Apply only this migration's two statements to the disposable database, then verify the table definition and index before moving to migration 0003. Do not use Wrangler's general migration workflow.
+
+## 4. Current checkpoint
+
+- [x] Reconstruct all six migration 0001 application tables.
+- [x] Compare the six table definitions with committed migration 0001.
+- [x] Verify `courses` column metadata.
 - [x] Verify `PRAGMA foreign_keys` returns `1`.
 - [x] Run `PRAGMA foreign_key_check`; no violation rows were reported.
-- [x] Execute the three-course seed INSERT statement.
-- [ ] Verify the exact three seeded course rows with a SELECT query.
-- [ ] Verify the three indexes from migration 0001.
-- [ ] Continue with migrations 0002–0009 in controlled, individually verified batches.
+- [x] Verify all three migration 0001 course seed rows.
+- [x] Verify all three migration 0001 indexes.
+- [ ] Apply and verify migration 0002 on the disposable database.
+- [ ] Continue with migrations 0003–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 6. Stop conditions
+## 5. Stop conditions
 
-Stop and investigate if any expected seed record is missing, any expected index is missing or malformed, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to migrations 0010/0011 or CMS tests until the 0001–0009 baseline is reconstructed and verified.
+Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 7. Repository reference
+## 6. Repository references
 
-Baseline migration: [migrations/0001_initial_schema.sql](../migrations/0001_initial_schema.sql)
+- [Migration 0001](../migrations/0001_initial_schema.sql)
+- [Migration 0002](../migrations/0002_rate_limits.sql)
 
 The Stage 9A.7 plan remains the governing test plan. This progress document supplements it; it does not authorize Preview or Production changes.
