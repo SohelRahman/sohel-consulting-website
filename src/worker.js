@@ -543,9 +543,9 @@ async function handleApi(request, env) {
         const assetUrl=new URL(course.syllabus_file_url),parts=assetUrl.pathname.split("/").filter(Boolean);
         if (assetUrl.hostname!=="res.cloudinary.com" || parts[0]!==env.CLOUDINARY_CLOUD_NAME) throw new Error();
         const uploadIndex=parts.indexOf("upload");if(uploadIndex<0)throw new Error();
-        let assetParts=parts.slice(uploadIndex+1);if(assetParts[0]&&/^v\\d+$/.test(assetParts[0]))assetParts=assetParts.slice(1);
+        let assetParts=parts.slice(uploadIndex+1);if(assetParts[0]&&/^v[0-9]+$/.test(assetParts[0]))assetParts=assetParts.slice(1);
         if(!assetParts.length)throw new Error();
-        const last=assetParts.length-1;assetParts[last]=assetParts[last].replace(/\\.[a-zA-Z0-9]+$/,"");publicId=assetParts.join("/");
+        const last=assetParts.length-1,extensionIndex=assetParts[last].lastIndexOf(".");if(extensionIndex>0&&/^[a-zA-Z0-9]+$/.test(assetParts[last].slice(extensionIndex+1)))assetParts[last]=assetParts[last].slice(0,extensionIndex);publicId=assetParts.join("/");
         if(!publicId.startsWith("sohel-consulting/")||!/^[a-zA-Z0-9_./-]+$/.test(publicId)||publicId.split("/").some(part=>!part||part==="."||part===".."))throw new Error();
       } catch { return json({error:"The saved syllabus URL is not a valid Cloudinary asset in the approved folder. The course record was not changed."},400); }
       const timestamp=Math.floor(Date.now()/1000),params={invalidate:"true",public_id:publicId,timestamp},signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET),form=new FormData();
