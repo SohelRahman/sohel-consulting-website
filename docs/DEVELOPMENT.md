@@ -62,3 +62,17 @@ These checks cover JavaScript syntax and the repository's HTML/local-link/inline
 ## Documentation rule
 
 Any change to routes, database schema, secrets, environment configuration, user-facing behavior, deployment or testing must update the corresponding document and `CHANGELOG.md`.
+
+
+### CMS planning and implementation gate
+
+Stages 6–8 CMS work is currently documentation/planning only. Before implementation:
+1. Read `docs/CHATGPT_PROJECT_CONTEXT.md` and `docs/CMS_ADMIN_UI_WORKFLOW.md`.
+2. Obtain explicit Stage 6 schema approval.
+3. Verify the Preview D1 migration history, schema, relevant record counts and foreign keys.
+4. Re-inspect the current Worker, Admin Panel and page-builder implementation.
+5. Implement and test only on `current-focus-development` and the dedicated Preview D1 database.
+6. Preserve existing public appearance, existing APIs and operational modules during gradual migration.
+7. Do not touch Production without separate explicit approval.
+
+Do not treat proposed CMS endpoints, tables or permissions in the planning documents as implemented.
