@@ -110,3 +110,54 @@ Next:
 4. Present the final schema for explicit user approval in Stage 9A.5.
 
 Until then, do not create or apply a CMS migration. Do not modify Production.
+
+
+## 7. Stage 9A.3 Preview evidence — partial results received (2026-11-18)
+
+The user supplied output for the Preview foreign-key check, legacy row counts and `sqlite_master` table definitions.
+
+### 7.1 Verified observations
+
+| Check | Observed result |
+|---|---|
+| `PRAGMA foreign_keys` | `1` (enabled for the query connection) |
+| `PRAGMA foreign_key_check` | No violation rows were displayed |
+| `pages` rows | 1 |
+| `site_content` rows | 4 |
+| `page_styles` rows | 1 |
+| CMS table definitions | All seven proposed CMS table names are present in Preview D1 |
+| JSON validation | `json_valid()` appears in CHECK constraints on `cms_content_elements.config_json` and `cms_page_versions.snapshot_json`; this is evidence the current D1 schema accepted those definitions |
+
+The repository migration directory on `current-focus-development` contains migrations `0001` through `0011`; no CMS migration file is present in that directory. Therefore, the Preview CMS tables are not explained by the currently committed migration inventory. Their origin and migration-history entry must be identified before any schema changes.
+
+### 7.2 Preview CMS schema differs materially from the proposed Stage 9A.1–9A.2 contract
+
+| Area | Observed Preview definition | Required design contract / gap |
+|---|---|---|
+| `cms_sections` | No `section_type` or `config_json`; uses `locale_id`, `section_label`, `sort_order`, `is_required` | Must preserve renderer type/configuration and map legacy section types |
+| `cms_content_elements` | No `textarea` in `content_type`; no explicit `position`; uses `element_label`, `is_required` | Preserve textarea and deterministic ordering; confirm type/config contract |
+| `cms_content_values` | Stores mutable `published_value` beside default and draft values | Conflicts with the proposed immutable page-snapshot source of truth unless legacy/transition semantics are explicitly designed |
+| `cms_page_locales` | No `draft_revision`, `publication_revision`, or `current_published_version_id`; uses `language` and `route` | Missing proposed optimistic-concurrency and current-publication pointer fields |
+| `cms_page_versions` | Has per-locale `version_number` and `snapshot_json`, but no source draft revision or explicit current-pointer relationship | Must add/define concurrency and current-version integrity in an approved migration |
+| `cms_content_versions` | Action/old-new draft/published value history; no `version_no` | Different from proposed monotonic element version contract; migration/backfill semantics need review |
+| locale/section/element labels | Existing names differ from the proposed names | Use an explicit mapping or retain existing names; do not assume proposed DDL can be applied unchanged |
+
+The Preview schema is therefore **not equivalent to the reviewed proposed schema**. Do not apply the proposed table definitions as if these were empty tables, and do not overwrite or drop the existing CMS tables. First identify their creation migration/source and inspect any existing CMS data and Worker code that uses them.
+
+### 7.3 Evidence still missing
+
+The uploaded output did not include the result of:
+
+```sql
+SELECT *
+FROM d1_migrations
+ORDER BY id;
+```
+
+The applied migration names and timestamps remain unknown. The user should provide this result before Stage 9A.3 can be closed.
+
+### 7.4 Revised Stage 9A.3 status
+
+**Partial evidence reviewed; verification remains open.** Foreign-key enforcement is enabled and no FK violations were displayed. Legacy row counts and the current CMS table definitions are now recorded. Migration provenance, CMS table row counts, existing CMS data, and the actual Worker/API dependencies have not yet been verified.
+
+No database changes were made during this review. Do not create a new CMS migration or modify Production until the migration history and CMS implementation provenance are understood and the revised schema is explicitly approved.
