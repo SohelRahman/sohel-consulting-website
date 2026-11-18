@@ -105,7 +105,7 @@ Stage 6 proposed seven additive tables. This is a design proposal only; no CMS m
 1. User approval of the Stage 6 schema is still pending.
 2. Preview D1 migration history, actual table definitions, record counts and foreign-key checks have not yet been supplied/verified.
 3. Confirm SQLite/D1 JSON validation support and all referenced legacy columns before finalizing SQL.
-4. Finalize global-content publication and section deletion/restore semantics.
+4. Incorporate the confirmed independent global publication model (Option A) and finalize section deletion/restore semantics.
 5. Create an additive migration only after the schema is approved and Preview D1 is verified.
 
 Do not add these proposed tables to the applied migration inventory until a migration file exists and its application is verified independently in Preview and Production. Production migration requires separate explicit approval.
@@ -115,7 +115,7 @@ See [CMS Admin UI and workflow specification](CMS_ADMIN_UI_WORKFLOW.md) for the 
 
 ## Stage 9A schema review
 
-The Stage 6 seven-table proposal has been reviewed against the repository's existing migrations. The seven-table direction is acceptable as a starting point, but the current proposed SQL is **not approved for migration**.
+The Stage 6 seven-table proposal has been reviewed against the repository's existing migrations. The seven-table direction is acceptable as a starting point, but the current proposed SQL is **not approved for migration**. The user confirmed Option A: Global English and Bangla each have independent Draft, Preview, Publish and Version History workflows.
 
 Required revisions:
 1. Preserve page-builder section types and renderer configuration.
@@ -124,10 +124,25 @@ Required revisions:
 4. Reuse existing `audit_logs` for structural/admin actions; version tables remain for content recovery.
 5. Define safe section soft-delete/restore semantics, including child elements.
 6. Preserve existing `textarea` content-type semantics during migration.
-7. Finalize global-content publication as a separate scope.
+7. Implement Global as one logical `cms_pages` record with separate EN/BN locale records and independent publication/version pointers. Global publish affects only the selected Global locale; page publish does not publish Global. Public rendering composes the page's published snapshot with the currently published Global snapshot for the same language. Do not embed Global content in page snapshots; invalidate/revalidate affected public responses after Global publication.
 
 Additional checks include D1 JSON validation support, complete snapshot contents, indexes, route compatibility and source-to-target backfill mapping.
 
 Detailed findings and proposed migration gates: [Stage 9A CMS Schema Review](CMS_SCHEMA_REVIEW_STAGE_9A.md).
 
 **Approval state:** Pending revisions, user decision on global publication, and Preview D1 inspection. No CMS migration has been created or applied.
+
+
+### Global publication model — confirmed Option A
+
+Global is represented by one logical `cms_pages` record with `page_type='global'` and two `cms_page_locales` records (`en`, `bn`). Each locale has independent editable content, draft state, published-version pointer, publication revision and history.
+
+- Publish Global EN and Global BN separately.
+- A page/language publish advances only that page's published version.
+- A Global/language publish advances only that Global locale's published version.
+- Neither publication operation modifies the other scope.
+- Public rendering composes the selected page's published snapshot with the currently published Global snapshot for the same language. Draft Global content is never public.
+- Global history restoration creates Draft only; publication remains separate.
+- Global publication must invalidate/revalidate public responses that include the changed language. The exact cache mechanism requires implementation-time verification.
+
+This is a design contract, not implemented SQL. See [Stage 9A review](CMS_SCHEMA_REVIEW_STAGE_9A.md).
