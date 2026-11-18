@@ -1,0 +1,188 @@
+# Stage 9A — Stage 6 CMS Database Schema Review
+
+**Review status:** Reviewed; changes required before approval.  
+**Implementation status:** Not implemented.  
+**Database status:** No CMS migration created or applied.  
+**Branch reviewed:** `current-focus-development`.
+
+## 1. Review scope and inspected source
+
+Reviewed the Stage 6 seven-table proposal recorded in the project handover and database reference, and inspected these existing repository migrations:
+
+- `migrations/0001_initial_schema.sql` — operational tables and `audit_logs`.
+- `migrations/0003_site_content.sql` — current editable site content.
+- `migrations/0004_page_styles.sql` — draft/published visual styles.
+- `migrations/0005_pages.sql` — existing custom page-builder storage.
+- `migrations/0009_admin_rbac.sql` — administrator accounts and permission storage.
+
+The existing schema confirms:
+- `pages` stores `slug`, `title`, `language`, `status`, `draft_json`, `published_json`, SEO fields and publication timestamps.
+- `site_content` stores one `content_value` and a `published` flag; the existing Admin Panel describes this workflow as immediate publication.
+- `page_styles` already has separate draft and published JSON.
+- `audit_logs` records `admin_email`, action, entity type, entity ID and details.
+- `admin_users.permissions_json` is the current RBAC permission source.
+
+The actual applied Preview D1 schema and migration history have not been verified. Repository migration files do not prove which migrations are applied remotely.
+
+## 2. Proposed seven-table baseline
+
+The Stage 6 proposal contains:
+
+1. `cms_pages`
+2. `cms_page_locales`
+3. `cms_sections`
+4. `cms_content_elements`
+5. `cms_content_values`
+6. `cms_content_versions`
+7. `cms_page_versions`
+
+The separation of logical page identity, language-specific page data, section/element structure, content values and history is appropriate. Keep the additive approach and do not replace the existing `pages`, `site_content` or `page_styles` tables.
+
+## 3. Required schema revisions
+
+### R1 — Preserve page-builder section type and renderer configuration
+
+**Finding:** The proposed `cms_sections` fields include a section key and label, but do not explicitly preserve the existing page-builder section type or its renderer-specific configuration.
+
+The current page builder uses section types including `hero`, `text`, `split`, `cards` and `cta`.
+
+**Required change:**
+- Add a constrained `section_type` field or equivalent stable renderer identifier.
+- Add validated `config_json` for section-level presentation/layout configuration.
+- Define an explicit mapping from existing page-builder JSON into CMS sections/elements.
+- Preserve existing page IDs, slugs, section IDs/keys, content and SEO metadata during migration.
+
+Do not treat an element's content type (for example, `rich_text` or `image`) as a replacement for the page-builder section type.
+
+### R2 — Make published structure independent from editable structure
+
+**Finding:** The proposal has one `is_active` / `deleted_at` state on sections and elements. That state alone cannot safely represent both the administrator's current draft structure and the currently published public structure.
+
+This matters because:
+- A newly created section must not appear publicly before publication.
+- A deleted section/element must remain publicly visible until the next successful publication, as the user approved.
+- Reordering or editing a section in Draft must not change the public page before publication.
+
+**Required change:**
+Use the complete published page snapshot as the public rendering source of truth. The admin structure tables can represent the current editable working structure; a successful page publication writes a complete immutable snapshot to `cms_page_versions` and updates an explicit current-published-version reference on the locale. Public rendering reads only that published snapshot.
+
+Do not derive public structure directly from the current `is_active` flags in the editable section/element tables.
+
+### R3 — Add an explicit current published version reference and concurrency control
+
+**Finding:** `cms_page_versions` has a sequential version number, but `cms_page_locales` does not explicitly identify the currently published snapshot or maintain a publication revision.
+
+**Required change:**
+- Add a nullable `current_published_version_id` (or equivalent version pointer) to `cms_page_locales`.
+- Add a publication revision/current version field suitable for optimistic concurrency.
+- Define how the first publication works (no prior version).
+- Ensure the expected-version check and publication update occur atomically.
+- Add an appropriate foreign-key relationship once the chosen key design is finalized.
+
+A stale editor must receive a conflict response rather than overwrite a newer published version.
+
+### R4 — Reuse the existing audit log for structural and administrative events
+
+**Finding:** `cms_content_versions` captures element value changes and `cms_page_versions` captures page snapshots. Neither alone provides a complete record of page/section/element creation, metadata changes, reordering, deletion, restoration and permission-sensitive actions.
+
+**Required change:**
+Use the existing `audit_logs` for CMS structural and administrative events, with consistent entity types and structured details. Keep version snapshots for recovery. Do not add a second general audit table unless a demonstrated retention/query requirement justifies it.
+
+Review whether `admin_email` is sufficient for actor attribution or whether a stable admin user ID should also be recorded. Preserve the email as a readable audit snapshot.
+
+### R5 — Clarify section deletion and restoration semantics
+
+**Finding:** Element deletion rules are confirmed, but section deletion with child elements is not fully defined. Foreign-key RESTRICT prevents physical deletion but does not define safe soft-delete behaviour.
+
+**Required change:**
+- Required sections cannot be deleted.
+- A section containing required elements cannot be deleted.
+- Optional section deletion should be soft-delete and should not physically delete child records or history.
+- The next successful page publication excludes that section and its descendants from the published snapshot.
+- Restoring a section reactivates it in the editable structure only; it does not publish it automatically.
+- Define how child element active/deleted states are preserved and restored without unexpectedly reactivating individually deleted elements.
+
+### R6 — Preserve existing content type semantics during migration
+
+**Finding:** Existing `site_content.content_type` values include `text`, `textarea` and `url`. The proposed CMS content type check uses `text`, `rich_text`, `url`, `image`, `list`, `option_list`, `seo_text` and `system_text`, but omits `textarea`.
+
+**Required change:**
+- Explicitly support `textarea` or document and test a lossless mapping to the chosen CMS type.
+- Keep the original value and content meaning during backfill.
+- Define content-type mappings for all existing site-content keys and page-builder fields before migration.
+- Do not silently coerce URL, rich text, list or system content into plain text.
+
+### R7 — Define the global content publication scope
+
+**Finding:** A logical `global` page and EN/BN locale rows are proposed, but the exact publication contract for shared header/footer/navigation and other global content has not been finalized.
+
+**Required change:**
+- Keep global content as a separate publication scope.
+- Define a dedicated global publish operation and version history.
+- Page publication must not publish global content.
+- Global publication must not unintentionally publish page-specific changes.
+
+This is a design decision still requiring user confirmation.
+
+## 4. Additional technical safeguards
+
+These should be incorporated into the final schema and implementation specification:
+
+- Keep foreign keys restrictive; use soft-delete for CMS-managed content.
+- Keep stable keys unique within their parent scope, including when a record is soft-deleted, to prevent accidental duplicate identities.
+- Validate `config_json` and snapshot JSON on the server as well as with database constraints where supported.
+- Confirm D1/SQLite JSON function availability with a Preview-only compatibility check before relying on `json_valid()`.
+- Add indexes for locale/page lookup, section ordering, active element listing and version history.
+- Define whether version snapshots include SEO metadata, route, section types/configuration, element types/configuration, values and deleted-state decisions. The full published snapshot should contain everything required to render that version without consulting mutable draft records.
+- Keep immutable defaults separate from drafts and published snapshots.
+- Treat route changes as a separate compatibility concern; do not allow a route change to break existing public URLs without a redirect/alias plan.
+- Keep page styles in `page_styles` unless a separately approved design explicitly brings them into CMS publication.
+- Do not duplicate courses, course discounts, syllabus files, registrations, inquiries, chat, analytics or media binaries in CMS tables.
+
+## 5. Migration and backfill approach
+
+The migration must remain additive.
+
+1. Verify actual Preview D1 migration state and schema.
+2. Finalize the revised schema and obtain explicit approval.
+3. Add a new sequential migration; never edit an already-applied migration.
+4. Create CMS registry records for approved pages and locales.
+5. Map existing custom `pages` records through `legacy_page_id` where appropriate.
+6. Map eligible `site_content` keys and existing static-page content using a documented key/source inventory.
+7. Map existing page-builder JSON while preserving section types, ordering, IDs/keys and SEO metadata.
+8. Compare CMS snapshots against current public content before switching any page.
+9. Test one page/language at a time in Preview.
+10. Retain legacy APIs and existing tables during gradual integration.
+
+No data backfill should run until the source-to-target mapping is reviewed.
+
+## 6. Approval checklist
+
+| Review item | Result |
+|---|---|
+| Seven-table separation | Accept as design direction |
+| Existing tables preserved | Required |
+| Existing page-builder section types/configuration | Revision required |
+| Published structure isolated from draft structure | Revision required |
+| Current published version pointer/concurrency | Revision required |
+| Structural audit coverage | Revision required; reuse `audit_logs` |
+| Section delete/restore semantics | Revision required |
+| `textarea` compatibility | Revision required |
+| Global publication contract | User decision pending |
+| Preview D1 state verified | Pending |
+| Migration SQL ready | No |
+
+## 7. Stage 9A outcome
+
+**Do not approve the current Stage 6 SQL for migration yet.**
+
+The seven-table model can be retained, subject to revisions R1–R7 and the additional safeguards above. This is a schema design review only; no SQL migration was created or applied, no database was modified and no deployment was performed.
+
+### Required user decision
+
+Confirm the global-content publishing model:
+
+- **Option A (recommended):** Global content has its own EN/BN Draft, Preview, Publish and Version History workflow. It is published independently and never as a side effect of page publishing.
+- **Option B:** Global content is managed separately but is published together with every page.
+
+After that decision, revise the schema proposal, review the final table definitions and request explicit schema approval. Preview D1 inspection remains a separate mandatory gate before implementation.
