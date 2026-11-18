@@ -88,7 +88,13 @@ The user created `media_assets` on the disposable D1 target. The supplied `sqlit
 
 **Checkpoint:** Migration 0006 table DDL and `idx_media_assets_created` index are verified from user-supplied D1 Console outputs. The index is on `media_assets(created_at DESC)`.
 
-## 8. Current checkpoint
+## 8. Migration 0007 — first table verified; remaining objects pending
+
+The user created `chat_conversations` on the disposable D1 target. The supplied `sqlite_master` DDL matches the first table definition in committed `migrations/0007_chat.sql`: `id` primary key; unique required `visitor_token_hash`; `status` default `open` constrained to `open`, `needs_human`, or `closed`; `language` default `en` constrained to `en` or `bn`; and both timestamps defaulting to `CURRENT_TIMESTAMP`.
+
+**Checkpoint:** `chat_conversations` table DDL is verified from user-supplied D1 Console output. Migration 0007's `chat_messages` table and two indexes remain pending.
+
+## 9. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -105,14 +111,36 @@ The user created `media_assets` on the disposable D1 target. The supplied `sqlit
 - [x] Create and verify migration 0005's `pages` table.
 - [x] Create and verify migration 0005's `idx_pages_status_slug` index.
 - [x] Create and verify migration 0006's `idx_media_assets_created` index.
-- [ ] Continue with migrations 0007–0009 in controlled, individually verified batches.
+- [x] Create and verify migration 0007's `chat_conversations` table.
+- [ ] Create and verify migration 0007's `chat_messages` table and foreign key.
+- [ ] Create and verify migration 0007's two indexes.
+- [ ] Continue with migrations 0008–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 9. Next step — migration 0007
+## 10. Next step — migration 0007
 
-Inspect committed `migrations/0007_chat.sql` and apply its exact statements on the disposable target in manageable chunks. Verify every table, index, and constraint against the migration before continuing. Do not guess the schema.
+The first table matches the committed migration. Create the second table on the disposable target only:
 
-This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+```sql
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL CHECK (sender IN ('visitor','bot','admin')),
+  message TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Then verify its DDL:
+
+```sql
+SELECT name, sql
+FROM sqlite_master
+WHERE type = 'table'
+  AND name = 'chat_messages';
+```
+
+Do not create the indexes until this table definition is verified. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
 ## 10. Stop conditions
 
