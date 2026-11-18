@@ -55,24 +55,20 @@ The supplied `sqlite_master` output confirmed:
 
 **Checkpoint:** Migration 0002's table and index definitions are verified from user-supplied D1 Console output.
 
-## 4. Next migration — 0003
+## 4. Migration 0003 — seed records verified; table DDL pending
 
-The next file is `migrations/0003_site_content.sql`. It creates `site_content` with:
+The user applied the table creation and seed statements from committed `migrations/0003_site_content.sql`.
 
-- `content_key` TEXT primary key
-- `content_value` TEXT not null
-- `content_type` default `text`, constrained to `text`, `textarea`, or `url`
-- `published` default 1, constrained to 0 or 1
-- `updated_at` default `CURRENT_TIMESTAMP`
+The supplied SELECT returned all four expected records, with `published = 1`:
 
-It then inserts four homepage hero content records using `INSERT OR IGNORE`:
+- `home.hero.eyebrow` — `text`
+- `home.hero.lead` — `textarea`
+- `home.hero.note` — `text`
+- `home.hero.title` — `text`
 
-- `home.hero.eyebrow`
-- `home.hero.title`
-- `home.hero.lead` (type `textarea`)
-- `home.hero.note`
+This confirms the four seed keys, content types, and published flags. The actual `site_content` table DDL has not yet been supplied for comparison against migration 0003.
 
-Apply only migration 0003's table creation and seed statements to the disposable database. Verify the table DDL and the four expected keys/types before proceeding to migration 0004. Do not use Wrangler's general migration workflow.
+**Next check:** retrieve the `site_content` table definition from `sqlite_master`. Do not proceed to migration 0004 until it matches the committed migration.
 
 ## 5. Current checkpoint
 
@@ -85,8 +81,10 @@ Apply only migration 0003's table creation and seed statements to the disposable
 - [x] Verify all three migration 0001 indexes.
 - [x] Create and verify migration 0002's `rate_limits` table.
 - [x] Verify migration 0002's `idx_rate_limits_expiry` index.
-- [ ] Apply and verify migration 0003 on the disposable database.
-- [ ] Continue with migrations 0004–0009 in controlled, individually verified batches.
+- [x] Verify the four migration 0003 seed keys, content types, and published flags.
+- [ ] Compare `site_content` table DDL with migration 0003.
+- [ ] Apply and verify migration 0004 on the disposable database.
+- [ ] Continue with migrations 0005–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
 ## 6. Stop conditions
@@ -98,5 +96,6 @@ Stop and investigate if a table definition, seed record, or index differs from t
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
 - [Migration 0003](../migrations/0003_site_content.sql)
+- [Migration 0004](../migrations/0004_page_styles.sql)
 
 The Stage 9A.7 plan remains the governing test plan. This progress document supplements it; it does not authorize Preview or Production changes.
