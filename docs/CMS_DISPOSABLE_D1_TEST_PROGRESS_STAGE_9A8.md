@@ -92,7 +92,7 @@ The user created `media_assets` on the disposable D1 target. The supplied `sqlit
 
 The user created `chat_conversations` on the disposable D1 target. The supplied `sqlite_master` DDL matches the first table definition in committed `migrations/0007_chat.sql`: `id` primary key; unique required `visitor_token_hash`; `status` default `open` constrained to `open`, `needs_human`, or `closed`; `language` default `en` constrained to `en` or `bn`; and both timestamps defaulting to `CURRENT_TIMESTAMP`.
 
-**Checkpoint:** `chat_conversations` table DDL is verified from user-supplied D1 Console output. Migration 0007's `chat_messages` table DDL has also been supplied and matches the committed definition: `id` primary key; required `conversation_id` referencing `chat_conversations(id)` with `ON DELETE CASCADE`; `sender` constrained to `visitor`, `bot`, or `admin`; required `message`; and `created_at` defaulting to `CURRENT_TIMESTAMP. The user supplied the `idx_chat_conversations_status` definition, which matches the committed SQL (`chat_conversations(status, updated_at)`). Only `idx_chat_messages_conversation` remains pending.
+**Checkpoint:** `chat_conversations` table DDL is verified from user-supplied D1 Console output. Migration 0007's `chat_messages` table DDL has also been supplied and matches the committed definition: `id` primary key; required `conversation_id` referencing `chat_conversations(id)` with `ON DELETE CASCADE`; `sender` constrained to `visitor`, `bot`, or `admin`; required `message`; and `created_at` defaulting to `CURRENT_TIMESTAMP. The user supplied the `idx_chat_conversations_status` definition, which matches the committed SQL (`chat_conversations(status, updated_at)`). The user supplied the `idx_chat_messages_conversation` definition, matching the committed SQL (`chat_messages(conversation_id, created_at)`). Both migration 0007 indexes are now verified.
 
 ## 9. Current checkpoint
 
@@ -114,29 +114,15 @@ The user created `chat_conversations` on the disposable D1 target. The supplied 
 - [x] Create and verify migration 0007's `chat_conversations` table.
 - [x] Create and verify migration 0007's `chat_messages` table and foreign key.
 - [x] Create and verify `idx_chat_conversations_status`.
-- [ ] Create and verify `idx_chat_messages_conversation`.
+- [x] Create and verify `idx_chat_messages_conversation`.
 - [ ] Continue with migrations 0008–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 10. Next step — migration 0007
+## 10. Next step — migration 0008
 
-Both table definitions match the committed migration. Create the remaining index on the disposable target only:
+Both table definitions match the committed migration. Inspect committed `migrations/0008_analytics.sql` and apply its exact statements on the disposable target in manageable chunks. Verify every table, index, and constraint against the migration before continuing. Do not guess the schema.
 
-```sql
-CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation
-ON chat_messages(conversation_id, created_at);
-```
-
-Then verify it:
-
-```sql
-SELECT name, tbl_name, sql
-FROM sqlite_master
-WHERE type = 'index'
-  AND name = 'idx_chat_messages_conversation';
-```
-
-Do not proceed to migration 0008 until this index definition is verified. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
 ## 10. Stop conditions
 
