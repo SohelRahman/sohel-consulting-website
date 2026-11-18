@@ -1,3 +1,11 @@
+## 2026-11-18 — CMS planning documentation (Stages 6–8)
+- Added the Stage 8 CMS Admin Panel UI and workflow specification.
+- Recorded the user's confirmed Stage 7 decisions: page-and-language scoped publishing; automatic registration through approved CMS/page-builder workflows; historical restore into Draft; deleted elements removed publicly at the next successful page publication; gradual legacy integration.
+- Updated the API reference with proposed CMS endpoints and security/publication rules, explicitly marked not implemented.
+- Updated the database reference with the proposed seven-table CMS schema and outstanding approval/Preview D1 verification gates.
+- Added a future CMS acceptance test matrix and updated the master ChatGPT project handover and README documentation index.
+- Documentation-only change. No CMS code, migration, database records, Preview deployment or Production resources were changed. Stage 6 schema approval and Preview D1 verification remain outstanding.
+
 ## 2026-11-18 — Cloudinary course syllabus uploads (development)
 - Added signed Cloudinary upload support for course syllabus PDFs via `raw/upload` and JPG/PNG/WebP images via `image/upload`, using the existing `sohel-consulting` folder and Cloudinary credentials. Standard PDFs use Cloudinary's image asset type so they can be delivered and transformed like other PDFs.
 - Added browser-side file validation (PDF up to 10 MB; images up to 3 MB), upload progress/error feedback, and automatic population of the course syllabus URL field. The link is persisted when the course is saved.
