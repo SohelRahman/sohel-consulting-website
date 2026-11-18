@@ -82,7 +82,13 @@ The user created the `pages` table on the disposable D1 target. The supplied `sq
 
 **Checkpoint:** Migration 0005 table DDL and `idx_pages_status_slug` index are verified from user-supplied D1 Console outputs. The index definition is `CREATE INDEX idx_pages_status_slug ON pages(status,slug)`.
 
-## 7. Current checkpoint
+## 7. Migration 0006 — table verified; index pending
+
+The user created `media_assets` on the disposable D1 target. The supplied `sqlite_master` DDL matches committed `migrations/0006_cloudinary_media.sql`: `public_id` primary key; required `secure_url` and `bytes`; `format` defaulting to an empty string; nullable `width` and `height`; and `created_at` defaulting to `CURRENT_TIMESTAMP`.
+
+**Checkpoint:** Migration 0006 table DDL is verified from user-supplied D1 Console output. The `idx_media_assets_created` index remains pending.
+
+## 8. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -98,20 +104,34 @@ The user created the `pages` table on the disposable D1 target. The supplied `sq
 - [x] Apply and verify migration 0004 on the disposable database.
 - [x] Create and verify migration 0005's `pages` table.
 - [x] Create and verify migration 0005's `idx_pages_status_slug` index.
-- [ ] Continue with migrations 0006–0009 in controlled, individually verified batches.
+- [ ] Create and verify migration 0006's `idx_media_assets_created` index.
+- [ ] Continue with migrations 0007–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 8. Next step — migration 0006
+## 9. Next step — migration 0006 index
 
-Inspect committed `migrations/0006_cloudinary_media.sql` and apply its exact statements on the disposable target in manageable chunks. Verify every table, index, and constraint against the migration before continuing. Do not guess the schema.
+The `media_assets` table matches the committed migration. Create the remaining index on the disposable target only:
 
-This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+```sql
+CREATE INDEX IF NOT EXISTS idx_media_assets_created ON media_assets(created_at DESC);
+```
 
-## 9. Stop conditions
+Then verify it:
+
+```sql
+SELECT name, tbl_name, sql
+FROM sqlite_master
+WHERE type = 'index'
+  AND name = 'idx_media_assets_created';
+```
+
+Do not proceed to migration 0007 until the returned index definition matches the committed migration. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+
+## 10. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 10. Repository references
+## 11. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
