@@ -551,3 +551,13 @@ Detailed contract: `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md`. The schema remains unap
 - Do not treat Preview as empty, apply the proposed schema unchanged, or drop/replace existing CMS tables. Identify the creation migration/source, inspect CMS row counts and dependent Worker/API code, and plan a safe compatibility migration only after review and explicit approval.
 - Stage 9A.3 is partially verified, not complete. Outstanding: provide `SELECT * FROM d1_migrations ORDER BY id;` output and verify CMS table data/provenance.
 - Details: `docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md`. No database changes were made during this inspection; Production remains untouched.
+
+
+### Stage 9A.5 — final migration specification (2026-11-18)
+
+- Added `docs/CMS_MIGRATION_SPECIFICATION_STAGE_9A5.md`, documenting the verified Preview CMS DDL, named indexes, all seven foreign-key relationships, legacy inventory, proposed target controls, import mapping, migration phases, recovery controls and acceptance tests.
+- Verified Preview baseline: legacy `pages=1`, `site_content=4`, `page_styles=1`; all seven CMS tables have zero rows.
+- Legacy `corporate-training` is English Draft with an empty `sections` array and NULL published JSON. Four published `home.hero.*` content values exist; `home.hero.lead` is `textarea`. The `home.hero.note` style remains in the separate `page_styles` system.
+- All seven CMS foreign-key relationships were confirmed from user-supplied individual PRAGMA results and DDL; delete behavior is RESTRICT.
+- Migration provenance remains unresolved. The specification is documentation-only; exact executable migration SQL is withheld until provenance/preflight and D1 compatibility tests are complete.
+- No CMS code, migration, D1 data, Preview deployment or Production resource was changed. Continue on `current-focus-development`; Production remains excluded.
