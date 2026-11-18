@@ -52,7 +52,7 @@ These checks do not execute the application in a real browser.
 - [ ] Verify an Admin cannot disable/demote their own account and the last active Admin cannot be disabled/demoted.
 - [ ] Verify login, invalid login, session expiry and logout.
 - [ ] Test course create/edit/activate/deactivate/delete as supported.
-- [ ] Upload a PDF syllabus (maximum 10 MB) and JPG/PNG/WebP syllabus image (maximum 3 MB); save the course and verify the link in both English and Bangla course detail pages.
+- [ ] Upload a PDF syllabus (maximum 10 MB) and JPG/PNG/WebP syllabus image (maximum 3 MB); save the course and verify both the reference URL and uploaded file link in English and Bangla course detail pages.
 - [ ] Verify invalid file types, oversized files, upload errors and course-save failures leave a clear recovery path.
 - [ ] Verify existing Media Library image uploads still work after signed allowed-format validation was added.
 - [ ] Test registration review, quotation and enrollment updates.
