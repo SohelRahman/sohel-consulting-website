@@ -190,3 +190,14 @@ Important discrepancy: the current development-branch `migrations/` directory co
 The observed Preview CMS schema is not the same as the proposed Stage 9A schema. Examples: `cms_sections` lacks `section_type` and `config_json`; `cms_content_elements.content_type` does not allow `textarea`; `cms_content_values` contains mutable `published_value`; and `cms_page_locales` lacks the proposed Draft/publication revision fields and current published-version pointer. Do not apply the proposed schema as a fresh-table migration or drop/replace existing CMS tables. Identify their provenance, existing data and Worker/API dependencies first.
 
 See [Stage 9A.4 Final CMS Schema Review](CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md) for the full comparison. Stage 9A.3 remains partially verified pending the `d1_migrations` result and CMS data/provenance review.
+
+
+## Stage 9A.5 migration specification — 2026-11-18
+
+See [CMS Migration Specification — Stage 9A.5](CMS_MIGRATION_SPECIFICATION_STAGE_9A5.md).
+
+The user supplied the complete Preview D1 CMS table definitions, named indexes, individual foreign-key outputs, and legacy record details. The seven CMS tables are empty. Legacy counts are `pages=1`, `site_content=4`, and `page_styles=1`. The legacy Corporate Training page is Draft with `published_json=NULL`; four `home.hero.*` content records are published, including one `textarea`; the homepage style remains in `page_styles`.
+
+All seven CMS foreign-key relationships have now been verified from the supplied DDL and individual PRAGMA outputs. All use `ON DELETE RESTRICT` and `ON UPDATE NO ACTION`.
+
+The new Stage 9A.5 document is a design specification only. Migration provenance remains unresolved, and exact executable migration SQL is intentionally withheld pending preflight and D1 compatibility testing. No migration, application code, Preview deployment or Production resource was changed.
