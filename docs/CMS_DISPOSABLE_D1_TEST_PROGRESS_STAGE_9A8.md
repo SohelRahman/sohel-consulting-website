@@ -108,7 +108,17 @@ The user then created `idx_admin_users_role_active`. The supplied `sqlite_master
 
 **Checkpoint:** Migration 0009's table and index are verified from user-supplied D1 Console outputs. Migrations 0001–0009 have now been reconstructed and verified on the disposable target based on the evidence supplied. This does not establish that the migration ledger has been applied or updated; no `d1_migrations` entry was created as part of these manual tests.
 
-## 11. Current checkpoint
+## 11. Migration 0010 — clean-database schema test verified
+
+The user confirmed the disposable target identity before this mutating test. Before applying migration 0010, `PRAGMA table_info(courses)` showed the original 15-column schema and `SELECT COUNT(*)` returned 3 courses. The user then applied all five `ALTER TABLE` statements from committed `migrations/0010_course_discounts_syllabus.sql` individually.
+
+Post-test `PRAGMA table_info(courses)` confirmed all five columns and expected definitions: `discount_type TEXT NOT NULL DEFAULT 'none'` with CHECK values `none`, `percentage`, `fixed`; nullable `discount_value INTEGER`; nullable `discount_starts_at TEXT`; nullable `discount_ends_at TEXT`; nullable `syllabus_url TEXT`.
+
+The post-test count query returned `course_count = 3`, `discount_type_count = 3`, and `syllabus_url_count = 0`. This verifies the three existing rows remain and the non-null default is populated. No data transformation was needed for migration 0010.
+
+**Checkpoint:** Migration 0010's clean-start schema application and basic row-preservation test passed based on user-supplied D1 Console output. Further CHECK-constraint behavior tests are not yet performed.
+
+## 12. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -135,17 +145,19 @@ The user then created `idx_admin_users_role_active`. The supplied `sqlite_master
 - [x] Create and verify `idx_analytics_events_visitor`.
 - [x] Create and verify migration 0009's `admin_users` table.
 - [x] Create and verify migration 0009's `idx_admin_users_role_active` index.
-- [ ] Begin the planned 0010/0011 compatibility scenarios and CMS schema tests after confirming the disposable baseline and test data requirements.
+- [x] Apply and verify migration 0010 from the clean starting schema; confirm all three course rows remain.
+- [ ] Test migration 0010 CHECK-constraint behavior with synthetic data, if required by the detailed test plan.
+- [ ] Proceed to migration 0011 data-transfer scenarios, including preservation of an existing `syllabus_file_url`.
 
-## 12. Next step — 0010/0011 compatibility and CMS schema tests
+## 13. Next step — migration 0011 compatibility tests
 
-Migrations 0001–0009 are reconstructed and their table/index definitions have been verified against committed SQL using user-supplied D1 Console outputs. Next, follow the Stage 9A.7 plan for isolated 0010/0011 compatibility scenarios and CMS schema tests, using synthetic data only. Do not run the general Wrangler migration workflow or mutate Preview/Production. Verify the exact disposable database identity and obtain explicit approval before any test that changes or rebuilds existing objects.
+Migration 0010 has been applied from the clean starting schema on the confirmed disposable target. The five expected columns match the committed migration, all three existing course rows remain, `discount_type` is populated for all three, and `syllabus_url` is NULL for all three. Next, test migration 0011's column addition and Cloudinary PDF URL transfer using synthetic data only. First inspect `syllabus_file_url` absence and the exact synthetic fixture plan; do not use real URLs or credentials. Do not run the general Wrangler migration workflow or mutate Preview/Production.
 
-## 13. Stop conditions
+## 14. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 14. Repository references
+## 15. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
