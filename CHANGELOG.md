@@ -1,3 +1,9 @@
+## 2026-11-18 — Stage 9A global publication decision
+- Recorded the user's selection of Option A: Global English and Bangla content each have independent Draft, Preview, Publish and Version History workflows.
+- Revised the Stage 9A schema review and database reference: one logical Global page with separate locale records, independent publication/version pointers, isolated page/global publish operations, and public composition from the current published page and Global snapshots.
+- Specified that Global Draft is never public, Global content is not embedded in page snapshots, and successful Global publication must invalidate/revalidate affected public responses.
+- Updated the master project handover. Documentation-only change; no migration, D1 data, Worker code, Preview deployment or Production resource was changed. Full schema approval and Preview D1 verification remain pending.
+
 ## 2026-11-18 — Stage 9A CMS schema review
 - Reviewed the proposed seven-table CMS schema against existing page-builder, site-content, page-style, audit-log and RBAC migrations.
 - Recorded required revisions for section renderer compatibility, draft/published structure isolation, current published-version tracking and concurrency, structural audit coverage, section deletion/restoration, textarea compatibility and global-content publication.
