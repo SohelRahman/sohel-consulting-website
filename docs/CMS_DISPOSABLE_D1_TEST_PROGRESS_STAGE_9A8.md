@@ -100,7 +100,15 @@ The user supplied the `analytics_events` table DDL from the disposable D1 target
 
 **Checkpoint:** Migration 0008 table DDL is verified from user-supplied D1 Console output. The user supplied the `idx_analytics_events_created` definition, matching the committed SQL (`analytics_events(created_at)`). The user supplied the `idx_analytics_events_page` definition, matching committed SQL (`analytics_events(event_name,page_path,created_at)`). The user supplied the `idx_analytics_events_visitor` definition, matching committed SQL (`analytics_events(visitor_hash,created_at)`). All three indexes are verified.
 
-## 10. Current checkpoint
+## 10. Migration 0009 — table and index verified
+
+The user created `admin_users` on the disposable D1 target. The supplied `sqlite_master` DDL matches committed `migrations/0009_admin_rbac.sql`, including the case-insensitive unique email constraint, role CHECK, password hash and permissions fields, active CHECK, session version default, timestamps, and nullable `last_login_at`.
+
+The user then created `idx_admin_users_role_active`. The supplied `sqlite_master` output confirms the exact committed definition: `CREATE INDEX idx_admin_users_role_active ON admin_users(role,is_active)`.
+
+**Checkpoint:** Migration 0009's table and index are verified from user-supplied D1 Console outputs. Migrations 0001–0009 have now been reconstructed and verified on the disposable target based on the evidence supplied. This does not establish that the migration ledger has been applied or updated; no `d1_migrations` entry was created as part of these manual tests.
+
+## 11. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -125,18 +133,19 @@ The user supplied the `analytics_events` table DDL from the disposable D1 target
 - [x] Create and verify `idx_analytics_events_created`.
 - [x] Create and verify `idx_analytics_events_page`.
 - [x] Create and verify `idx_analytics_events_visitor`.
-- [ ] Continue with migration 0009 in a controlled, individually verified batch.
-- [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
+- [x] Create and verify migration 0009's `admin_users` table.
+- [x] Create and verify migration 0009's `idx_admin_users_role_active` index.
+- [ ] Begin the planned 0010/0011 compatibility scenarios and CMS schema tests after confirming the disposable baseline and test data requirements.
 
-## 11. Next step — migration 0009
+## 12. Next step — 0010/0011 compatibility and CMS schema tests
 
-Migration 0008 is complete on the disposable target based on user-supplied table and index definitions. Before creating migration 0009 objects, inspect the committed `migrations/0009_admin_rbac.sql` and execute its table and index statements individually on the disposable target. Verify each definition against the committed SQL. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+Migrations 0001–0009 are reconstructed and their table/index definitions have been verified against committed SQL using user-supplied D1 Console outputs. Next, follow the Stage 9A.7 plan for isolated 0010/0011 compatibility scenarios and CMS schema tests, using synthetic data only. Do not run the general Wrangler migration workflow or mutate Preview/Production. Verify the exact disposable database identity and obtain explicit approval before any test that changes or rebuilds existing objects.
 
-## 12. Stop conditions
+## 13. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 13. Repository references
+## 14. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
