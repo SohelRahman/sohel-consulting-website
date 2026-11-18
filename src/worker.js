@@ -165,7 +165,7 @@ async function handleApi(request, env) {
   }
 
   if (path === "/api/courses" && method === "GET") {
-    const {results=[]} = await env.DB.prepare("SELECT id,slug,title_en,title_bn,summary_en,summary_bn,level,delivery_modes,languages,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at,syllabus_url FROM courses WHERE active=1 ORDER BY title_en").all();
+    const {results=[]} = await env.DB.prepare("SELECT id,slug,title_en,title_bn,summary_en,summary_bn,level,delivery_modes,languages,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at,syllabus_url,syllabus_file_url FROM courses WHERE active=1 ORDER BY title_en").all();
     return json({courses:results});
   }
 
@@ -518,14 +518,15 @@ async function handleApi(request, env) {
       if(discountType!=="none"&&fixedFee===null)return json({error:"A fixed course fee is required before applying a discount."},400);
       if(discountType!=="none"&&(!Number.isFinite(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>100)||(discountType==="fixed"&&discountValue>=fixedFee)))return json({error:"Enter a valid discount. Percentage must be 1–100; fixed discount must be less than the course fee."},400);
       if(!validDate(discountStart)||!validDate(discountEnd)||(discountStart&&discountEnd&&discountEnd<discountStart))return json({error:"Enter valid discount dates. The end date cannot be earlier than the start date."},400);
-      const syllabusUrl=clean(data?.syllabusUrl,1000);
-      let safeSyllabus="";
-      if(syllabusUrl){try{const u=new URL(syllabusUrl);if(!["https:","http:"].includes(u.protocol))throw new Error();safeSyllabus=u.href;}catch{return json({error:"Syllabus link must be a valid HTTP or HTTPS URL."},400);}}
+      const syllabusUrl=clean(data?.syllabusUrl,1000), syllabusFileUrl=clean(data?.syllabusFileUrl,1000);
+      const safeUrl=value=>{if(!value)return "";try{const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error();return u.href;}catch{return null;}};
+      const safeSyllabus=safeUrl(syllabusUrl), safeSyllabusFile=safeUrl(syllabusFileUrl);
+      if(safeSyllabus===null||safeSyllabusFile===null)return json({error:"Syllabus links must be valid HTTP or HTTPS URLs."},400);
       if (!title || !slug) return json({error:"Course title and URL slug are required."},400);
       const courseId=id();
       try {
-        await env.DB.prepare("INSERT INTO courses (id,slug,title_en,title_bn,summary_en,summary_bn,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at,syllabus_url,active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)")
-          .bind(courseId,slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),["fixed","custom","both"].includes(data.pricingType)?data.pricingType:"both",fixedFee,"BDT",discountType,discountValue,discountStart,discountEnd,safeSyllabus).run();
+        await env.DB.prepare("INSERT INTO courses (id,slug,title_en,title_bn,summary_en,summary_bn,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at,syllabus_url,syllabus_file_url,active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)")
+          .bind(courseId,slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),["fixed","custom","both"].includes(data.pricingType)?data.pricingType:"both",fixedFee,"BDT",discountType,discountValue,discountStart,discountEnd,safeSyllabus,safeSyllabusFile).run();
       } catch { return json({error:"Could not create course. Check whether the URL slug is already in use."},409); }
       await audit(env,session.email,"course_created","course",courseId,slug);
       return json({ok:true,id:courseId},201);
@@ -548,12 +549,13 @@ async function handleApi(request, env) {
       if(discountType!=="none"&&fixedFee===null)return json({error:"A fixed course fee is required before applying a discount."},400);
       if(discountType!=="none"&&(!Number.isFinite(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>100)||(discountType==="fixed"&&discountValue>=fixedFee)))return json({error:"Enter a valid discount. Percentage must be 1–100; fixed discount must be less than the course fee."},400);
       if(!validDate(discountStart)||!validDate(discountEnd)||(discountStart&&discountEnd&&discountEnd<discountStart))return json({error:"Enter valid discount dates. The end date cannot be earlier than the start date."},400);
-      const syllabusUrl=clean(data?.syllabusUrl,1000);
-      let safeSyllabus="";
-      if(syllabusUrl){try{const u=new URL(syllabusUrl);if(!["https:","http:"].includes(u.protocol))throw new Error();safeSyllabus=u.href;}catch{return json({error:"Syllabus link must be a valid HTTP or HTTPS URL."},400);}}
+      const syllabusUrl=clean(data?.syllabusUrl,1000), syllabusFileUrl=clean(data?.syllabusFileUrl,1000);
+      const safeUrl=value=>{if(!value)return "";try{const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error();return u.href;}catch{return null;}};
+      const safeSyllabus=safeUrl(syllabusUrl), safeSyllabusFile=safeUrl(syllabusFileUrl);
+      if(safeSyllabus===null||safeSyllabusFile===null)return json({error:"Syllabus links must be valid HTTP or HTTPS URLs."},400);
       try {
-        const result=await env.DB.prepare("UPDATE courses SET slug=?,title_en=?,title_bn=?,summary_en=?,summary_bn=?,pricing_type=?,fixed_fee_minor=?,discount_type=?,discount_value=?,discount_starts_at=?,discount_ends_at=?,syllabus_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
-          .bind(slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),pricingType,fixedFee,discountType,discountValue,discountStart,discountEnd,safeSyllabus,courseEditMatch[1]).run();
+        const result=await env.DB.prepare("UPDATE courses SET slug=?,title_en=?,title_bn=?,summary_en=?,summary_bn=?,pricing_type=?,fixed_fee_minor=?,discount_type=?,discount_value=?,discount_starts_at=?,discount_ends_at=?,syllabus_url=?,syllabus_file_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind(slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),pricingType,fixedFee,discountType,discountValue,discountStart,discountEnd,safeSyllabus,safeSyllabusFile,courseEditMatch[1]).run();
         if (!result.meta.changes) return json({error:"Course not found."},404);
       } catch { return json({error:"Could not update course. Check whether the URL slug is already in use."},409); }
       await audit(env,session.email,"course_updated","course",courseEditMatch[1],slug);
