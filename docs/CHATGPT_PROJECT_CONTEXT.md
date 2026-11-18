@@ -486,7 +486,7 @@ Existing repository objects include `pages`, `site_content`, `page_styles`, cour
 - User review and explicit approval of the Stage 6 database schema.
 - Preview D1 read-only verification results: `d1_migrations`, actual tables/schema, row counts for `pages`, `site_content`, `page_styles`, and foreign-key checks.
 - Re-inspect current `current-focus-development` branch files and exact route/page-builder behavior before implementation.
-- Finalize global-content publication semantics, section deletion/restore rules, and exact page registry mappings.
+- Apply confirmed Option A global publication semantics; finalize section deletion/restore rules and exact page registry mappings.
 - Reconcile proposed CMS permissions with the current RBAC permission catalogue.
 - Stage 7 API routes are proposals, not live endpoints.
 - Stage 8 is a planning specification, not an implemented Admin Panel.
@@ -510,6 +510,23 @@ Required revisions:
 - Reuse existing `audit_logs` for structural/admin actions.
 - Define section soft-delete/restore semantics and child-state preservation.
 - Preserve existing `textarea` content type during backfill.
-- Finalize global-content publication scope.
+- Global publication scope is confirmed as Option A: independent EN/BN Draft, Preview, Publish and Version History. Page and Global publication are isolated; public rendering composes their published snapshots.
 
-The user must decide whether global content has an independent EN/BN publish/version workflow (recommended) or publishes together with each page. Preview D1 migration history/schema/record checks are still outstanding. No CMS migration or database change has been made.
+The user selected Option A: Global EN and BN have independent Draft, Preview, Publish and Version History. Global is one logical page with two locale records; each locale publishes independently. Page publishing never publishes Global, and Global publishing never publishes a page. Public rendering composes the published page snapshot with the currently published Global snapshot for the same language; Global drafts are never public. Preview D1 migration history/schema/record checks are still outstanding. No CMS migration or database change has been made.
+
+
+### Stage 9A global publication decision (2026-11-18)
+
+The user explicitly selected **Option A — independent global publication**.
+
+Schema/service implications:
+- One `cms_pages` Global registry record, `page_type='global'`.
+- Separate `cms_page_locales` records for English and Bangla.
+- Independent draft and published-version pointers, publication revisions and history per Global locale.
+- Dedicated Global publish operation, scoped to one language.
+- Page publication and Global publication never publish or mutate each other.
+- Public rendering composes the page's published snapshot with the currently published Global snapshot for the same language. Global Draft is never public; Global content is not copied into page snapshots.
+- Global restore returns content to Draft; publishing is separate.
+- Successful Global publication must invalidate/revalidate affected public responses.
+
+Detailed contract: `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md`. The schema remains unapproved for migration pending the complete revised table-level definition and Preview D1 verification.
