@@ -1,3 +1,11 @@
+## 2026-11-18 — Cloudinary course syllabus uploads (development)
+- Added signed Cloudinary upload support for course syllabus PDFs via `raw/upload` and JPG/PNG/WebP images via `image/upload`, using the existing `sohel-consulting` folder and Cloudinary credentials.
+- Added browser-side file validation (PDF up to 10 MB; images up to 3 MB), upload progress/error feedback, and automatic population of the course syllabus URL field. The link is persisted when the course is saved.
+- Updated English and Bangla course detail pages to display saved syllabus links; the Bangla page now also displays active course discounts.
+- Updated the existing Media Library upload client to send the signed `allowed_formats` parameter.
+- Added source-contract checks and Preview QA checklist items; documented the upload API contract.
+- No D1 migration was added. Preview deployment and live PDF/image upload tests remain pending. Production branch, database, Worker and secrets were not changed.
+
 ## 2026-11-16 — Preview D1 migration workflow
 - Added a manually triggered GitHub Actions workflow restricted to `current-focus-development` for Preview D1 migration listing, application and post-application verification.
 - Added a guard that checks the configured Preview D1 UUID, resolves the database name through Cloudflare, and generates a temporary Wrangler config containing only the Preview D1 binding before remote migration commands.
