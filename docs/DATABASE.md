@@ -146,3 +146,14 @@ Global is represented by one logical `cms_pages` record with `page_type='global'
 - Global publication must invalidate/revalidate public responses that include the changed language. The exact cache mechanism requires implementation-time verification.
 
 This is a design contract, not implemented SQL. See [Stage 9A review](CMS_SCHEMA_REVIEW_STAGE_9A.md).
+
+
+## Stage 9A.1–9A.2 — revised table-level schema and integrity review
+
+The detailed proposed definitions for all seven CMS tables, columns, nullability, defaults, checks, keys, relationships, indexes, snapshot contents, transaction rules and integrity findings are now recorded in [Stage 9A Revised CMS Table-Level Schema and Integrity Specification](CMS_SCHEMA_TABLE_SPEC_STAGE_9A.md).
+
+The design retains the seven-table additive model and includes the confirmed independent Global EN/BN publication model (Option A). It preserves `textarea`, page-builder section renderer types/configuration, immutable published snapshots, draft/publication revisions, locale-scoped history, soft-delete/restore rules and reuse of `audit_logs`.
+
+**Status:** Design proposal only; not approved for migration. No migration SQL was created, no CMS code was changed and no D1 database was accessed or modified. Stage 9A.2 identified remaining verification gates for the same-locale published-version pointer, deferred/cyclic foreign-key behavior, D1 JSON validation and transaction semantics, route uniqueness, Global pre-first-publication fallback/cache invalidation, and actual legacy data.
+
+**Next:** Stage 9A.3 — read-only verification of the dedicated Preview D1 migration history, schema, row counts and foreign-key integrity. Production must not be accessed.
