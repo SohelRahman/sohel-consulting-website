@@ -1,11 +1,9 @@
 
 
-## Stage 9A.7 — migration recovery and compatibility test plan
+## Stage 9A.8 — disposable D1 test progress
 
-See [CMS Migration Recovery and Compatibility Test Plan — Stage 9A.7](CMS_MIGRATION_RECOVERY_COMPATIBILITY_TEST_PLAN_STAGE_9A7.md).
+See [CMS Disposable D1 Test Progress — Stage 9A.8](CMS_DISPOSABLE_D1_TEST_PROGRESS_STAGE_9A8.md).
 
-The user supplied the complete Preview `d1_migrations` result: only `0001`–`0009` are recorded. Preview `courses` nevertheless contains all columns expected from repository migrations `0010` and `0011`. The table has 3 rows; `syllabus_url IS NOT NULL` and matching Cloudinary PDF URL counts are both zero. This confirms a migration-history/schema discrepancy, but not how or when the columns were created or whether the historical data transformation ran.
+The user reports that the disposable test database now contains six application tables: `courses`, `learners`, `registrations`, `inquiries`, `quotations`, and `audit_logs`. The reported `courses` column metadata matches the corresponding migration 0001 definition. These are user-supplied D1 Console results, not independently executed checks.
 
-CMS table creation provenance is unknown. The current Preview migration workflow applies all pending migration files; do not run it while 0010/0011 remain pending in the ledger and their columns already exist. Do not manually edit `d1_migrations` or drop/recreate tables as a shortcut.
-
-Stage 9A.7 is a planning document only. It requires a verified Preview backup/fingerprint, cross-environment migration-state inventory, and disposable D1 tests for migration reconciliation, foreign-key-safe table rebuilds, same-locale pointer integrity and atomic publication. No migration or database change is authorized.
+The migration 0001 baseline remains incomplete until all six table definitions, its three indexes, its three course seed records, and foreign-key enforcement are verified. Do not proceed to later migrations or CMS compatibility tests before that checkpoint passes. Preview and Production remain out of scope.
