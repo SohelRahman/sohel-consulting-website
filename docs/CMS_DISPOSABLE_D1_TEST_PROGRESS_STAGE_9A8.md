@@ -76,7 +76,13 @@ The user created `page_styles` on the disposable D1 target using the statement i
 
 **Checkpoint:** Migration 0004 table DDL is verified from user-supplied D1 Console output.
 
-## 6. Current checkpoint
+## 6. Migration 0005 — table verified; index pending
+
+The user created the `pages` table on the disposable D1 target. The supplied `sqlite_master` DDL matches committed `migrations/0005_pages.sql`, including the primary key, unique slug, EN/BN language constraint, draft/published status constraint, required `draft_json`, nullable `published_json`, SEO defaults, timestamps, and nullable `published_at`.
+
+**Checkpoint:** Migration 0005 table DDL is verified from user-supplied D1 Console output. The migration's `idx_pages_status_slug` index has not yet been created or verified.
+
+## 7. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -90,21 +96,35 @@ The user created `page_styles` on the disposable D1 target using the statement i
 - [x] Verify the four migration 0003 seed keys, content types, and published flags.
 - [x] Compare `site_content` table DDL with migration 0003.
 - [x] Apply and verify migration 0004 on the disposable database.
-- [ ] Apply and verify migration 0005 on the disposable database.
+- [x] Create and verify migration 0005's `pages` table.
+- [ ] Create and verify migration 0005's `idx_pages_status_slug` index.
 - [ ] Continue with migrations 0006–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 7. Next step — migration 0005
+## 8. Next step — migration 0005 index
 
-Committed `migrations/0005_pages.sql` must now be inspected and applied as its own controlled step. Do not proceed using a guessed schema. Retrieve the exact committed migration 0005 SQL, then provide its table/index/seed statements in manageable chunks. Verify each resulting DDL and any seed/index output against the migration before continuing.
+The `pages` table matches the committed migration. Create the remaining index on the disposable target only:
 
-This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+```sql
+CREATE INDEX IF NOT EXISTS idx_pages_status_slug ON pages(status,slug);
+```
 
-## 8. Stop conditions
+Then verify it:
+
+```sql
+SELECT name, tbl_name, sql
+FROM sqlite_master
+WHERE type = 'index'
+  AND name = 'idx_pages_status_slug';
+```
+
+Do not proceed to migration 0006 until the returned index definition matches the committed migration. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+
+## 9. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 9. Repository references
+## 10. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
