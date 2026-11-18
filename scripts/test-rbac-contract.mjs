@@ -44,9 +44,10 @@ check("RBAC migration stores active state and session version", /is_active INTEG
 
 check("Cloudinary upload signatures support PDF and image syllabus formats", /purpose=data\?\.purpose==="syllabus"/.test(worker) && /data\?\.fileType==="pdf"/.test(worker) && /allowedFormats=purpose==="syllabus"/.test(worker));
 check("Syllabus upload is authenticated, same-origin and rate-limited", /path === "\/api\/admin\/media\/signature" && method === "POST"/.test(worker) && /if \(!sameOrigin\(request\)\)/.test(worker) && /purpose==="syllabus"\?"syllabus-upload":"media-upload"/.test(worker) && /bucket\+"-hour"/.test(worker) && /bucket\+"-day"/.test(worker));
-check("Course form uploads PDF and supported images to Cloudinary and saves the returned URL", /course-syllabus-upload/.test(adminHtml) && /signed\.resourceType/.test(adminHtml) && /form\.elements\.syllabusUrl\.value=asset\.secure_url/.test(adminHtml));
+check("Course form uploads PDF and supported images to Cloudinary and saves the returned URL", /course-syllabus-upload/.test(adminHtml) && /signed\.resourceType/.test(adminHtml) && /form\.elements\.syllabusFileUrl\.value=asset\.secure_url/.test(adminHtml) && /name="syllabusFileUrl"/.test(adminHtml));
 check("Existing Media Library uploads include the signed allowed_formats parameter", /data\.append\('allowed_formats',signed\.allowedFormats\)/.test(adminHtml));
-check("English and Bangla course detail pages display saved syllabus links", /course-syllabus-link/.test(fs.readFileSync("course.html","utf8")) && /course-syllabus-link/.test(fs.readFileSync("bn/course.html","utf8")));
+check("English and Bangla course detail pages display reference and uploaded syllabus links separately", /course-reference-link/.test(fs.readFileSync("course.html","utf8")) && /course-file-link/.test(fs.readFileSync("course.html","utf8")) && /course-reference-link/.test(fs.readFileSync("bn/course.html","utf8")) && /course-file-link/.test(fs.readFileSync("bn/course.html","utf8")));
+check("Course syllabus file URL has a dedicated migration and is persisted by create and update APIs", /ALTER TABLE courses ADD COLUMN syllabus_file_url TEXT/.test(fs.readFileSync("migrations/0011_course_syllabus_file_url.sql","utf8")) && /syllabus_file_url/.test(worker));
 check("Bangla course detail page displays active course discounts", /course-discount/.test(fs.readFileSync("bn/course.html","utf8")) && /activeDiscount/.test(fs.readFileSync("bn/course.html","utf8")));
 
 if (failures.length) {
