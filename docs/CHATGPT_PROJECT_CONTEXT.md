@@ -541,3 +541,13 @@ Detailed contract: `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md`. The schema remains unap
 - Remaining compatibility gates: verify D1 JSON validation and transaction behavior, choose/verify same-locale published-version pointer enforcement, confirm route uniqueness/redirect behavior, and define safe pre-first-publication Global fallback and cache invalidation.
 - Documentation was updated on `current-focus-development`; no CMS code, migration SQL, D1 data, Preview deployment or Production resource was changed.
 - **Next action:** inspect the four Stage 9A.3 query result sets, close any discrepancies, then present Stage 9A.5 for explicit schema approval. Do not create/apply a CMS migration before approval; do not modify Production.
+
+
+### Stage 9A.3 Preview D1 evidence update — partial results received (2026-11-18)
+
+- User supplied Preview D1 outputs: `PRAGMA foreign_keys` = 1; `PRAGMA foreign_key_check` displayed no violation rows; `pages` = 1 row, `site_content` = 4 rows, `page_styles` = 1 row.
+- Critical finding: all seven CMS tables already exist in Preview D1, although the current development-branch `migrations/` directory contains only migrations `0001`–`0011` and no CMS migration file. The `d1_migrations` query result was not supplied, so table provenance and applied migration history are unknown.
+- The observed Preview CMS schema differs materially from the proposed Stage 9A.1–9A.2 contract: `cms_sections` lacks renderer type/config; `cms_content_elements` does not permit `textarea`; `cms_content_values` has a mutable `published_value`; and `cms_page_locales` lacks draft/publication revisions and a current published-version pointer. Other field names and version-history structures also differ.
+- Do not treat Preview as empty, apply the proposed schema unchanged, or drop/replace existing CMS tables. Identify the creation migration/source, inspect CMS row counts and dependent Worker/API code, and plan a safe compatibility migration only after review and explicit approval.
+- Stage 9A.3 is partially verified, not complete. Outstanding: provide `SELECT * FROM d1_migrations ORDER BY id;` output and verify CMS table data/provenance.
+- Details: `docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md`. No database changes were made during this inspection; Production remains untouched.
