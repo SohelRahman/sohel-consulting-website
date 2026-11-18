@@ -514,7 +514,7 @@ async function handleApi(request, env) {
       const discountType=["none","percentage","fixed"].includes(data?.discountType)?data.discountType:"none";
       const discountValue=discountType==="none"?null:(discountType==="fixed"?Math.round(Number(data.discountValue)*100):Math.round(Number(data.discountValue)));
       const discountStart=clean(data?.discountStartsAt,10)||null, discountEnd=clean(data?.discountEndsAt,10)||null;
-      const validDate=v=>!v||/^\\d{4}-\\d{2}-\\d{2}$/.test(v);
+      const validDate=v=>!v||/^\d{4}-\d{2}-\d{2}$/.test(v);
       if(discountType!=="none"&&fixedFee===null)return json({error:"A fixed course fee is required before applying a discount."},400);
       if(discountType!=="none"&&(!Number.isFinite(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>100)||(discountType==="fixed"&&discountValue>=fixedFee)))return json({error:"Enter a valid discount. Percentage must be 1–100; fixed discount must be less than the course fee."},400);
       if(!validDate(discountStart)||!validDate(discountEnd)||(discountStart&&discountEnd&&discountEnd<discountStart))return json({error:"Enter valid discount dates. The end date cannot be earlier than the start date."},400);
@@ -541,7 +541,7 @@ async function handleApi(request, env) {
       const discountType=["none","percentage","fixed"].includes(data?.discountType)?data.discountType:"none";
       const discountValue=discountType==="none"?null:(discountType==="fixed"?Math.round(Number(data.discountValue)*100):Math.round(Number(data.discountValue)));
       const discountStart=clean(data?.discountStartsAt,10)||null, discountEnd=clean(data?.discountEndsAt,10)||null;
-      const validDate=v=>!v||/^\\d{4}-\\d{2}-\\d{2}$/.test(v);
+      const validDate=v=>!v||/^\d{4}-\d{2}-\d{2}$/.test(v);
       if (!title || !slug || !pricingType) return json({error:"Course title, valid URL slug and pricing model are required."},400);
       if (fixedFee!==null && (!Number.isFinite(fixedFee)||fixedFee<1)) return json({error:"Enter a valid positive fixed fee."},400);
       if (pricingType==="fixed" && fixedFee===null) return json({error:"A fixed-fee course needs a fee amount."},400);
