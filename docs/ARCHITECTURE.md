@@ -47,3 +47,20 @@ These are implementation notes, not a substitute for a security audit.
 Development uses the `current-focus-development` branch and its Worker Preview configuration. Preview must use the dedicated Preview D1 database. Production uses a separate D1 database and must not be used for development or testing.
 
 See [Deployment](DEPLOYMENT.md) before changing Cloudflare resources.
+
+
+## Proposed CMS architecture (planning only)
+
+The website-wide CMS is a planned extension, not part of the current implemented architecture.
+
+The proposed design adds a CMS content-resolution and administration layer to the existing Cloudflare Worker/D1 application:
+- The existing static website and page templates remain responsible for presentation.
+- The Worker remains the API entry point and enforces session authentication, RBAC, validation and publication transactions.
+- Proposed CMS records separate logical pages, language-specific page records, sections, elements, default/draft/published values and version snapshots.
+- Public page delivery reads published values only.
+- Admin preview reads draft values only after authorization.
+- English and Bangla are separate publication scopes.
+- Existing `pages`, `site_content` and `page_styles` remain compatible during gradual page-by-page migration.
+- Courses, registrations, inquiries, media assets, chat and analytics remain separate operational domains.
+
+This proposal depends on Stage 6 schema approval and Preview D1 verification. It must not be interpreted as implemented or as authorization to create tables or change public rendering. See [CMS Admin UI and workflow specification](CMS_ADMIN_UI_WORKFLOW.md), [API Reference](API.md) and [Database Reference](DATABASE.md).
