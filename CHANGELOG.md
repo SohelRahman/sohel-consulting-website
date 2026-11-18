@@ -114,3 +114,10 @@ All notable project changes should be recorded here. Entries describe repository
 - Confirmed all seven CMS foreign-key relationships from individual Preview PRAGMA outputs and table DDL. Existing delete behavior is `RESTRICT`.
 - Migration provenance remains unresolved. The specification is not executable migration SQL and does not authorize a migration.
 - Documentation-only change on `current-focus-development`. No CMS code, migration SQL, D1 data, Preview deployment or Production resource was changed.
+## 2026-11-18 — Stage 9A.6 CMS provenance and technical feasibility review
+
+- Added `docs/CMS_PROVENANCE_FEASIBILITY_REVIEW_STAGE_9A6.md` documenting repository migration inventory, workflow behavior, unresolved CMS table provenance, D1/SQLite feasibility and required read-only follow-up evidence.
+- Confirmed no tracked CMS schema migration exists in the inspected development-branch recursive tree. The Preview diagnostic workflows inspect schema and run `EXPLAIN`; they do not create CMS tables.
+- Identified a migration workflow risk: the existing Preview workflow applies all pending migration files. The last user-supplied Preview history listed `0001`–`0009`, while repository migrations `0010` and `0011` exist. Migration `0011` updates matching Cloudinary PDF syllabus URLs. Do not run the workflow until this discrepancy and course-data effects are reconciled.
+- Reviewed official D1 documentation for foreign-key enforcement/defer behavior, migrations and transactional batch operations. Exact table-rebuild and same-locale pointer enforcement still require disposable D1 tests.
+- Documentation-only review on `current-focus-development`. No migration SQL, D1 data, application code, Preview deployment or Production resource was changed.
