@@ -14,50 +14,45 @@
 
 The user initially queried `sqlite_master` and reported that the disposable database contained only the Cloudflare-managed `_cf_KV` table. No application baseline schema was present at that point.
 
-The user then created the `courses` table using the DDL for that table from `migrations/0001_initial_schema.sql`. The subsequent user-supplied `PRAGMA table_info(courses)` output showed 15 columns:
+The user created the `courses` table and supplied `PRAGMA table_info(courses)` output showing 15 columns matching the `courses` definition in committed migration 0001.
 
-`id`, `slug`, `title_en`, `title_bn`, `summary_en`, `summary_bn`, `level`, `delivery_modes`, `languages`, `pricing_type`, `fixed_fee_minor`, `currency`, `active`, `created_at`, `updated_at`.
+The user subsequently created `learners`, `registrations`, `inquiries`, `quotations`, and `audit_logs`. The user-supplied `sqlite_master` output showed all six application tables and their DDL. Comparison against committed `migrations/0001_initial_schema.sql` found the six table definitions consistent with the migration.
 
-The reported types, nullability and defaults match the corresponding `courses` definition in the inspected migration 0001.
+## 3. Foreign-key evidence
 
-The user subsequently executed the supplied DDL for five additional tables: `learners`, `registrations`, `inquiries`, `quotations`, and `audit_logs`.
+The user reported:
 
-The user's verification query returned exactly these six application tables:
+- `PRAGMA foreign_keys;` returned `1`.
+- `PRAGMA foreign_key_check;` executed successfully and returned no violation rows.
 
-- `audit_logs`
-- `courses`
-- `inquiries`
-- `learners`
-- `quotations`
-- `registrations`
+This is evidence that foreign-key enforcement is enabled in the tested D1 Console session and that the current database has no reported foreign-key violations.
 
-This confirms table existence according to the supplied query output. It does not yet verify all table definitions, indexes, foreign-key enforcement, seed rows, or the complete migration 0001 baseline.
+## 4. Seed-data insertion
 
-## 3. Important qualification
+The user executed the three-course `INSERT OR IGNORE` statement from migration 0001. The D1 Console reported: “This query successfully executed.”
 
-The table DDL supplied for the five additional tables was transcribed from migration 0001 and should be checked against the committed migration before treating the baseline as complete. The committed migration also creates three indexes and inserts three course seed records. Those indexes and seed records have not yet been verified in the disposable database.
+The follow-up `SELECT id, slug, title_en FROM courses ORDER BY id;` has not yet been supplied. Therefore the presence and exact contents of all three seed rows remain pending verification; successful execution alone is not treated as proof of the final row set.
 
-The initial migration begins with `PRAGMA foreign_keys = ON;`. Foreign-key enforcement in the disposable database has not yet been demonstrated by a test or a reported `PRAGMA foreign_keys` result.
-
-## 4. Current checkpoint
+## 5. Current checkpoint
 
 - [x] Confirm initial disposable database had no application tables (user-reported).
 - [x] Create `courses`.
-- [x] Inspect `courses` columns with `PRAGMA table_info(courses)`.
+- [x] Inspect `courses` columns with `PRAGMA table_info(courses)`; reported columns match migration 0001.
 - [x] Create `learners`, `registrations`, `inquiries`, `quotations`, and `audit_logs`.
-- [x] Confirm existence of all six tables.
-- [ ] Compare all six table definitions with migration 0001.
+- [x] Confirm existence of all six tables and compare their reported DDL with migration 0001.
+- [x] Verify `PRAGMA foreign_keys` returns `1`.
+- [x] Run `PRAGMA foreign_key_check`; no violation rows were reported.
+- [x] Execute the three-course seed INSERT statement.
+- [ ] Verify the exact three seeded course rows with a SELECT query.
 - [ ] Verify the three indexes from migration 0001.
-- [ ] Verify the three seeded course records without exposing unnecessary personal data.
-- [ ] Verify foreign-key enforcement and run `PRAGMA foreign_key_check`.
 - [ ] Continue with migrations 0002–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 5. Stop conditions
+## 6. Stop conditions
 
-Stop and investigate if any table definition differs from the committed migration, any expected index or seed record is missing, foreign-key checks fail, or the target database identity is uncertain. Do not proceed to migrations 0010/0011 or CMS tests until the 0001–0009 baseline is reconstructed and verified.
+Stop and investigate if any expected seed record is missing, any expected index is missing or malformed, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to migrations 0010/0011 or CMS tests until the 0001–0009 baseline is reconstructed and verified.
 
-## 6. Repository reference
+## 7. Repository reference
 
 Baseline migration: [migrations/0001_initial_schema.sql](../migrations/0001_initial_schema.sql)
 
