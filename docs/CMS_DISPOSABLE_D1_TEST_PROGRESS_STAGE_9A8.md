@@ -70,7 +70,13 @@ This confirms the four seed keys, content types, and published flags. The user t
 
 **Checkpoint:** Migration 0003 table DDL and seed records are verified from user-supplied D1 Console outputs.
 
-## 5. Current checkpoint
+## 5. Migration 0004 — verified
+
+The user created `page_styles` on the disposable D1 target using the statement in committed `migrations/0004_page_styles.sql`. The supplied `sqlite_master` output matches the migration definition: `element_key` primary key; required `draft_json`; nullable `published_json`; `updated_at` defaulting to `CURRENT_TIMESTAMP`; and nullable `published_at`.
+
+**Checkpoint:** Migration 0004 table DDL is verified from user-supplied D1 Console output.
+
+## 6. Current checkpoint
 
 - [x] Reconstruct and verify migration 0001's six application tables.
 - [x] Compare all six table definitions with committed migration 0001.
@@ -83,40 +89,22 @@ This confirms the four seed keys, content types, and published flags. The user t
 - [x] Verify migration 0002's `idx_rate_limits_expiry` index.
 - [x] Verify the four migration 0003 seed keys, content types, and published flags.
 - [x] Compare `site_content` table DDL with migration 0003.
-- [ ] Apply and verify migration 0004 on the disposable database.
-- [ ] Continue with migrations 0005–0009 in controlled, individually verified batches.
+- [x] Apply and verify migration 0004 on the disposable database.
+- [ ] Apply and verify migration 0005 on the disposable database.
+- [ ] Continue with migrations 0006–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 6. Next step — migration 0004
+## 7. Next step — migration 0005
 
-Committed `migrations/0004_page_styles.sql` contains one table creation statement. On the verified disposable target only, execute:
+Committed `migrations/0005_pages.sql` must now be inspected and applied as its own controlled step. Do not proceed using a guessed schema. Retrieve the exact committed migration 0005 SQL, then provide its table/index/seed statements in manageable chunks. Verify each resulting DDL and any seed/index output against the migration before continuing.
 
-```sql
-CREATE TABLE IF NOT EXISTS page_styles (
-  element_key TEXT PRIMARY KEY,
-  draft_json TEXT NOT NULL,
-  published_json TEXT,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  published_at TEXT
-);
-```
+This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
-Then verify the created table definition:
-
-```sql
-SELECT name, sql
-FROM sqlite_master
-WHERE type = 'table'
-  AND name = 'page_styles';
-```
-
-Do not proceed to migration 0005 until the returned DDL is compared with committed migration 0004. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
-
-## 7. Stop conditions
+## 8. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 8. Repository references
+## 9. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
