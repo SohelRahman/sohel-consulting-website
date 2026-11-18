@@ -495,3 +495,21 @@ No CMS code, schema migration, D1 data change, Preview deployment or Production 
 
 ### Recommended next action
 Obtain the Preview D1 inspection results and user approval of Stage 6. Then finalize schema and API contracts before any CMS implementation. Do not infer database migration status from migration files committed in Git.
+
+
+### Stage 9A schema review outcome (2026-11-18)
+
+Stage 6's seven-table CMS schema was reviewed against the current repository migrations. The model is acceptable as a starting direction but the proposed SQL is **not approved for migration**.
+
+Detailed review: `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md`.
+
+Required revisions:
+- Preserve existing page-builder section types and renderer configuration.
+- Make immutable published page snapshots the public rendering source of truth; separate editable draft structure from published structure.
+- Add an explicit current-published-version pointer and atomic optimistic concurrency control.
+- Reuse existing `audit_logs` for structural/admin actions.
+- Define section soft-delete/restore semantics and child-state preservation.
+- Preserve existing `textarea` content type during backfill.
+- Finalize global-content publication scope.
+
+The user must decide whether global content has an independent EN/BN publish/version workflow (recommended) or publishes together with each page. Preview D1 migration history/schema/record checks are still outstanding. No CMS migration or database change has been made.
