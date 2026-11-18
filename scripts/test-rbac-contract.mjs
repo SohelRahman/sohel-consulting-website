@@ -42,6 +42,13 @@ check("Dashboard exposes role-based User Access controls", /User Access/i.test(a
 check("RBAC migration creates admin_users with constrained roles", /CREATE TABLE IF NOT EXISTS admin_users/.test(migration) && /CHECK \(role IN \('admin','user'\)\)/.test(migration));
 check("RBAC migration stores active state and session version", /is_active INTEGER/.test(migration) && /session_version INTEGER/.test(migration));
 
+check("Cloudinary upload signatures support PDF raw uploads and image uploads for course syllabi", /purpose=data\?\.purpose==="syllabus"/.test(worker) && /data\?\.resourceType==="raw"/.test(worker) && /allowedFormats=purpose==="syllabus"/.test(worker));
+check("Syllabus upload is authenticated, same-origin and rate-limited", /path === "\/api\/admin\/media\/signature" && method === "POST"/.test(worker) && /syllabus-upload-hour/.test(worker) && /syllabus-upload-day/.test(worker));
+check("Course form uploads PDF and supported images to Cloudinary and saves the returned URL", /course-syllabus-upload/.test(adminHtml) && /signed\.resourceType/.test(adminHtml) && /form\.elements\.syllabusUrl\.value=asset\.secure_url/.test(adminHtml));
+check("Existing Media Library uploads include the signed allowed_formats parameter", /data\.append\('allowed_formats',signed\.allowedFormats\)/.test(adminHtml));
+check("English and Bangla course detail pages display saved syllabus links", /course-syllabus-link/.test(fs.readFileSync("course.html","utf8")) && /course-syllabus-link/.test(fs.readFileSync("bn/course.html","utf8")));
+check("Bangla course detail page displays active course discounts", /course-discount/.test(fs.readFileSync("bn/course.html","utf8")) && /activeDiscount/.test(fs.readFileSync("bn/course.html","utf8")));
+
 if (failures.length) {
   console.error("\\nRBAC contract checks failed:");
   for (const failure of failures) console.error("- " + failure);
