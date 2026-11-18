@@ -485,11 +485,18 @@ async function handleApi(request, env) {
     if (path === "/api/admin/media/signature" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured. Add the three Cloudinary secrets to the Preview Worker."},503);
-      if (!(await rateLimit(env,request,"media-upload-hour",10,60*60*1000))) return json({error:"Upload limit reached: maximum 10 images per hour."},429);
-      if (!(await rateLimit(env,request,"media-upload-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached: maximum 40 images per day."},429);
+      const data=await request.json().catch(()=>({}));
+      const purpose=data?.purpose==="syllabus"?"syllabus":"media";
+      const resourceType=purpose==="syllabus"?(data?.resourceType==="raw"?"raw":data?.resourceType==="image"?"image":""):"image";
+      if (!resourceType) return json({error:"Syllabus uploads must use the PDF or image resource type."},400);
+      const allowedFormats=purpose==="syllabus"?(resourceType==="raw"?"pdf":"jpg,png,webp"):"jpg,jpeg,png,webp,gif";
+      const bucket=purpose==="syllabus"?"syllabus-upload":"media-upload";
+      if (!(await rateLimit(env,request,bucket+"-hour",10,60*60*1000))) return json({error:"Upload limit reached. Please try again later."},429);
+      if (!(await rateLimit(env,request,bucket+"-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached. Please try again tomorrow."},429);
       const timestamp=Math.floor(Date.now()/1000), folder="sohel-consulting";
-      const signature=await cloudinarySignature({folder,timestamp},env.CLOUDINARY_API_SECRET);
-      return json({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,timestamp,folder,signature});
+      const params={allowed_formats:allowedFormats,folder,timestamp};
+      const signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET);
+      return json({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,timestamp,folder,signature,resourceType,allowedFormats});
     }
     if (path === "/api/admin/courses" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT * FROM courses ORDER BY title_en").all();
