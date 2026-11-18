@@ -530,3 +530,14 @@ Schema/service implications:
 - Successful Global publication must invalidate/revalidate affected public responses.
 
 Detailed contract: `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md`. The schema remains unapproved for migration pending the complete revised table-level definition and Preview D1 verification.
+
+
+### Stage 9A.4 — final CMS schema review (2026-11-18)
+
+- Completed a conditional design review of the revised seven-table additive CMS model. The model is accepted as the design direction, but executable migration approval remains pending.
+- Detailed review: `docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md`.
+- Mandatory invariants include immutable published snapshots, Draft/public isolation, atomic publication with optimistic concurrency, safe soft-delete/restore, page-builder and legacy content compatibility, server-side authorization, reuse of `audit_logs`, and independent Global EN/BN publication (confirmed Option A).
+- The user reported successful execution of all four read-only Stage 9A.3 Preview D1 queries. Their result sets have not been supplied, so applied migration history, actual Preview table definitions, legacy table row counts and foreign-key integrity remain unverified. Do not mark Stage 9A.3 evidence-complete.
+- Remaining compatibility gates: verify D1 JSON validation and transaction behavior, choose/verify same-locale published-version pointer enforcement, confirm route uniqueness/redirect behavior, and define safe pre-first-publication Global fallback and cache invalidation.
+- Documentation was updated on `current-focus-development`; no CMS code, migration SQL, D1 data, Preview deployment or Production resource was changed.
+- **Next action:** inspect the four Stage 9A.3 query result sets, close any discrepancies, then present Stage 9A.5 for explicit schema approval. Do not create/apply a CMS migration before approval; do not modify Production.
