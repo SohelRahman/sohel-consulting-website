@@ -455,3 +455,43 @@ Read the relevant documents alongside this prompt:
 - [Changelog](../CHANGELOG.md) — chronological repository changes.
 
 **Source-of-truth rule:** Current repository code, current workflow YAML, current Wrangler configuration and verified Cloudflare/GitHub environment state take precedence over this handover document. Update this document whenever those sources materially change.
+
+
+## CMS planning status — Stages 6–8 (2026-11-18)
+
+The user requested a website-wide, page-wise CMS for all public pages, including Privacy Policy, Terms and Conditions and Refund Policy. English and Bangla are independently managed. The existing public design and functionality must be preserved.
+
+### Confirmed user decisions
+1. Publishing scope: publish the entire selected page in one language.
+2. New content registration: automatically register content created through approved CMS/page-builder workflows.
+3. Historical version restoration: restore into Draft first; publishing is separate.
+4. Deleted element visibility: keep current published content visible until the next successful publication of that page/language; exclude the deleted element from that publication.
+5. Legacy integration: gradual page-by-page integration, retaining existing APIs during transition.
+6. CMS implementation scope: preserve the current design and functionality.
+
+### Planning documents
+- `docs/CMS_ADMIN_UI_WORKFLOW.md` — Stage 8 Admin Panel UI and workflow specification.
+- `docs/API.md` — proposed Stage 7 CMS API contract, clearly marked not implemented.
+- `docs/DATABASE.md` — proposed Stage 6 schema, clearly marked not implemented.
+- `docs/TESTING.md` — planned CMS acceptance test matrix, not executed.
+- `CHANGELOG.md` — documentation-only planning update.
+
+### Proposed Stage 6 schema
+Seven proposed tables: `cms_pages`, `cms_page_locales`, `cms_sections`, `cms_content_elements`, `cms_content_values`, `cms_content_versions`, `cms_page_versions`. This schema has not been approved or migrated. No CMS migration file exists as part of this planning work.
+
+### Stage 5 audit findings carried forward
+Existing repository objects include `pages`, `site_content`, `page_styles`, course/registration data, media, chat, analytics and RBAC. Existing page-builder and public APIs must be preserved during gradual integration. Existing `site_content` currently has immediate-save/publish behaviour and will need a compatible draft workflow before it can safely serve as the CMS editor. Page styles remain a separate concern. Course syllabus/discount fields and operational data must not be duplicated in CMS.
+
+### Outstanding gates — do not start implementation yet
+- User review and explicit approval of the Stage 6 database schema.
+- Preview D1 read-only verification results: `d1_migrations`, actual tables/schema, row counts for `pages`, `site_content`, `page_styles`, and foreign-key checks.
+- Re-inspect current `current-focus-development` branch files and exact route/page-builder behavior before implementation.
+- Finalize global-content publication semantics, section deletion/restore rules, and exact page registry mappings.
+- Reconcile proposed CMS permissions with the current RBAC permission catalogue.
+- Stage 7 API routes are proposals, not live endpoints.
+- Stage 8 is a planning specification, not an implemented Admin Panel.
+
+No CMS code, schema migration, D1 data change, Preview deployment or Production change was performed during Stages 6–8 planning/documentation. Production remains untouched.
+
+### Recommended next action
+Obtain the Preview D1 inspection results and user approval of Stage 6. Then finalize schema and API contracts before any CMS implementation. Do not infer database migration status from migration files committed in Git.
