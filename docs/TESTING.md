@@ -82,3 +82,45 @@ For each QA cycle, record:
 - Owner and resolution commit
 
 Do not mark a manual test as passed based only on static analysis or CI success.
+
+
+## Planned CMS acceptance tests (not implemented)
+
+These cases define future QA scope. They have not been executed because the CMS is not implemented.
+
+### Page registry and bilingual editing
+- [ ] Confirm all approved page records are listed.
+- [ ] Confirm English and Bangla load independent content, drafts and publication states.
+- [ ] Confirm an absent locale shows an explicit setup state rather than silently copying the other language.
+- [ ] Confirm page/section/element ordering and stable identifiers are preserved.
+
+### Draft, default and publication
+- [ ] Save Draft and verify public content remains unchanged.
+- [ ] Restore Default and verify only the selected element's draft value changes.
+- [ ] Publish one page/language and verify no other page, locale, global content or page style changes.
+- [ ] Simulate validation/database failure and verify the transaction rolls back.
+- [ ] Simulate stale version publication and verify a conflict is returned without overwriting newer work.
+
+### Delete, restore and history
+- [ ] Soft-delete an optional element and verify current public content remains visible before publication.
+- [ ] Publish the page and verify the deleted element is excluded from the new public snapshot.
+- [ ] Verify required elements and protected sections cannot be deleted.
+- [ ] Restore a deleted item and verify it is not automatically published.
+- [ ] Restore a historical page version into Draft and verify public content remains unchanged.
+- [ ] Publish the restored draft and verify a new version is created while old versions remain available.
+
+### Security and public data isolation
+- [ ] Verify each CMS operation enforces its server-side permission.
+- [ ] Verify unauthorized direct API requests are rejected even if the UI control is hidden.
+- [ ] Verify public APIs never return default, draft, audit or private version data.
+- [ ] Verify draft preview requires an authenticated authorized administrator.
+- [ ] Verify rich text sanitization and URL/media validation.
+
+### Compatibility and visual regression
+- [ ] Verify existing page-builder IDs, slugs, section JSON, SEO metadata and preview behavior are preserved.
+- [ ] Verify legacy APIs continue working during page-by-page migration.
+- [ ] Compare each migrated page with its pre-CMS public appearance and functionality.
+- [ ] Verify Courses, registrations, inquiries, page styles, media, chat and analytics modules remain operational.
+- [ ] Run responsive, keyboard and accessibility checks for English and Bangla CMS screens.
+
+Record test evidence using the existing Test evidence format above. Do not mark any CMS test as passed before implementation and execution in Preview.
