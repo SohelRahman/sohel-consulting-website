@@ -71,3 +71,43 @@ The workflow is restricted to the development branch and targets the configured 
 8. Record the migration and deployment in the changelog.
 
 Never edit an already-applied migration to change its historical effect. Add a new numbered migration instead.
+
+
+## Proposed CMS schema — not implemented
+
+Stage 6 proposed seven additive tables. This is a design proposal only; no CMS migration has been created or applied.
+
+| Proposed table | Responsibility |
+| --- | --- |
+| `cms_pages` | Stable logical page identity and page type |
+| `cms_page_locales` | Independent EN/BN route, title, SEO metadata and legacy page link |
+| `cms_sections` | Language-specific section hierarchy, ordering and deletion protection |
+| `cms_content_elements` | Element identity, content type, configuration and required/active state |
+| `cms_content_values` | Immutable default, editable draft and published values |
+| `cms_content_versions` | Element-level change history |
+| `cms_page_versions` | Full page/language publication snapshots and version numbers |
+
+### Proposed relationships and safeguards
+
+- Page locale belongs to one logical page and is unique per language.
+- Sections belong to a locale; elements belong to a section; values belong to an element.
+- Legacy `pages` records are linked without deleting or replacing them.
+- Foreign keys use restrictive deletion semantics; CMS deletion is soft-delete.
+- Existing `site_content`, `page_styles` and operational tables remain intact during gradual migration.
+- Default values are immutable through normal CMS operations.
+- Public delivery reads published values only.
+- Page publication snapshots and updates one selected page/language in one transaction.
+- Historical restoration copies a snapshot into Draft; it does not directly change published content.
+- A soft-deleted element remains visible on the public site until the next successful publication of its page/language, when it is excluded from the new snapshot.
+
+### Outstanding schema and environment gates
+
+1. User approval of the Stage 6 schema is still pending.
+2. Preview D1 migration history, actual table definitions, record counts and foreign-key checks have not yet been supplied/verified.
+3. Confirm SQLite/D1 JSON validation support and all referenced legacy columns before finalizing SQL.
+4. Finalize global-content publication and section deletion/restore semantics.
+5. Create an additive migration only after the schema is approved and Preview D1 is verified.
+
+Do not add these proposed tables to the applied migration inventory until a migration file exists and its application is verified independently in Preview and Production. Production migration requires separate explicit approval.
+
+See [CMS Admin UI and workflow specification](CMS_ADMIN_UI_WORKFLOW.md) for the editor workflow and [API Reference](API.md) for proposed endpoints.
