@@ -127,6 +127,7 @@ Never publish unconfirmed client names, project outcomes, prices or credentials.
 
 ## Developer documentation
 
+- [CMS Admin UI and workflow specification](docs/CMS_ADMIN_UI_WORKFLOW.md) — Stage 8 planning baseline; CMS is not implemented yet.
 - [Master ChatGPT project context](docs/CHATGPT_PROJECT_CONTEXT.md) — reusable project handover prompt covering objectives, architecture, features, status, pending work and working/release rules. Keep this document current; use it to start new project chats.
 
 The maintained technical documentation is in [`docs/`](docs/):
