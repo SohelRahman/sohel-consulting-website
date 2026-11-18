@@ -1,3 +1,10 @@
+## 2026-11-18 — Stage 9A CMS schema review
+- Reviewed the proposed seven-table CMS schema against existing page-builder, site-content, page-style, audit-log and RBAC migrations.
+- Recorded required revisions for section renderer compatibility, draft/published structure isolation, current published-version tracking and concurrency, structural audit coverage, section deletion/restoration, textarea compatibility and global-content publication.
+- Added `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md` and linked it from the database reference, master handover and README.
+- Review outcome: current proposed SQL is not approved for migration. User decision on global publication and Preview D1 verification remain pending.
+- Documentation-only update. No CMS code, migration, D1 data or Production resource was changed.
+
 ## 2026-11-18 — CMS planning documentation (Stages 6–8)
 - Added the Stage 8 CMS Admin Panel UI and workflow specification.
 - Recorded the user's confirmed Stage 7 decisions: page-and-language scoped publishing; automatic registration through approved CMS/page-builder workflows; historical restore into Draft; deleted elements removed publicly at the next successful page publication; gradual legacy integration.
