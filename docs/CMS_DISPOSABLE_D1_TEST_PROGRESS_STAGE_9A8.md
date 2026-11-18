@@ -94,11 +94,11 @@ The user created `chat_conversations` on the disposable D1 target. The supplied 
 
 **Checkpoint:** `chat_conversations` table DDL is verified from user-supplied D1 Console output. Migration 0007's `chat_messages` table DDL has also been supplied and matches the committed definition: `id` primary key; required `conversation_id` referencing `chat_conversations(id)` with `ON DELETE CASCADE`; `sender` constrained to `visitor`, `bot`, or `admin`; required `message`; and `created_at` defaulting to `CURRENT_TIMESTAMP. The user supplied the `idx_chat_conversations_status` definition, which matches the committed SQL (`chat_conversations(status, updated_at)`). The user supplied the `idx_chat_messages_conversation` definition, matching the committed SQL (`chat_messages(conversation_id, created_at)`). Both migration 0007 indexes are now verified.
 
-## 9. Migration 0008 — table verified; three indexes pending
+## 9. Migration 0008 — table and all indexes verified
 
 The user supplied the `analytics_events` table DDL from the disposable D1 target. It matches committed `migrations/0008_analytics.sql` in columns, primary key, required fields, event-name CHECK values, `referrer_host` default, device-type CHECK values/default, and `created_at` default. Formatting/whitespace differs only.
 
-**Checkpoint:** Migration 0008 table DDL is verified from user-supplied D1 Console output. The user supplied the `idx_analytics_events_created` definition, matching the committed SQL (`analytics_events(created_at)`). The user supplied the `idx_analytics_events_page` definition, matching committed SQL (`analytics_events(event_name,page_path,created_at)`). Only `idx_analytics_events_visitor` remains pending.
+**Checkpoint:** Migration 0008 table DDL is verified from user-supplied D1 Console output. The user supplied the `idx_analytics_events_created` definition, matching the committed SQL (`analytics_events(created_at)`). The user supplied the `idx_analytics_events_page` definition, matching committed SQL (`analytics_events(event_name,page_path,created_at)`). The user supplied the `idx_analytics_events_visitor` definition, matching committed SQL (`analytics_events(visitor_hash,created_at)`). All three indexes are verified.
 
 ## 10. Current checkpoint
 
@@ -124,35 +124,19 @@ The user supplied the `analytics_events` table DDL from the disposable D1 target
 - [x] Create and verify migration 0008's `analytics_events` table.
 - [x] Create and verify `idx_analytics_events_created`.
 - [x] Create and verify `idx_analytics_events_page`.
-- [ ] Create and verify `idx_analytics_events_visitor`.
+- [x] Create and verify `idx_analytics_events_visitor`.
 - [ ] Continue with migration 0009 in a controlled, individually verified batch.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 11. Next step — migration 0008 indexes
+## 11. Next step — migration 0009
 
-Both table definitions match the committed migration. The `analytics_events` table matches the committed migration. Create the final index on the disposable target only:
+Migration 0008 is complete on the disposable target based on user-supplied table and index definitions. Before creating migration 0009 objects, inspect the committed `migrations/0009_admin_rbac.sql` and execute its table and index statements individually on the disposable target. Verify each definition against the committed SQL. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
-```sql
-CREATE INDEX IF NOT EXISTS idx_analytics_events_visitor
-ON analytics_events(visitor_hash,created_at);
-```
-
-Verify it:
-
-```sql
-SELECT name, tbl_name, sql
-FROM sqlite_master
-WHERE type = 'index'
-  AND name = 'idx_analytics_events_visitor';
-```
-
-Do not proceed to migration 0009 until this index is verified. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
-
-## 10. Stop conditions
+## 12. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 11. Repository references
+## 13. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
