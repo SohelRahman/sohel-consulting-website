@@ -1,3 +1,10 @@
+## 2026-11-18 — Stage 9A.1–9A.2 revised CMS schema and integrity review
+- Added `docs/CMS_SCHEMA_TABLE_SPEC_STAGE_9A.md` with a complete proposed table-level definition for all seven CMS tables, including column types, nullability, defaults, checks, primary/foreign/unique keys, indexes, snapshot requirements and relationships.
+- Documented immutable published snapshots, page/language-scoped optimistic concurrency, same-locale publication pointer integrity, soft-delete/restore rules, `textarea` preservation, page-builder section types/configuration, legacy mapping and reuse of `audit_logs`.
+- Recorded Stage 9A.2 integrity findings and D1/SQLite compatibility gates. Confirmed Global Option A remains independently published for EN and BN.
+- Updated the database reference and Stage 9A review document. Documentation-only change on `current-focus-development`; no CMS code, migration SQL, D1 data, Preview deployment or Production resource was changed.
+- Next stage: Stage 9A.3 read-only Preview D1 verification. Schema approval and implementation remain pending.
+
 ## 2026-11-18 — Stage 9A global publication decision
 - Recorded the user's selection of Option A: Global English and Bangla content each have independent Draft, Preview, Publish and Version History workflows.
 - Revised the Stage 9A schema review and database reference: one logical Global page with separate locale records, independent publication/version pointers, isolated page/global publish operations, and public composition from the current published page and Global snapshots.
