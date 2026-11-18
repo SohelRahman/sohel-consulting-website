@@ -487,9 +487,11 @@ async function handleApi(request, env) {
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured. Add the three Cloudinary secrets to the Preview Worker."},503);
       const data=await request.json().catch(()=>({}));
       const purpose=data?.purpose==="syllabus"?"syllabus":"media";
-      const resourceType=purpose==="syllabus"?(data?.resourceType==="raw"?"raw":data?.resourceType==="image"?"image":""):"image";
-      if (!resourceType) return json({error:"Syllabus uploads must use the PDF or image resource type."},400);
-      const allowedFormats=purpose==="syllabus"?(resourceType==="raw"?"pdf":"jpg,png,webp"):"jpg,jpeg,png,webp,gif";
+      const fileType=data?.fileType==="pdf"?"pdf":data?.fileType==="image"?"image":"";
+      if (purpose==="syllabus" && !fileType) return json({error:"Syllabus uploads must be PDF or image files."},400);
+      // Cloudinary supports ordinary PDFs as image assets; raw is reserved for files such as password-protected PDFs.
+      const resourceType="image";
+      const allowedFormats=purpose==="syllabus"?(fileType==="pdf"?"pdf":"jpg,png,webp"):"jpg,jpeg,png,webp,gif";
       const bucket=purpose==="syllabus"?"syllabus-upload":"media-upload";
       if (!(await rateLimit(env,request,bucket+"-hour",10,60*60*1000))) return json({error:"Upload limit reached. Please try again later."},429);
       if (!(await rateLimit(env,request,bucket+"-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached. Please try again tomorrow."},429);
