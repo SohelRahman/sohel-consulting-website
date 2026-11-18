@@ -2,7 +2,7 @@
 
 > **Purpose:** This is the canonical handover prompt for continuing work on this repository in a new ChatGPT conversation. Read this file and the linked source documents before making project changes. Keep this file current as implementation, decisions, and release status change.
 >
-> **Last maintained:** 2026-11-16
+> **Last maintained:** 2026-11-18
 > **Latest status update:** User reports roadmap workstreams 2–6 (privacy/analytics, security, UI/UX, SEO/performance, business content) complete; full Preview QA and release administration remain open.  
 > **Repository:** `SohelRahman/sohel-consulting-website`  
 > **Active development branch:** `current-focus-development`
@@ -360,7 +360,7 @@ This is a user-provided project status update. The assistant has not independent
 
 ### Remaining verification and development work
 
-### Priority 1 — RBAC migration and role-based access verification
+### Priority 1 — Course syllabus upload Preview verification\n- Course administration now supports direct signed Cloudinary upload of PDF syllabus files (`raw/upload`) and JPG/PNG/WebP syllabus images (`image/upload`) into the existing `sohel-consulting` folder.\n- Upload limits are 10 MB for PDF and 3 MB for images in the browser; signature issuance is rate-limited to 10/hour and 40/day.\n- The uploaded Cloudinary `secure_url` is stored in the existing `courses.syllabus_url` field when the course is saved; no new migration is required.\n- English and Bangla course detail pages display the syllabus link; the Bangla course detail page also displays active discounts.\n- Existing Media Library image uploads now submit the signed `allowed_formats` field.\n- Source-contract checks and Preview browser upload tests remain to be verified after CI and deployment.\n\n### Priority 2 — RBAC migration and role-based access verification
 - Apply migration `0009_admin_rbac.sql` to the dedicated Preview D1 database only.
 - Sign in using the configured bootstrap `ADMIN_EMAIL` / `ADMIN_PASSWORD`; first successful login provisions the initial Admin account in `admin_users`.
 - Create a restricted User account and test every granted and denied module/action at both UI and API levels.
@@ -368,7 +368,7 @@ This is a user-provided project status update. The assistant has not independent
 - Verify Admin accounts receive full permissions and only Admin accounts can manage users/roles.
 - Existing signed-in sessions from the previous email-only session format must sign in again after this change.
 
-### Priority 2 — full Preview browser QA
+### Priority 3 — full Preview browser QA
 Full browser-based Preview QA has not been confirmed complete. Execute and record:
 - English and Bangla public pages.
 - Navigation, language switching, links, page metadata and images.
@@ -386,7 +386,7 @@ Full browser-based Preview QA has not been confirmed complete. Execute and recor
 
 Record actual evidence, browser/device, commit SHA, result and defects in the QA record. Do not mark manual tests passed because syntax CI is green.
 
-### Priority 3 — test automation depth
+### Priority 4 — test automation depth
 Current CI checks:
 ```sh
 node --input-type=module --check < src/worker.js
@@ -395,13 +395,13 @@ node scripts/validate-site.mjs
 ```
 These checks syntax and static site structure. They do not execute Worker routes or real browser flows. Assess and add practical tests for API payload validation, Worker route behavior, consent state transitions and core user journeys without introducing paid services.
 
-### Priority 4 — API documentation
+### Priority 5 — API documentation
 `docs/API.md` is only a route inventory. Gradually document exact request and response contracts from the actual Worker implementation, especially for registration, inquiry, admin, chat, analytics, media and custom-page routes.
 
-### Priority 5 — payments (deferred)
+### Priority 6 — payments (deferred)
 No payment gateway is connected. Do not implement a gateway or imply payment functionality without explicit scope approval. Future payment work requires provider selection, merchant onboarding, payment initiation, server-side verification, reconciliation, failure/refund handling, security review and updated policies.
 
-### Priority 6 — release administration
+### Priority 7 — release administration
 An authorized repository administrator still needs to verify/configure:
 - `main` branch protection/ruleset.
 - Development branch force-push/deletion protection.
