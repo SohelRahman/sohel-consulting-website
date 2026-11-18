@@ -428,6 +428,60 @@ async function handleApi(request, env) {
       await audit(env,session.email,"media_uploaded","media_asset",publicId,format+" "+bytes+" bytes");
       return json({ok:true,public_id:publicId},201);
     }
+    if (path === "/api/admin/media/delete" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
+        return json({error:"Cloudinary is not configured for image deletion."},503);
+      }
+      if (!(await rateLimit(env,request,"media-delete",10,60*60*1000))) {
+        return json({error:"Delete limit reached. Please try again later."},429);
+      }
+      const data=await request.json().catch(()=>null);
+      const publicId=clean(data?.public_id,255);
+      if (!publicId || !/^[a-zA-Z0-9_./-]+$/.test(publicId) ||
+          !publicId.startsWith("sohel-consulting/") ||
+          publicId.split("/").some(part=>!part || part==="." || part==="..")) {
+        return json({error:"Invalid image identifier."},400);
+      }
+      const existing=await env.DB.prepare("SELECT public_id FROM media_assets WHERE public_id=?").bind(publicId).first();
+      if (!existing) return json({error:"Image not found in the media library."},404);
+
+      const timestamp=Math.floor(Date.now()/1000);
+      const params={invalidate:"true",public_id:publicId,timestamp};
+      const signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET);
+      const form=new FormData();
+      form.set("api_key",env.CLOUDINARY_API_KEY);
+      form.set("timestamp",String(timestamp));
+      form.set("public_id",publicId);
+      form.set("invalidate","true");
+      form.set("signature",signature);
+
+      let cloudinaryResult;
+      try {
+        const response=await fetch(
+          "https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/image/destroy",
+          {method:"POST",body:form}
+        );
+        cloudinaryResult=await response.json().catch(()=>null);
+        if (!response.ok || !["ok","not found"].includes(cloudinaryResult?.result)) {
+          return json({
+            error:cloudinaryResult?.error?.message || "Cloudinary could not delete this image.",
+            cloudinaryResult:cloudinaryResult?.result || "unknown"
+          },502);
+        }
+      } catch {
+        return json({error:"Could not reach Cloudinary. The media library record was not changed."},502);
+      }
+
+      try {
+        const removed=await env.DB.prepare("DELETE FROM media_assets WHERE public_id=?").bind(publicId).run();
+        if (!removed.meta.changes) return json({error:"Cloudinary image was deleted, but its media library record could not be confirmed."},503);
+      } catch {
+        return json({error:"Cloudinary image was deleted, but the media library record could not be removed. Retry this deletion to synchronize the library."},503);
+      }
+      await audit(env,session.email,"media_deleted","media_asset",publicId,"Cloudinary result: "+cloudinaryResult.result);
+      return json({ok:true,public_id:publicId,cloudinary_result:cloudinaryResult.result});
+    }
     if (path === "/api/admin/media/signature" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured. Add the three Cloudinary secrets to the Preview Worker."},503);
