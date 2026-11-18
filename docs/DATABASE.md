@@ -201,3 +201,14 @@ The user supplied the complete Preview D1 CMS table definitions, named indexes, 
 All seven CMS foreign-key relationships have now been verified from the supplied DDL and individual PRAGMA outputs. All use `ON DELETE RESTRICT` and `ON UPDATE NO ACTION`.
 
 The new Stage 9A.5 document is a design specification only. Migration provenance remains unresolved, and exact executable migration SQL is intentionally withheld pending preflight and D1 compatibility testing. No migration, application code, Preview deployment or Production resource was changed.
+
+
+## Stage 9A.6 provenance and feasibility review — 2026-11-18
+
+See [CMS Migration Provenance and Technical Feasibility Review — Stage 9A.6](CMS_PROVENANCE_FEASIBILITY_REVIEW_STAGE_9A6.md).
+
+The inspected development-branch recursive tree contains migrations `0001`–`0011` and no dedicated CMS schema migration. The inspected Preview diagnostic workflows are read-only; the Preview migration workflow applies all pending files from the migrations directory. The origin of the seven CMS tables remains unresolved.
+
+The last user-supplied Preview migration history listed only `0001`–`0009`, while repository migrations `0010` and `0011` are present. Do not run the current Preview migration workflow until their application state and course-data effects are reconciled. Migration `0011` updates matching Cloudinary PDF syllabus URLs.
+
+Official D1 documentation supports foreign-key deferral and transactional batches, but the exact element-table rebuild and same-locale published-version constraint must be tested on a disposable D1 database. No migration SQL or database changes were made.
