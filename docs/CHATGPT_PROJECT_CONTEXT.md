@@ -561,3 +561,14 @@ Detailed contract: `docs/CMS_SCHEMA_REVIEW_STAGE_9A.md`. The schema remains unap
 - All seven CMS foreign-key relationships were confirmed from user-supplied individual PRAGMA results and DDL; delete behavior is RESTRICT.
 - Migration provenance remains unresolved. The specification is documentation-only; exact executable migration SQL is withheld until provenance/preflight and D1 compatibility tests are complete.
 - No CMS code, migration, D1 data, Preview deployment or Production resource was changed. Continue on `current-focus-development`; Production remains excluded.
+
+
+### Stage 9A.6 — migration provenance and technical feasibility (2026-11-18)
+
+- Inspected the full recursive file tree, visible branch commit history, migration directory, Wrangler D1 configuration, Preview migration workflow and Preview diagnostic workflows.
+- No tracked CMS schema migration was found in `current-focus-development`; diagnostic workflows inspected schema/used `EXPLAIN` and did not create CMS tables. CMS table provenance remains unresolved.
+- The user-supplied Preview migration history listed `0001`–`0009`; repository migrations `0010` and `0011` are present. The current Preview migration workflow applies all pending migration files, not only a newly added CMS migration. Migration `0011` updates matching Cloudinary PDF syllabus URLs. Do not run the workflow until migration state and course data effects are reconciled.
+- Reviewed current Cloudflare D1 documentation: foreign keys are enforced; `PRAGMA defer_foreign_keys` is available; D1 batch operations are transactional; Wrangler documents rollback on a failed migration and a backup after applying migrations.
+- Technical gates: safely extend the existing `cms_content_elements.content_type` CHECK to support `textarea`; preserve child foreign keys during any table rebuild; enforce same-locale current-version pointer integrity at database level; test atomic publication and rollback on disposable D1.
+- Added `docs/CMS_PROVENANCE_FEASIBILITY_REVIEW_STAGE_9A6.md`.
+- Read-only review only. No migration SQL, D1 data, application code, Preview deployment or Production resource was changed.
