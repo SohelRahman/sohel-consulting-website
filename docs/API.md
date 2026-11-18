@@ -53,7 +53,7 @@ User accounts can be assigned granular module permissions. A manage permission a
 | GET | `/api/admin/inquiries` | List inquiries |
 | PATCH | `/api/admin/inquiries/:id` | Update inquiry |
 | GET, POST | `/api/admin/media` | List media and create media records |
-| POST | `/api/admin/media/signature` | Generate signed media-upload parameters |
+| POST | `/api/admin/media/signature` | Generate signed Cloudinary upload parameters for Media Library images or course syllabus PDFs/images |
 | GET, POST | `/api/admin/pages` | List and create custom pages |
 | PUT, DELETE | `/api/admin/pages/:slug` | Update or delete custom page |
 | GET | `/api/admin/pages/:slug/preview` | Preview a draft page |
@@ -63,6 +63,14 @@ User accounts can be assigned granular module permissions. A manage permission a
 | GET | `/api/admin/chat/conversations` | List chat conversations |
 | GET, POST | `/api/admin/chat/conversations/:id` | Read conversation or perform supported admin action |
 | GET | `/api/admin/analytics` | Analytics summary/reporting data |
+
+### Cloudinary syllabus upload
+
+- The authenticated, same-origin `POST /api/admin/media/signature` endpoint accepts `{ "purpose": "syllabus", "resourceType": "raw" }` for PDF files or `{ "purpose": "syllabus", "resourceType": "image" }` for JPG/PNG/WebP images.
+- The response contains the Cloudinary cloud name, API key, timestamp, folder, signature, resource type and allowed formats. The browser uploads directly to Cloudinary using that signed response.
+- Syllabus files use the existing `sohel-consulting` folder and the Preview API key's folder permission. PDF uses Cloudinary `raw/upload`; images use `image/upload`.
+- The returned `secure_url` is saved to the course's existing `syllabus_url` field through `POST /api/admin/courses` or `PATCH /api/admin/courses/:id`. No additional D1 migration is required.
+- Syllabus upload limits: 10 MB for PDFs and 3 MB for images in the browser; server-side signing is rate-limited to 10/hour and 40/day per the existing rate-limit mechanism.
 
 ## General behavior
 
