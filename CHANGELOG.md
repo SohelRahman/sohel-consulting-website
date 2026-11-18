@@ -106,3 +106,11 @@ All notable project changes should be recorded here. Entries describe repository
 - Documented Production release gates, database migration controls, rollback and hotfix procedures.
 - Added release governance checks to the deployment checklist and README index.
 - Updated the Production deployment workflow to target the GitHub Environment named `production`; required reviewers and branch restrictions still need to be configured in repository settings.
+## 2026-11-18 — Stage 9A.5 final CMS migration specification
+
+- Added `docs/CMS_MIGRATION_SPECIFICATION_STAGE_9A5.md` with the verified Preview CMS schema, named indexes, all seven foreign-key relationships, legacy content mapping, target publication controls, migration phases, recovery plan, validation SQL and Preview acceptance criteria.
+- Recorded Preview baseline: legacy `pages=1`, `site_content=4`, `page_styles=1`; all seven CMS tables are empty.
+- Recorded legacy mapping: Corporate Training remains Draft with no published JSON; four published homepage hero values map to Home EN, including preservation of the `textarea` type; homepage styles remain in `page_styles`; homepage-specific content is not Global content.
+- Confirmed all seven CMS foreign-key relationships from individual Preview PRAGMA outputs and table DDL. Existing delete behavior is `RESTRICT`.
+- Migration provenance remains unresolved. The specification is not executable migration SQL and does not authorize a migration.
+- Documentation-only change on `current-focus-development`. No CMS code, migration SQL, D1 data, Preview deployment or Production resource was changed.
