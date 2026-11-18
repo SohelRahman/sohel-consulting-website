@@ -6,5 +6,7 @@
 - Verified migration 0004's `page_styles` table DDL against the committed migration using user-supplied D1 Console output.
 - Verified migration 0005's `pages` table DDL and `idx_pages_status_slug` index against the committed migration.
 - Verified migration 0006's `media_assets` table DDL and `idx_media_assets_created` index against the committed migration.
-- Verified migration 0007's `chat_conversations` table DDL against the committed migration; `chat_messages` DDL and its `ON DELETE CASCADE` foreign key are verified; both migration 0007 chat indexes are verified against the committed migration.
+- Verified migration 0007's `chat_conversations` and `chat_messages` table DDL, the `ON DELETE CASCADE` foreign key, and both chat indexes against the committed migration.
+- Verified migration 0008's `analytics_events` table DDL and all three indexes (`idx_analytics_events_created`, `idx_analytics_events_page`, `idx_analytics_events_visitor`) against the committed migration from user-supplied D1 Console output.
+- Next: inspect and individually execute/verify migration 0009 on the disposable D1 target only.
 - Documentation-only repository changes. No migration 0004 or later, Preview or Production database mutation, application code change, or deployment was performed.
