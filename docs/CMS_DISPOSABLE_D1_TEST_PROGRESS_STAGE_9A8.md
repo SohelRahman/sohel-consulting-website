@@ -98,7 +98,7 @@ The user created `chat_conversations` on the disposable D1 target. The supplied 
 
 The user supplied the `analytics_events` table DDL from the disposable D1 target. It matches committed `migrations/0008_analytics.sql` in columns, primary key, required fields, event-name CHECK values, `referrer_host` default, device-type CHECK values/default, and `created_at` default. Formatting/whitespace differs only.
 
-**Checkpoint:** Migration 0008 table DDL is verified from user-supplied D1 Console output. Three indexes remain pending: `idx_analytics_events_created`, `idx_analytics_events_page`, and `idx_analytics_events_visitor`.
+**Checkpoint:** Migration 0008 table DDL is verified from user-supplied D1 Console output. The user supplied the `idx_analytics_events_created` definition, matching the committed SQL (`analytics_events(created_at)`). Two indexes remain pending: `idx_analytics_events_page` and `idx_analytics_events_visitor`.
 
 ## 10. Current checkpoint
 
@@ -122,17 +122,19 @@ The user supplied the `analytics_events` table DDL from the disposable D1 target
 - [x] Create and verify `idx_chat_conversations_status`.
 - [x] Create and verify `idx_chat_messages_conversation`.
 - [x] Create and verify migration 0008's `analytics_events` table.
-- [ ] Create and verify migration 0008's three indexes individually.
+- [x] Create and verify `idx_analytics_events_created`.
+- [ ] Create and verify `idx_analytics_events_page`.
+- [ ] Create and verify `idx_analytics_events_visitor`.
 - [ ] Continue with migration 0009 in a controlled, individually verified batch.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
 ## 11. Next step — migration 0008 indexes
 
-Both table definitions match the committed migration. The `analytics_events` table matches the committed migration. Create the first index on the disposable target only:
+Both table definitions match the committed migration. The `analytics_events` table matches the committed migration. Create the second index on the disposable target only:
 
 ```sql
-CREATE INDEX IF NOT EXISTS idx_analytics_events_created
-ON analytics_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_page
+ON analytics_events(event_name,page_path,created_at);
 ```
 
 Verify it:
@@ -141,10 +143,10 @@ Verify it:
 SELECT name, tbl_name, sql
 FROM sqlite_master
 WHERE type = 'index'
-  AND name = 'idx_analytics_events_created';
+  AND name = 'idx_analytics_events_page';
 ```
 
-Do not create the next index until this one is verified. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+Do not create the final index until this one is verified. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
 ## 10. Stop conditions
 
