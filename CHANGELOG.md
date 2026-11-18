@@ -1,3 +1,10 @@
+## 2026-11-18 — Stage 9A.3 Preview D1 evidence review (partial)
+- Recorded user-supplied Preview query results: foreign-key enforcement returned 1, no foreign-key violation rows were displayed, and legacy row counts were pages=1, site_content=4, page_styles=1.
+- Identified that all seven CMS tables already exist in Preview D1 even though the current development-branch migration directory contains no CMS migration file (migrations 0001–0011 only). The d1_migrations result was not supplied, so the origin/applied migration history remains unknown.
+- Compared actual Preview CMS definitions with the proposed Stage 9A schema and documented material differences: missing section renderer type/configuration, missing textarea content type, mutable published_value, and missing locale draft/publication revisions/current published pointer, among other field-name/version-history differences.
+- Stage 9A.3 remains partially verified. Do not apply the proposed schema as fresh-table DDL or drop/replace Preview CMS tables. Obtain migration history and inspect CMS data and Worker/API dependencies before proposing a compatibility migration.
+- Documentation-only update; no D1 data, CMS code, migration or Production resource was changed.
+
 ## 2026-11-18 — Stage 9A.4 final CMS schema review
 - Added `docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md` with the final design review of the seven-table additive CMS model, publication/concurrency invariants, legacy compatibility conditions and remaining implementation gates.
 - Accepted the seven-table model as the design direction, subject to Preview D1 evidence review and final route, Global fallback/cache and D1 transaction/FK decisions. The schema is not approved for migration.
