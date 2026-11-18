@@ -157,3 +157,21 @@ The design retains the seven-table additive model and includes the confirmed ind
 **Status:** Design proposal only; not approved for migration. No migration SQL was created, no CMS code was changed and no D1 database was accessed or modified. Stage 9A.2 identified remaining verification gates for the same-locale published-version pointer, deferred/cyclic foreign-key behavior, D1 JSON validation and transaction semantics, route uniqueness, Global pre-first-publication fallback/cache invalidation, and actual legacy data.
 
 **Next:** Stage 9A.3 — read-only verification of the dedicated Preview D1 migration history, schema, row counts and foreign-key integrity. Production must not be accessed.
+
+
+## Stage 9A.4 — final CMS schema review
+
+The seven-table additive CMS model is conditionally accepted as the design direction. It is **not approved for executable migration SQL**.
+
+The review records mandatory controls for immutable published snapshots, Draft/public isolation, atomic publication and optimistic concurrency, soft-delete/restore, legacy/page-builder compatibility, server-side authorization, reuse of `audit_logs`, and the confirmed independent Global EN/BN publication model.
+
+The four Stage 9A.3 Preview D1 queries were reported as successfully executed, but their result sets have not been reviewed. Actual Preview migration history, table definitions, row counts and foreign-key integrity therefore remain unverified. Successful query execution is not evidence that the database matches the repository migrations.
+
+Outstanding gates:
+- Inspect the four Preview query result sets.
+- Verify D1 JSON validation and transaction behavior and finalize same-locale published-version pointer enforcement.
+- Confirm Worker route uniqueness/redirect behavior.
+- Define the safe Global pre-first-publication fallback and matching-locale cache invalidation.
+- Obtain explicit user approval in Stage 9A.5 before creating or applying a CMS migration.
+
+See [Stage 9A.4 Final CMS Schema Review](CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md). No CMS migration or implementation has been created; no D1 database or Production resource was modified.
