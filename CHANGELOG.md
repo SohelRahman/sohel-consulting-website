@@ -10,5 +10,7 @@
 - Verified migration 0008's `analytics_events` table DDL and all three indexes (`idx_analytics_events_created`, `idx_analytics_events_page`, `idx_analytics_events_visitor`) against the committed migration from user-supplied D1 Console output.
 - Verified migration 0009's `admin_users` table DDL and `idx_admin_users_role_active` index against committed SQL from user-supplied D1 Console output.
 - Migrations 0001–0009 have been reconstructed and verified against committed SQL on the disposable target. The manual process did not create or update `d1_migrations` entries.
+- Applied and verified migration 0010 from the clean starting schema on the confirmed disposable target. All five expected columns and definitions are present; the course count remained 3; `discount_type` is populated for all three rows; `syllabus_url` is NULL for all three.
+- Next: test migration 0011's `syllabus_file_url` addition and Cloudinary PDF URL transfer with synthetic data.
 - Next: follow the Stage 9A.7 plan for isolated 0010/0011 compatibility scenarios and CMS schema tests on the disposable target.
 - Documentation-only repository changes. No migration 0004 or later, Preview or Production database mutation, application code change, or deployment was performed.
