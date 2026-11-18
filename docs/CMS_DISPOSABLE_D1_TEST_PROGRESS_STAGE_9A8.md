@@ -55,7 +55,7 @@ The supplied `sqlite_master` output confirmed:
 
 **Checkpoint:** Migration 0002's table and index definitions are verified from user-supplied D1 Console output.
 
-## 4. Migration 0003 — seed records verified; table DDL pending
+## 4. Migration 0003 — verified
 
 The user applied the table creation and seed statements from committed `migrations/0003_site_content.sql`.
 
@@ -66,9 +66,9 @@ The supplied SELECT returned all four expected records, with `published = 1`:
 - `home.hero.note` — `text`
 - `home.hero.title` — `text`
 
-This confirms the four seed keys, content types, and published flags. The actual `site_content` table DDL has not yet been supplied for comparison against migration 0003.
+This confirms the four seed keys, content types, and published flags. The user then supplied the `sqlite_master` table definition. It matches the committed migration 0003 definition: primary key `content_key`; required `content_value`; `content_type` default `text` constrained to `text`, `textarea`, and `url`; `published` default `1` constrained to `0` or `1`; and `updated_at` default `CURRENT_TIMESTAMP.
 
-**Next check:** retrieve the `site_content` table definition from `sqlite_master`. Do not proceed to migration 0004 until it matches the committed migration.
+**Checkpoint:** Migration 0003 table DDL and seed records are verified from user-supplied D1 Console outputs.
 
 ## 5. Current checkpoint
 
@@ -82,16 +82,41 @@ This confirms the four seed keys, content types, and published flags. The actual
 - [x] Create and verify migration 0002's `rate_limits` table.
 - [x] Verify migration 0002's `idx_rate_limits_expiry` index.
 - [x] Verify the four migration 0003 seed keys, content types, and published flags.
-- [ ] Compare `site_content` table DDL with migration 0003.
+- [x] Compare `site_content` table DDL with migration 0003.
 - [ ] Apply and verify migration 0004 on the disposable database.
 - [ ] Continue with migrations 0005–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 6. Stop conditions
+## 6. Next step — migration 0004
+
+Committed `migrations/0004_page_styles.sql` contains one table creation statement. On the verified disposable target only, execute:
+
+```sql
+CREATE TABLE IF NOT EXISTS page_styles (
+  element_key TEXT PRIMARY KEY,
+  draft_json TEXT NOT NULL,
+  published_json TEXT,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  published_at TEXT
+);
+```
+
+Then verify the created table definition:
+
+```sql
+SELECT name, sql
+FROM sqlite_master
+WHERE type = 'table'
+  AND name = 'page_styles';
+```
+
+Do not proceed to migration 0005 until the returned DDL is compared with committed migration 0004. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+
+## 7. Stop conditions
 
 Stop and investigate if a table definition, seed record, or index differs from the committed migration, a foreign-key check fails, or the target database identity is uncertain. Do not proceed to 0010/0011 or CMS tests until migrations 0001–0009 are reconstructed and verified.
 
-## 7. Repository references
+## 8. Repository references
 
 - [Migration 0001](../migrations/0001_initial_schema.sql)
 - [Migration 0002](../migrations/0002_rate_limits.sql)
