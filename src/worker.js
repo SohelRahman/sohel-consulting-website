@@ -531,6 +531,32 @@ async function handleApi(request, env) {
       await audit(env,session.email,"course_created","course",courseId,slug);
       return json({ok:true,id:courseId},201);
     }
+    const courseSyllabusDeleteMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)\/syllabus-file$/);
+    if (courseSyllabusDeleteMatch && method === "DELETE") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured for syllabus deletion."},503);
+      const course=await env.DB.prepare("SELECT id,syllabus_file_url FROM courses WHERE id=?").bind(courseSyllabusDeleteMatch[1]).first();
+      if (!course) return json({error:"Course not found."},404);
+      if (!course.syllabus_file_url) return json({ok:true,deleted:false});
+      let publicId="";
+      try {
+        const assetUrl=new URL(course.syllabus_file_url),parts=assetUrl.pathname.split("/").filter(Boolean);
+        if (assetUrl.hostname!=="res.cloudinary.com" || parts[0]!==env.CLOUDINARY_CLOUD_NAME) throw new Error();
+        const uploadIndex=parts.indexOf("upload");if(uploadIndex<0)throw new Error();
+        let assetParts=parts.slice(uploadIndex+1);if(assetParts[0]&&/^v\\d+$/.test(assetParts[0]))assetParts=assetParts.slice(1);
+        if(!assetParts.length)throw new Error();
+        const last=assetParts.length-1;assetParts[last]=assetParts[last].replace(/\\.[a-zA-Z0-9]+$/,"");publicId=assetParts.join("/");
+        if(!publicId.startsWith("sohel-consulting/")||!/^[a-zA-Z0-9_./-]+$/.test(publicId)||publicId.split("/").some(part=>!part||part==="."||part===".."))throw new Error();
+      } catch { return json({error:"The saved syllabus URL is not a valid Cloudinary asset in the approved folder. The course record was not changed."},400); }
+      const timestamp=Math.floor(Date.now()/1000),params={invalidate:"true",public_id:publicId,timestamp},signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET),form=new FormData();
+      form.set("api_key",env.CLOUDINARY_API_KEY);form.set("timestamp",String(timestamp));form.set("public_id",publicId);form.set("invalidate","true");form.set("signature",signature);
+      let result;
+      try {const response=await fetch("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/image/destroy",{method:"POST",body:form});result=await response.json().catch(()=>null);if(!response.ok||!["ok","not found"].includes(result?.result))return json({error:result?.error?.message||"Cloudinary could not delete the uploaded syllabus. The course record was not changed."},502);}
+      catch{return json({error:"Could not reach Cloudinary. The course record was not changed."},502);}
+      const updated=await env.DB.prepare("UPDATE courses SET syllabus_file_url=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND syllabus_file_url=?").bind(course.id,course.syllabus_file_url).run();
+      if(!updated.meta.changes)return json({error:"The Cloudinary file was deleted, but the course record changed concurrently. Refresh the course list."},409);
+      await audit(env,session.email,"course_syllabus_deleted","course",course.id,publicId);return json({ok:true,public_id:publicId});
+    }
     const courseEditMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)$/);
     if (courseEditMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
