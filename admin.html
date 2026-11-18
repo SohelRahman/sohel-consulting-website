@@ -103,6 +103,35 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 let editingCourseId=null;
 function resetCourseForm(){const f=$('#course-form');f.reset();editingCourseId=null;$('#course-submit').textContent='Add course';$('#course-cancel-edit').classList.add('hidden');$('#course-message').textContent='';}
 $('#course-cancel-edit').addEventListener('click',resetCourseForm);
+
+$('#course-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const form=e.currentTarget,button=$('#course-submit'),message=$('#course-message');
+ const data=Object.fromEntries(new FormData(form));
+ data.fixedFee=data.fixedFee||'';
+ data.discountValue=data.discountValue||'';
+ data.syllabusUrl=data.syllabusUrl||'';
+ data.syllabusFileUrl=data.syllabusFileUrl||'';
+ button.disabled=true;
+ message.textContent=editingCourseId?'Updating course…':'Adding course…';
+ try{
+  const isEditing=Boolean(editingCourseId);
+  await api(isEditing?'/api/admin/courses/'+encodeURIComponent(editingCourseId):'/api/admin/courses',{
+   method:isEditing?'PATCH':'POST',
+   body:JSON.stringify(data)
+  });
+  message.textContent=isEditing?'Course updated successfully.':'Course added successfully.';
+  resetCourseForm();
+  await loadDashboard();
+  setAdminView('courses');
+  $('#course-message').textContent=isEditing?'Course updated successfully.':'Course added successfully.';
+ }catch(error){
+  message.textContent='Could not save course: '+error.message;
+ }finally{
+  button.disabled=false;
+ }
+});
+
 async function loadPageStyles(){try{const d=await api('/api/admin/page-styles'),rows=d.styles||[];$('#style-list').innerHTML=rows.length?'<table class="admin-table"><thead><tr><th>Element</th><th>Draft</th><th>Published</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.element_key)+'</td><td>'+(x.draft?'Saved':'—')+'</td><td>'+(x.published?'Published':'Not published')+'</td></tr>').join('')+'</tbody></table>':'<p class="admin-message">No style settings saved yet.</p>';const row=rows.find(x=>x.element_key===$('#style-form').elements.key.value),s=row?.draft||row?.published;if(s){const f=$('#style-form');f.elements.color.value=s.color||'#eef4fb';f.elements.backgroundColor.value=s.backgroundColor&&s.backgroundColor!=='transparent'?s.backgroundColor:'#081629';f.elements.fontSize.value=parseInt(s.fontSize)||16;f.elements.mobileFontSize.value=parseInt(s.mobileFontSize)||16;f.elements.fontWeight.value=s.fontWeight||'400';f.elements.textAlign.value=s.textAlign||'left';f.elements.maxWidth.value=s.maxWidth||'100%';}}catch(e){$('#style-list').textContent=e.message;}}
 async function savePageStyle(publish){const f=$('#style-form'),v=Object.fromEntries(new FormData(f));v.style={color:v.color,backgroundColor:v.backgroundColor,fontSize:Number(v.fontSize)+'px',mobileFontSize:Number(v.mobileFontSize)+'px',fontWeight:v.fontWeight,textAlign:v.textAlign,maxWidth:v.maxWidth};v.publish=publish;try{await api('/api/admin/page-styles',{method:'POST',body:JSON.stringify(v)});$('#style-message').textContent=publish?'Style published.':'Draft saved. The public website is unchanged.';await loadPageStyles();}catch(e){$('#style-message').textContent=e.message;}}
 $('#style-save-draft').addEventListener('click',()=>savePageStyle(false));$('#style-publish').addEventListener('click',()=>savePageStyle(true));$('#style-form').elements.key.addEventListener('change',loadPageStyles);
