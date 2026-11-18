@@ -211,3 +211,10 @@ The seven-table design remains. Global content is not an eighth table and is not
 **Caching:** A successful Global publish must invalidate/revalidate cached public responses that include that Global language. Exact cache mechanism must be confirmed against the current Worker/Cloudflare delivery path before implementation.
 
 This is a schema contract revision, not final SQL. Key types, composite uniqueness, foreign-key shape and transaction statements still require the final table-level design review.
+
+
+## Stage 9A.1–9A.2 — revised schema and integrity review completed
+
+The seven-table CMS model now has a detailed proposed table-level definition in [CMS_SCHEMA_TABLE_SPEC_STAGE_9A.md](CMS_SCHEMA_TABLE_SPEC_STAGE_9A.md). The specification covers every table's columns and constraints, relationship model, indexes, immutable page snapshots, optimistic concurrency, soft-delete/restore behavior, Global Option A isolation, legacy mapping and Preview-only compatibility gates.
+
+Stage 9A.2 recorded integrity findings, including the need to ensure a locale cannot point to another locale's published version, atomic conditional publication, independent child deletion state, safe audit attribution, route compatibility, and verification of D1 JSON/deferred-FK/transaction behavior. The specification remains **not approved for migration**. Preview D1 state is still unverified. No migration, CMS implementation or database operation was performed.
