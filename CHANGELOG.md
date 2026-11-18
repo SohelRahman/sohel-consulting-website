@@ -8,5 +8,7 @@
 - Verified migration 0006's `media_assets` table DDL and `idx_media_assets_created` index against the committed migration.
 - Verified migration 0007's `chat_conversations` and `chat_messages` table DDL, the `ON DELETE CASCADE` foreign key, and both chat indexes against the committed migration.
 - Verified migration 0008's `analytics_events` table DDL and all three indexes (`idx_analytics_events_created`, `idx_analytics_events_page`, `idx_analytics_events_visitor`) against the committed migration from user-supplied D1 Console output.
-- Next: inspect and individually execute/verify migration 0009 on the disposable D1 target only.
+- Verified migration 0009's `admin_users` table DDL and `idx_admin_users_role_active` index against committed SQL from user-supplied D1 Console output.
+- Migrations 0001–0009 have been reconstructed and verified against committed SQL on the disposable target. The manual process did not create or update `d1_migrations` entries.
+- Next: follow the Stage 9A.7 plan for isolated 0010/0011 compatibility scenarios and CMS schema tests on the disposable target.
 - Documentation-only repository changes. No migration 0004 or later, Preview or Production database mutation, application code change, or deployment was performed.
