@@ -76,11 +76,11 @@ The user created `page_styles` on the disposable D1 target using the statement i
 
 **Checkpoint:** Migration 0004 table DDL is verified from user-supplied D1 Console output.
 
-## 6. Migration 0005 — table verified; index pending
+## 6. Migration 0005 — verified
 
 The user created the `pages` table on the disposable D1 target. The supplied `sqlite_master` DDL matches committed `migrations/0005_pages.sql`, including the primary key, unique slug, EN/BN language constraint, draft/published status constraint, required `draft_json`, nullable `published_json`, SEO defaults, timestamps, and nullable `published_at`.
 
-**Checkpoint:** Migration 0005 table DDL is verified from user-supplied D1 Console output. The migration's `idx_pages_status_slug` index has not yet been created or verified.
+**Checkpoint:** Migration 0005 table DDL and `idx_pages_status_slug` index are verified from user-supplied D1 Console outputs. The index definition is `CREATE INDEX idx_pages_status_slug ON pages(status,slug)`.
 
 ## 7. Current checkpoint
 
@@ -97,28 +97,15 @@ The user created the `pages` table on the disposable D1 target. The supplied `sq
 - [x] Compare `site_content` table DDL with migration 0003.
 - [x] Apply and verify migration 0004 on the disposable database.
 - [x] Create and verify migration 0005's `pages` table.
-- [ ] Create and verify migration 0005's `idx_pages_status_slug` index.
+- [x] Create and verify migration 0005's `idx_pages_status_slug` index.
 - [ ] Continue with migrations 0006–0009 in controlled, individually verified batches.
 - [ ] Only then begin the planned 0010/0011 compatibility scenarios and CMS schema tests.
 
-## 8. Next step — migration 0005 index
+## 8. Next step — migration 0006
 
-The `pages` table matches the committed migration. Create the remaining index on the disposable target only:
+Inspect committed `migrations/0006_cloudinary_media.sql` and apply its exact statements on the disposable target in manageable chunks. Verify every table, index, and constraint against the migration before continuing. Do not guess the schema.
 
-```sql
-CREATE INDEX IF NOT EXISTS idx_pages_status_slug ON pages(status,slug);
-```
-
-Then verify it:
-
-```sql
-SELECT name, tbl_name, sql
-FROM sqlite_master
-WHERE type = 'index'
-  AND name = 'idx_pages_status_slug';
-```
-
-Do not proceed to migration 0006 until the returned index definition matches the committed migration. This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
+This instruction is limited to the disposable test database; it is not approval to mutate Preview or Production.
 
 ## 9. Stop conditions
 
