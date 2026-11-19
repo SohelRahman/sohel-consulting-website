@@ -136,3 +136,5 @@
 - Admin account edits now increment `session_version`, revoking the target account's existing sessions after role, permission, active-state or password changes.
 - Account disable now increments `session_version` together with setting `is_active=0`, so re-enabling an account does not revive a previously issued session.
 - Added RBAC source-contract assertions for both paths. CI and Preview live-session acceptance remain pending. No migration or Production change was made.
+
+- Development CI run `44638857897` passed all automated checks for the Admin session-revocation contract commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`; live Preview session tests remain pending.
