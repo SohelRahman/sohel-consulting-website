@@ -150,3 +150,8 @@ Record test evidence using the existing Test evidence format above. Do not mark 
 - [ ] Test keyboard access, focus order, close action, status announcements and narrow mobile viewport for the inline panel.
 
 Record browser, viewport, Preview deployment commit SHA and screenshots/results. These tests are currently pending; a commit or CI pass is not a substitute for browser verification.
+
+
+## Course pricing automated tests
+
+The development workflow runs `node scripts/test-course-pricing.mjs`. It covers no discount, percentage and fixed discounts, percentage rounding, 100% discounts, inclusive date boundaries, invalid calendar dates, reversed date ranges, invalid discount values and consistency contracts across the Worker, English/Bangla course pages and Admin registration fee display. These checks do not replace Preview API and browser acceptance tests.

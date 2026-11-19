@@ -42,3 +42,13 @@
 - Seed page title, SEO and section content keys when custom pages are created or their structure is saved.
 - Render published CMS values on public custom pages and draft CMS values in authenticated previews.
 - Preserve existing CMS records when page structure is saved; delete associated CMS records and history when a custom page is deleted.
+
+
+## 2026-11-19 — Course discount and registration-fee consistency
+
+- Added a shared pricing module so public course display and registration persistence use the same integer-minor-unit calculation.
+- Public course API now returns the active discount, discount amount and final fee; English and Bangla course pages display these server-calculated values.
+- Centralized discount validation for course creation and updates, including real calendar-date checks, inclusive date windows, whole-number percentage discounts and safe discount bounds.
+- Preserved custom-quotation behavior and made zero-fee registrations visible in the Admin registration list.
+- Added course-pricing unit and integration-contract tests to the development CI workflow.
+- Preview deployment, API/browser acceptance and registration persistence checks remain pending. No D1 migration or Production change was made.

@@ -165,7 +165,7 @@ Before starting new implementation:
 
 ## 11. Next development item — course discount and registration fee consistency
 
-**Status: Planned / investigation not yet started.**
+**Status: Implemented and committed on development; automated CI and Preview acceptance pending.**
 
 User identified this item for the next development cycle:
 - Test discount calculation, display, and registration fee consistency.
@@ -187,8 +187,29 @@ User identified this item for the next development cycle:
 - Tests cover calculation, display data, registration persistence, and relevant edge cases.
 - No Production resources or data are changed.
 
-### Investigation notes
-- Actual supported discount fields, formula, currency, rounding rules, and registration fee behavior are **not yet verified**. Inspect the current development branch and migrations before deciding implementation details.
+### Investigation findings and implementation
+- Existing schema supports `none`, `percentage` and `fixed` discounts. Fixed discounts are stored in minor currency units; percentages are whole numbers.
+- The former registration API calculated the fee server-side, but English and Bangla course pages independently calculated the display amount. Percentage rounding could differ.
+- Added `src/course-pricing.js` as the shared price-calculation and discount-validation module.
+- Public `GET /api/courses` now returns `discount_active`, `discount_amount_minor` and `final_fee_minor`. Both course detail pages display these server-calculated values.
+- Registration submission uses the same helper before persisting `quoted_fee_minor`. Custom-quotation registrations continue to store NULL.
+- Create/update validation rejects impossible calendar dates, reversed date ranges, fractional percentage values, percentages above 100 and fixed discounts greater than or equal to the base fee. A 100% discount is allowed and results in a zero fee.
+- Admin now displays a zero quoted fee as `0.00` rather than hiding it.
+- Added unit and integration-contract tests to development CI.
+
+### Calculation and verification notes
+- Percentage discounts round to the nearest minor currency unit using `Math.round(baseFeeMinor * percentage / 100)`. Date boundaries are inclusive. Public display and registration use the same server UTC date.
+- No database migration is expected. No D1 SQL was executed by the assistant.
+- Pending: CI result, exact Preview deployment verification, and live tests for no discount, percentage discount, fixed discount, date boundaries, zero final fee and registration persistence.
+
+### Next actions
+1. Confirm CI passes for the pricing implementation.
+2. Verify Preview deploys the exact development commit.
+3. Test English and Bangla course detail pages against `/api/courses`.
+4. Submit fixed-fee registrations with and without discounts and compare stored `quoted_fee_minor` with `final_fee_minor`.
+5. Test custom quotation and confirm its stored fee remains NULL.
+6. Test discount date boundaries and invalid discount rejection.
+7. Record browser test evidence before marking the stage verified.
 - Do not change the pricing model or database schema unless the inspection shows it is necessary and the user approves any material business-rule decision.
 - Update this section with affected files, test cases/results, commits, Preview deployment status, and user verification as work progresses.
 
