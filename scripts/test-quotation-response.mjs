@@ -22,4 +22,10 @@ assert.ok(worker.includes('headers.set("cache-control", "no-store, max-age=0")')
 assert.ok(worker.includes('headers.set("referrer-policy", "no-referrer")'));
 assert.ok(worker.includes('headers.set("x-robots-tag", "noindex, nofollow, noarchive")'));
 assert.ok(migration.includes("token_hash TEXT NOT NULL UNIQUE") && migration.includes("ON DELETE CASCADE"));
+assert.ok(worker.includes('function sameOrigin(request)'));
+assert.ok(worker.includes('return Boolean(origin) && origin === new URL(request.url).origin'));
+assert.ok(worker.includes('rateLimit(env,request,"quotation-response",8,15*60*1000)'));
+const responsePost=worker.slice(worker.indexOf('if (path === "/api/quotation-response" && method === "POST")'));
+assert.ok(responsePost.indexOf('if (!sameOrigin(request))') < responsePost.indexOf('rateLimit(env,request,"quotation-response"'));
+assert.ok(responsePost.indexOf('if (!sameOrigin(request))') < responsePost.indexOf('request.json()'));
 console.log("Learner quotation response contract tests passed.");
