@@ -299,7 +299,7 @@ Next actions:
 Implemented on `current-focus-development`; not yet deployed or verified against Preview D1.
 
 - Migration: `0013_quotation_response_tokens.sql` creates one-time response-token storage with unique SHA-256 hashes, expiry, used and revoked timestamps. No plaintext token is stored.
-- Admin issues a seven-day response link only from a draft quotation. The link is returned once to Admin for manual sharing; no email provider is configured and no email is sent automatically.
+- Admin issues a seven-day response link from a draft or sent quotation. Reissuing a link revokes prior unused links for that quotation. The link is returned once to Admin for manual sharing; no email provider is configured and no email is sent automatically.
 - Public `GET /api/quotation-response` returns only quote details, course title, language and registration reference. Public `POST /api/quotation-response` accepts `accepted` or `declined`, applies one-time/expiry/status checks, same-origin validation and rate limiting.
 - Acceptance approves registration and sets payment to pending; enrollment remains unchanged. Decline does not change registration/payment/enrollment statuses.
 - Learner page: `quote-response.html` supports English and Bangla.
