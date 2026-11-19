@@ -71,3 +71,13 @@
 - Prevented acceptance for rejected/cancelled registrations or cancelled enrollments and rejected expired quotations.
 - Added Admin controls to advance quotation status and audit events for quotation and linked registration changes.
 - Added registration lifecycle contract tests and Preview acceptance cases. No schema migration or Production change was made.
+
+
+## 2026-11-19 — Learner-facing quotation response
+
+- Added one-time, 32-byte random learner response tokens; only SHA-256 hashes are stored in D1.
+- Added a seven-day response window and a bilingual learner-facing quotation response page.
+- Admin can issue a secure response link for a draft quote and manually share the returned URL. No email delivery provider is configured, so no automatic email is sent.
+- Learners can accept or decline; acceptance approves the registration and sets payment to pending while leaving enrollment unchanged. Decline leaves registration/payment/enrollment statuses unchanged.
+- Added token expiry, single-use, revocation, same-origin POST and rate-limit checks plus learner decision audit events.
+- Added migration 0013 and development CI contract tests. Preview D1 migration and browser/API acceptance remain pending; Production and `main` were not changed.

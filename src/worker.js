@@ -180,6 +180,49 @@ async function handleApi(request, env) {
     const {results=[]}=await env.DB.prepare("SELECT content_key,published_value,content_type FROM cms_content WHERE page_key=? AND language=? AND published_value IS NOT NULL").bind(page.slug,page.language).all();
     return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.published_json)},cms:Object.fromEntries(results.map(x=>[x.content_key,{value:x.published_value,type:x.content_type}]))});
   }
+
+  if (path === "/api/quotation-response" && method === "GET") {
+    const token=clean(url.searchParams.get("token"),100);
+    if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return json({error:"This quotation link is invalid or no longer available."},404);
+    const tokenHash=await chatTokenHash(token);
+    const quote=await env.DB.prepare(`SELECT q.amount_minor,q.currency,q.description,q.valid_until,r.reference_code,r.language_preference,c.title_en,c.title_bn
+      FROM quotation_response_tokens t JOIN quotations q ON q.id=t.quote_id
+      JOIN registrations r ON r.id=q.registration_id JOIN courses c ON c.id=r.course_id
+      WHERE t.token_hash=? AND t.used_at IS NULL AND t.revoked_at IS NULL
+        AND datetime(t.expires_at)>datetime('now') AND q.status='sent'
+        AND (q.valid_until IS NULL OR date(q.valid_until)>=date('now'))`).bind(tokenHash).first();
+    if (!quote) return json({error:"This quotation link is invalid or no longer available."},404);
+    return json({quotation:{amount_minor:quote.amount_minor,currency:quote.currency,description:quote.description||"",valid_until:quote.valid_until,reference_code:quote.reference_code,course_title:quote.language_preference==="bn"?(quote.title_bn||quote.title_en):quote.title_en,language:quote.language_preference==="bn"?"bn":"en"}});
+  }
+  if (path === "/api/quotation-response" && method === "POST") {
+    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+    if (!(await rateLimit(env,request,"quotation-response",8,15*60*1000))) return json({error:"Too many attempts. Please try again later."},429);
+    const data=await request.json().catch(()=>null),token=clean(data?.token,100),decision=data?.decision;
+    if (!/^[A-Za-z0-9_-]{40,60}$/.test(token) || !["accepted","declined"].includes(decision)) return json({error:"Invalid response."},400);
+    const tokenHash=await chatTokenHash(token);
+    const quote=await env.DB.prepare(`SELECT q.id,q.registration_id,q.valid_until,r.registration_status,r.enrollment_status
+      FROM quotation_response_tokens t JOIN quotations q ON q.id=t.quote_id JOIN registrations r ON r.id=q.registration_id
+      WHERE t.token_hash=? AND t.used_at IS NULL AND t.revoked_at IS NULL
+        AND datetime(t.expires_at)>datetime('now') AND q.status='sent'`).bind(tokenHash).first();
+    if (!quote) return json({error:"This quotation link is invalid, expired or already used."},409);
+    if (quote.valid_until && new Date(quote.valid_until+"T23:59:59Z").getTime()<Date.now()) {
+      await env.DB.prepare("UPDATE quotations SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='sent'").bind(quote.id).run();
+      return json({error:"This quotation has expired."},409);
+    }
+    if (decision==="accepted" && (["rejected","cancelled"].includes(quote.registration_status) || quote.enrollment_status==="cancelled")) return json({error:"This registration is no longer eligible to accept the quotation. Please contact the administrator."},409);
+    const now=new Date().toISOString().slice(0,19).replace("T"," ");
+    const statements=[
+      env.DB.prepare("UPDATE quotation_response_tokens SET used_at=? WHERE token_hash=? AND used_at IS NULL AND revoked_at IS NULL AND datetime(expires_at)>datetime('now') AND EXISTS (SELECT 1 FROM quotations WHERE id=? AND status='sent')").bind(now,tokenHash,quote.id),
+      env.DB.prepare("UPDATE quotations SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='sent' AND EXISTS (SELECT 1 FROM quotation_response_tokens WHERE token_hash=? AND used_at=?) AND (?='declined' OR EXISTS (SELECT 1 FROM registrations WHERE id=? AND registration_status NOT IN ('rejected','cancelled') AND enrollment_status<>'cancelled'))").bind(decision,quote.id,tokenHash,now,decision,quote.registration_id)
+    ];
+    if (decision==="accepted") statements.push(env.DB.prepare("UPDATE registrations SET registration_status='approved',payment_status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=? AND EXISTS (SELECT 1 FROM quotations WHERE id=? AND status='accepted')").bind(quote.registration_id,quote.id));
+    const updates=await env.DB.batch(statements);
+    if (!updates[0]?.meta?.changes || !updates[1]?.meta?.changes || (decision==="accepted" && !updates[2]?.meta?.changes)) return json({error:"This quotation response could not be completed. The link may already have been used; contact the administrator."},409);
+    await audit(env,"learner","quotation_learner_"+decision,"quotation",quote.id,"Learner responded through one-time quotation link");
+    if (decision==="accepted") await audit(env,"learner","registration_approved_by_learner_quote","registration",quote.registration_id,quote.id);
+    return json({ok:true,status:decision});
+  }
+
   if (path === "/api/health" && method === "GET") return json({ok:true, database:"connected", payments:"not_configured"});
   if (path === "/api/page-styles" && method === "GET") {
     try { const {results=[]}=await env.DB.prepare("SELECT element_key,published_json FROM page_styles WHERE published_json IS NOT NULL").all(); return json({styles:Object.fromEntries(results.map(row=>[row.element_key,JSON.parse(row.published_json)]))}); }
@@ -923,35 +966,20 @@ async function handleApi(request, env) {
     if (quoteStatusMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
-      const nextStatus=data?.status;
-      if (!["sent","accepted","declined","expired"].includes(nextStatus)) return json({error:"Invalid quotation status."},400);
-      const quote=await env.DB.prepare("SELECT id,registration_id,status,valid_until FROM quotations WHERE id=? AND registration_id=?").bind(quoteStatusMatch[2],quoteStatusMatch[1]).first();
+      if (data?.status!=="sent") return json({error:"Administrators can issue response links only for draft quotations. Learners must accept or decline using the secure link."},400);
+      const quote=await env.DB.prepare("SELECT id,registration_id,status FROM quotations WHERE id=? AND registration_id=?").bind(quoteStatusMatch[2],quoteStatusMatch[1]).first();
       if (!quote) return json({error:"Quotation not found."},404);
-      const transitions={draft:["sent"],sent:["accepted","declined","expired"]};
-      if (!(transitions[quote.status]||[]).includes(nextStatus)) return json({error:"This quotation status transition is not allowed."},409);
-      if (nextStatus==="accepted") {
-        if (quote.valid_until && new Date(quote.valid_until+"T23:59:59Z").getTime()<Date.now()) {
-          await env.DB.prepare("UPDATE quotations SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='sent'").bind(quote.id).run();
-          await audit(env,session.email,"quotation_expired","quotation",quote.id,"Expired before acceptance");
-          return json({error:"This quotation has expired."},409);
-        }
-        const registration=await env.DB.prepare("SELECT registration_status,enrollment_status FROM registrations WHERE id=?").bind(quote.registration_id).first();
-        if (!registration) return json({error:"Registration not found."},404);
-        if (["rejected","cancelled"].includes(registration.registration_status) || registration.enrollment_status==="cancelled") return json({error:"A rejected, cancelled or cancelled-enrollment registration cannot accept a quotation."},409);
-        const updates=await env.DB.batch([
-          env.DB.prepare("UPDATE quotations SET status='accepted',updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status='sent'").bind(quote.id,quote.registration_id),
-          env.DB.prepare("UPDATE registrations SET registration_status='approved',payment_status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=? AND EXISTS (SELECT 1 FROM quotations WHERE id=? AND status='accepted')").bind(quote.registration_id,quote.id)
-        ]);
-        if (!updates[0]?.meta?.changes) return json({error:"The quotation changed before this update. Reload and try again."},409);
-        await audit(env,session.email,"quotation_accepted","quotation",quote.id,"Registration approved; payment set to pending; enrollment remains unchanged");
-        await audit(env,session.email,"registration_approved_by_quote","registration",quote.registration_id,quote.id);
-        return json({ok:true,status:"accepted",registrationStatus:"approved",paymentStatus:"pending",enrollmentStatus:registration.enrollment_status});
-      }
-      const updated=await env.DB.prepare("UPDATE quotations SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status=?")
-        .bind(nextStatus,quote.id,quote.registration_id,quote.status).run();
-      if (!updated.meta.changes) return json({error:"The quotation changed before this update. Reload and try again."},409);
-      await audit(env,session.email,"quotation_status_changed","quotation",quote.id,nextStatus);
-      return json({ok:true,status:nextStatus});
+      if (quote.status!=="draft") return json({error:"Only a draft quotation can be sent."},409);
+      const expiresAt=new Date(Date.now()+7*24*60*60*1000),expiresSql=expiresAt.toISOString().slice(0,19).replace("T"," "),validUntil=expiresAt.toISOString().slice(0,10);
+      const rawToken=b64url(crypto.getRandomValues(new Uint8Array(32))),tokenHash=await chatTokenHash(rawToken),tokenId=id();
+      const batch=await env.DB.batch([
+        env.DB.prepare("UPDATE quotation_response_tokens SET revoked_at=CURRENT_TIMESTAMP WHERE quote_id=? AND used_at IS NULL AND revoked_at IS NULL").bind(quote.id),
+        env.DB.prepare("UPDATE quotations SET status='sent',valid_until=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status='draft'").bind(validUntil,quote.id,quote.registration_id),
+        env.DB.prepare("INSERT INTO quotation_response_tokens (id,quote_id,token_hash,expires_at) SELECT ?,?,?,? WHERE EXISTS (SELECT 1 FROM quotations WHERE id=? AND status='sent' AND valid_until=?)").bind(tokenId,quote.id,tokenHash,expiresSql,quote.id,validUntil)
+      ]);
+      if (!batch[1]?.meta?.changes || !batch[2]?.meta?.changes) return json({error:"The quotation changed before its response link could be issued. Reload and try again."},409);
+      await audit(env,session.email,"quotation_response_link_issued","quotation",quote.id,"Seven-day learner response link issued");
+      return json({ok:true,status:"sent",validUntil,responseUrl:url.origin+"/quote-response.html?token="+encodeURIComponent(rawToken)});
     }
     const paymentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/payment$/);
     if (paymentMatch && method === "PATCH") {

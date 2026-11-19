@@ -292,3 +292,17 @@ Next actions:
 - Admin quote history allows an operator to select a quote and advance it through an allowed transition.
 - No migration is required. No D1 SQL, Preview deployment or Production change was performed by the assistant.
 - Preview tests must cover valid acceptance, invalid transitions, decline, expiry, cancelled/rejected registrations, audit records and authorization.
+
+
+## 14. Learner-facing quotation response links
+
+Implemented on `current-focus-development`; not yet deployed or verified against Preview D1.
+
+- Migration: `0013_quotation_response_tokens.sql` creates one-time response-token storage with unique SHA-256 hashes, expiry, used and revoked timestamps. No plaintext token is stored.
+- Admin issues a seven-day response link only from a draft quotation. The link is returned once to Admin for manual sharing; no email provider is configured and no email is sent automatically.
+- Public `GET /api/quotation-response` returns only quote details, course title, language and registration reference. Public `POST /api/quotation-response` accepts `accepted` or `declined`, applies one-time/expiry/status checks, same-origin validation and rate limiting.
+- Acceptance approves registration and sets payment to pending; enrollment remains unchanged. Decline does not change registration/payment/enrollment statuses.
+- Learner page: `quote-response.html` supports English and Bangla.
+- CI contract test: `scripts/test-quotation-response.mjs`.
+- Apply migration 0013 manually to Preview D1 only after reviewing the SQL. Then perform the Preview tests in `docs/TESTING.md`. Do not use Wrangler migration commands. No Production/main changes are authorized.
+- Security note: the URL is a bearer credential. Anyone possessing it can view/respond to the quote until expiry or use. Share it only with the intended learner.

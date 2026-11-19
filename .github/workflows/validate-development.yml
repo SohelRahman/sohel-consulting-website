@@ -34,3 +34,5 @@ jobs:
         run: node scripts/test-course-pricing.mjs
       - name: Registration workflow contract tests
         run: node scripts/test-registration-workflow.mjs
+      - name: Learner quotation response contract tests
+        run: node scripts/test-quotation-response.mjs

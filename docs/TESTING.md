@@ -174,3 +174,22 @@ The development workflow runs `node scripts/test-registration-workflow.mjs`. It 
 - [ ] Verify quotation status changes and linked registration changes are audited.
 - [ ] Verify unauthorized users cannot read or change quotation status.
 
+
+
+## Learner quotation response links — Preview acceptance
+
+The development workflow runs `node scripts/test-quotation-response.mjs`. These are static contract checks, not end-to-end database tests.
+
+- [ ] Apply migration `0013_quotation_response_tokens.sql` to Preview D1 only; verify the table and indexes exist.
+- [ ] Create a draft quotation in Admin and issue its learner response link.
+- [ ] Confirm the link is copied/displayed once and can be shared manually; no email is sent automatically.
+- [ ] Open the link signed out and confirm only quotation amount, currency, description, course title and registration reference are shown.
+- [ ] Accept a valid quotation; verify quote status becomes accepted, registration becomes approved, payment becomes pending and enrollment remains unchanged.
+- [ ] Repeat with a separate quote and decline it; verify registration/payment/enrollment statuses remain unchanged.
+- [ ] Reuse a consumed link and verify it is rejected.
+- [ ] Test an expired link, a revoked link, a non-sent quotation and a cancelled/rejected registration.
+- [ ] Verify cross-origin POST is rejected and public response rate limiting applies.
+- [ ] Confirm raw tokens do not appear in D1 rows, audit details or application logs.
+- [ ] Verify English and Bangla learner pages, keyboard controls and mobile layout.
+
+The seven-day response URL is a bearer credential: anyone possessing it can view and respond to the quotation until it expires or is used. Share it only with the intended learner. Production remains out of scope.

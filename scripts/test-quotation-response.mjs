@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+const [worker,admin,page,migration]=await Promise.all(["../src/worker.js","../admin.html","../quote-response.html","../migrations/0013_quotation_response_tokens.sql"].map(p=>readFile(new URL(p,import.meta.url),"utf8")));
+assert.ok(worker.includes("crypto.getRandomValues(new Uint8Array(32))"));
+assert.ok(worker.includes("quotation_response_tokens"));
+assert.ok(worker.includes("path === \"/api/quotation-response\" && method === \"GET\""));
+assert.ok(worker.includes("path === \"/api/quotation-response\" && method === \"POST\""));
+assert.ok(worker.includes("t.used_at IS NULL AND t.revoked_at IS NULL"));
+assert.ok(worker.includes("datetime(t.expires_at)>datetime('now')"));
+assert.ok(worker.includes("registration_status='approved',payment_status='pending'"));
+assert.ok(worker.includes("quotation_learner_"));
+assert.ok(worker.includes('responseUrl:url.origin+"/quote-response.html?token="'));
+assert.ok(admin.includes("secure learner response link"));
+assert.ok(page.includes("Accept quotation") && page.includes("Decline quotation"));
+assert.ok(page.includes("/api/quotation-response"));
+assert.ok(migration.includes("token_hash TEXT NOT NULL UNIQUE") && migration.includes("ON DELETE CASCADE"));
+console.log("Learner quotation response contract tests passed.");
