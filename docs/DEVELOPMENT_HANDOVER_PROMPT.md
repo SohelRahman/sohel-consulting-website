@@ -383,3 +383,11 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - Pending: confirm CI passes; deploy the exact development commit to Preview; issue a fresh response link; confirm the URL contains a fragment, the address bar is cleaned after page load, details load successfully, accept/decline still work, and replay/expiry/revocation remain rejected.
 - Existing previously issued query-string links remain supported by the page fallback, but should be reissued to obtain fragment-based links.
 - No migration or D1 SQL is required. No deployment, Production change or merge to `main` was performed.
+
+
+### Stage 17 follow-up source-review correction
+- A subsequent source review found that the first POST-details refactor had omitted the quotation lookup used by the accept/decline path. This was corrected before CI verification.
+- Restored the sent-quotation/token/registration lookup after the action:"details" branch and added contract assertions that the decision lookup is present and ordered after the details branch.
+- Worker correction commit: `d13b9547bf16d42c2e3c879dd17a1ffae3fe307`.
+- Test commit: `15310cdf55fb857a5339ba7d55a3c5e5129b5df0`.
+- This correction was identified by static source review; it has not yet been exercised in Preview. CI status is not yet confirmed.
