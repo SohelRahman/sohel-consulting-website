@@ -330,3 +330,15 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - No D1 migration or SQL change was required. No Production deployment or `main` change was made.
 - Preview verification must inspect the response headers and confirm the page has no third-party resources that could receive the bearer-token URL.
 - Stage 14's accept/decline workflow remains unverified until the learner journey is tested in Preview.
+
+
+## 16. Admin quotation response link copy dialog
+
+**Status: Implemented on `current-focus-development`; Preview verification pending.**
+
+- Replaced the browser alert/prompt that displayed the learner response URL with an accessible in-page dialog.
+- The dialog displays the full URL in a read-only selectable text area and provides a dedicated **Copy link** button.
+- Copy uses the Clipboard API, then a legacy document copy fallback; if both are blocked, the URL remains selected for manual Ctrl+C / Cmd+C.
+- Added contract assertions in `scripts/test-quotation-response.mjs`.
+- No D1 schema change or SQL is required. Do not deploy to Production or merge to `main` without explicit approval.
+- After deploying Preview, issue/reissue a test link, verify the dialog, click Copy link, paste locally to verify, and then test the learner response separately. Treat generated URLs as bearer credentials; never share live tokens in screenshots or chat.
