@@ -44,8 +44,57 @@
  }
  const pageNodes=collect(document,"",true);
  const globalNodes={...collect(document.querySelector("header.site-header")||document.createElement("header"),"header",false),...collect(document.querySelector("footer.footer")||document.createElement("footer"),"footer",false)};
- if(new URLSearchParams(location.search).get("cmsKeys")==="1"){
-  const style=document.createElement("style");style.textContent="[data-cms-key]{outline:1px dashed #e0a43a!important;outline-offset:2px;cursor:help!important}";document.head.append(style);
+ const inspectorMode=new URLSearchParams(location.search).get("cmsKeys")==="1";
+ if(inspectorMode){
+  const style=document.createElement("style");
+  style.textContent="[data-cms-key]{outline:1px dashed #e0a43a!important;outline-offset:2px;cursor:pointer!important}[data-cms-key]:hover{outline:2px solid #f2b84b!important}";
+  document.head.append(style);
+  const panel=document.createElement("section");
+  panel.id="cms-inline-editor";
+  panel.setAttribute("role","dialog");
+  panel.setAttribute("aria-label","Edit website content");
+  panel.style.cssText="position:fixed;z-index:2147483000;right:18px;bottom:18px;width:min(390px,calc(100vw - 36px));max-height:75vh;overflow:auto;background:#fff;color:#142033;border:1px solid #cbd5e1;border-radius:12px;box-shadow:0 12px 40px #0005;padding:16px;font:14px/1.45 system-ui,sans-serif;display:none";
+  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><strong style="font-size:16px">Edit page content</strong><button type="button" id="cms-inline-close" aria-label="Close editor" style="border:0;background:#e8edf4;border-radius:6px;padding:5px 9px;cursor:pointer">Close</button></div><p id="cms-inline-key" style="margin:10px 0;color:#475569;overflow-wrap:anywhere"></p><label style="display:block;margin:8px 0 4px">Content type</label><select id="cms-inline-type" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:6px"><option value="text">Short text</option><option value="textarea">Long text</option><option value="url">URL</option><option value="image">Image URL</option><option value="richtext">Plain text</option></select><label style="display:block;margin:10px 0 4px" for="cms-inline-value">Draft value</label><textarea id="cms-inline-value" rows="5" style="box-sizing:border-box;width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:6px;resize:vertical"></textarea><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button type="button" id="cms-inline-save" style="background:#145da0;color:#fff;border:0;border-radius:6px;padding:9px 12px;cursor:pointer">Save draft</button><button type="button" id="cms-inline-preview" style="background:#e8edf4;color:#142033;border:0;border-radius:6px;padding:9px 12px;cursor:pointer">Preview draft</button></div><p id="cms-inline-status" role="status" style="margin:10px 0 0;color:#475569"></p>';
+  document.body.append(panel);
+  const byId=id=>document.getElementById(id);
+  let selectedKey="",selectedPage=page;
+  function openInlineEditor(el){
+   const raw=el.dataset.cmsKey||"";
+   const key=raw;
+   if(!key)return;
+   selectedKey=key;
+   selectedPage=(key.startsWith("header.")||key.startsWith("footer."))?"global":page;
+   byId("cms-inline-key").textContent="Key: "+selectedPage+" / "+language+" / "+key;
+   byId("cms-inline-type").value=el.tagName==="IMG"?"image":el.tagName==="A"?"url":"text";
+   byId("cms-inline-value").value=el.tagName==="IMG"?(el.getAttribute("src")||""):el.tagName==="A"?(el.getAttribute("href")||""):el.textContent.trim();
+   byId("cms-inline-status").textContent="Changes are saved as drafts only.";
+   panel.style.display="block";
+   byId("cms-inline-value").focus();
+  }
+  document.addEventListener("click",event=>{
+   if(panel.contains(event.target))return;
+   const el=event.target.closest?.("[data-cms-key]");
+   if(!el)return;
+   event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+   openInlineEditor(el);
+  },true);
+  byId("cms-inline-close").addEventListener("click",()=>{panel.style.display="none";});
+  byId("cms-inline-save").addEventListener("click",async()=>{
+   const value=byId("cms-inline-value").value,type=byId("cms-inline-type").value;
+   if(!selectedKey){byId("cms-inline-status").textContent="Select a highlighted element first.";return;}
+   if(!value.trim()){byId("cms-inline-status").textContent="Draft value cannot be empty.";return;}
+   const button=byId("cms-inline-save");button.disabled=true;byId("cms-inline-status").textContent="Saving draft…";
+   try{
+    const response=await fetch("/api/admin/cms/save",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({page:selectedPage,language,key:selectedKey,type,value})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||"Could not save draft. Check your admin session and content permissions.");
+    byId("cms-inline-status").textContent="Draft saved. Public content is unchanged. Use Preview draft to review it.";
+   }catch(error){byId("cms-inline-status").textContent=error.message;}
+   finally{button.disabled=false;}
+  });
+  byId("cms-inline-preview").addEventListener("click",()=>{
+   const previewUrl=new URL(location.href);previewUrl.searchParams.delete("cmsKeys");previewUrl.searchParams.set("cmsPreview","1");window.open(previewUrl.toString(),"_blank","noopener");
+  });
  }
  apply(page,pageNodes);apply("global",globalNodes);
 })();
