@@ -3,7 +3,7 @@ import {readFile} from "node:fs/promises";
 const [worker,admin,page,migration]=await Promise.all(["../src/worker.js","../admin.html","../quote-response.html","../migrations/0013_quotation_response_tokens.sql"].map(p=>readFile(new URL(p,import.meta.url),"utf8")));
 assert.ok(worker.includes("crypto.getRandomValues(new Uint8Array(32))"));
 assert.ok(worker.includes("quotation_response_tokens"));
-assert.ok(worker.includes("path === \"/api/quotation-response\" && method === \"GET\""));
+assert.ok(!worker.includes("path === \"/api/quotation-response\" && method === \"GET\""));
 assert.ok(worker.includes("path === \"/api/quotation-response\" && method === \"POST\""));
 assert.ok(worker.includes("t.used_at IS NULL AND t.revoked_at IS NULL"));
 assert.ok(worker.includes("datetime(t.expires_at)>datetime('now')"));
