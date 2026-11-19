@@ -89,3 +89,9 @@
 - Added a no-referrer meta policy as defense in depth.
 - Extended the learner quotation response contract test to check the security headers.
 - Preview header and browser verification remain pending. No D1 migration, Production deployment or `main` change was made.
+
+## 2026-11-19 — Admin quotation link copy dialog
+
+- Replaced the browser alert/prompt link handoff with an accessible dialog containing a read-only, selectable URL field and a dedicated Copy link button.
+- Added clipboard API support with a legacy copy fallback and a manual-selection fallback.
+- Added a contract assertion for the Admin copy dialog. Preview browser verification remains pending; no D1 migration, Production deployment or `main` change was made.
