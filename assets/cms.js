@@ -65,8 +65,8 @@
    selectedKey=key;
    selectedPage=(key.startsWith("header.")||key.startsWith("footer."))?"global":page;
    byId("cms-inline-key").textContent="Key: "+selectedPage+" / "+language+" / "+key;
-   byId("cms-inline-type").value=el.tagName==="IMG"?"image":el.tagName==="A"?"url":"text";
-   byId("cms-inline-value").value=el.tagName==="IMG"?(el.getAttribute("src")||""):el.tagName==="A"?(el.getAttribute("href")||""):el.textContent.trim();
+   byId("cms-inline-type").value=el.tagName==="IMG"?"image":"text";
+   byId("cms-inline-value").value=el.tagName==="IMG"?(el.getAttribute("src")||""):el.textContent.trim();
    byId("cms-inline-status").textContent="Changes are saved as drafts only.";
    panel.style.display="block";
    byId("cms-inline-value").focus();
