@@ -239,3 +239,5 @@ The fragment prevents the browser from including the bearer token in the initial
 ### Stage 17 automated contract follow-up
 - The quotation response contract test now checks that the POST details action returns before the accept/decline branch and that the latter performs its own sent-quotation/token/registration lookup.
 - This is a source-contract assertion only. Run the full development workflow and complete the Preview browser acceptance checklist above before marking the feature verified.
+
+- CI history for Stage 17: runs `44588560410` and `44588687993` failed because the contract test retained old GET/query-string expectations after the API change. The assertions were corrected in commit `42d58e24ff59fe728dd59b043c879783b7b948b8`. A passing workflow run for that corrected commit is still pending confirmation.
