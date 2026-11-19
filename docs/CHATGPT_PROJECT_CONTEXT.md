@@ -39,3 +39,12 @@
 > **Quotation response security hardening — 2026-11-19**
 >
 > Added `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive` to the learner quotation response page response. Added a no-referrer meta policy and extended the CI contract test. Preview header/browser verification is pending. User-reported Preview D1 output confirms the migration 0013 table, columns, FK cascade and indexes; learner accept/decline behavior remains unverified. Production and `main` untouched. See Sections 14–15 of `DEVELOPMENT_HANDOVER_PROMPT.md`.
+
+## 2026-11-20 — Learner quotation bearer-token URL hardening
+
+- New response URLs use a URL fragment (`#token=...`) instead of a query parameter. The browser does not send the fragment in the initial HTML request.
+- The learner page immediately replaces the current history entry with the clean page path after reading the token.
+- Quotation details are retrieved by same-origin POST with the token in the request body. The token-bearing GET details endpoint was removed.
+- The page temporarily supports old query-string links, cleans the URL and then uses the POST details endpoint.
+- Contract tests were extended. CI and Preview browser acceptance are pending; no deployment or D1 operation was performed.
+- See Stage 17 in `DEVELOPMENT_HANDOVER_PROMPT.md` and the corresponding Preview checklist in `TESTING.md`.
