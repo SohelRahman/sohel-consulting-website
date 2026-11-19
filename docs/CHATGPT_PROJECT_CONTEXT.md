@@ -52,3 +52,5 @@
 - Follow-up source review corrected the accept/decline POST path by restoring its own quote/token/registration lookup after the details action. Added static contract assertions for this branch. CI and Preview browser verification remain pending.
 
 - Stage 17 CI initially failed twice on stale assertions expecting the former GET/query-string design; both assertions were updated. A successful CI run for the corrected test commit has not yet been confirmed. See the Stage 17 CI follow-up in `DEVELOPMENT_HANDOVER_PROMPT.md`.
+
+- Stage 17 automated CI passed in run `44588832549` for commit `42d58e24ff59fe728dd59b043c879783b7b948b8`. Preview deployment and browser acceptance are still pending.
