@@ -1,0 +1,9 @@
+/src/**
+/migrations/**
+/README.md
+/wrangler.toml
+/.assetsignore
+/.git/**
+/.github/**
+/scripts/**
+/DEPLOYMENT-CHECKLIST.md
