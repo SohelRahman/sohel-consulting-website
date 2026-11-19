@@ -687,7 +687,7 @@ async function handleApi(request, env) {
       if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!value.trim())return json({error:"A valid page, content key and non-empty value are required."},400);
       if(type==="url"||type==="image"){try{const parsed=new URL(value);if(!["https:","http:"].includes(parsed.protocol))throw new Error();}catch{return json({error:"Enter a valid HTTP or HTTPS URL."},400);}}
       await env.DB.prepare("INSERT INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP) ON CONFLICT(page_key,language,content_key) DO UPDATE SET content_type=excluded.content_type,draft_value=excluded.draft_value,is_deleted=0,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP").bind(page,language,key,type,value,session.email).run();
-      await env.DB.prepare("INSERT INTO cms_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,type,value,session.email).run();
+      await env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,type,value,session.email).run();
       await audit(env,session.email,"cms_draft_saved","cms_content",page+":"+language+":"+key,type);return json({ok:true});
     }
     if (path === "/api/admin/cms/publish" && method === "POST") {
@@ -697,7 +697,7 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT content_key,content_type,draft_value,is_deleted FROM cms_content WHERE page_key=? AND language=?").bind(page,language).all();
       if(!results.length)return json({error:"There is no content to publish."},400);
       await env.DB.batch(results.map(row=>env.DB.prepare("UPDATE cms_content SET published_value=?,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=?").bind(row.is_deleted?null:row.draft_value,session.email,page,language,row.content_key)));
-      for(const row of results)if(!row.is_deleted)await env.DB.prepare("INSERT INTO cms_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'published',?)").bind(page,language,row.content_key,row.content_type,row.draft_value,session.email).run();
+      for(const row of results)if(!row.is_deleted)await env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'published',?)").bind(page,language,row.content_key,row.content_type,row.draft_value,session.email).run();
       await audit(env,session.email,"cms_page_published","cms_page",page+":"+language,"Published "+results.filter(row=>!row.is_deleted).length+" items");return json({ok:true,publishedCount:results.filter(row=>!row.is_deleted).length});
     }
     if (path === "/api/admin/cms/delete" && method === "POST") {
@@ -722,16 +722,16 @@ async function handleApi(request, env) {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),versionId=Number(data?.versionId);
       if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!Number.isInteger(versionId)||versionId<1)return json({error:"Invalid version reference."},400);
-      const version=await env.DB.prepare("SELECT content_type,value FROM cms_content_versions WHERE id=? AND page_key=? AND language=? AND content_key=?").bind(versionId,page,language,key).first();
+      const version=await env.DB.prepare("SELECT content_type,value FROM cms_static_content_versions WHERE id=? AND page_key=? AND language=? AND content_key=?").bind(versionId,page,language,key).first();
       if(!version)return json({error:"Version not found."},404);
       await env.DB.prepare("INSERT INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP) ON CONFLICT(page_key,language,content_key) DO UPDATE SET content_type=excluded.content_type,draft_value=excluded.draft_value,is_deleted=0,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP").bind(page,language,key,version.content_type,version.value,session.email).run();
-      await env.DB.prepare("INSERT INTO cms_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,version.content_type,version.value,session.email).run();
+      await env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,version.content_type,version.value,session.email).run();
       await audit(env,session.email,"cms_version_restored","cms_content",page+":"+language+":"+key,"Restored version "+versionId+" to draft");
       return json({ok:true});
     }
     if (path === "/api/admin/cms/history" && method === "GET") {
       const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en",key=clean(url.searchParams.get("key"),120).toLowerCase();
-      const {results=[]}=await env.DB.prepare("SELECT id,content_type,value,version_type,created_by,created_at FROM cms_content_versions WHERE page_key=? AND language=? AND content_key=? ORDER BY id DESC LIMIT 50").bind(page,language,key).all();return json({history:results});
+      const {results=[]}=await env.DB.prepare("SELECT id,content_type,value,version_type,created_by,created_at FROM cms_static_content_versions WHERE page_key=? AND language=? AND content_key=? ORDER BY id DESC LIMIT 50").bind(page,language,key).all();return json({history:results});
     }
     if (path === "/api/admin/site-content" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT content_key,content_value,content_type,published,updated_at FROM site_content ORDER BY content_key").all();
