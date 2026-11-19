@@ -397,3 +397,9 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - GitHub Actions run `44588560410` failed in the quotation response contract step because an earlier test assertion still expected the removed token-bearing GET endpoint. Worker syntax, site validation, RBAC, pricing and registration workflow steps passed in that run.
 - After updating the stale GET assertion, run `44588687993` failed on a second stale assertion that still expected `?token=` in the issued URL. The test was corrected to expect `#token=` in commit `42d58e24ff59fe728dd59b043c879783b7b948b8`.
 - The CI failure was in outdated test expectations, not a confirmed runtime test. A passing run for the corrected test commit has not yet been observed. Do not mark Stage 17 CI-passed until the latest workflow run is confirmed.
+
+
+### Stage 17 CI result — passed
+- GitHub Actions run `44588832549` completed successfully for test commit `42d58e24ff59fe728dd59b043c879783b7b948b8`.
+- All workflow steps passed: Worker syntax, shared JS syntax, HTML/local-link/inline-script validation, RBAC contract, course pricing tests, registration workflow contract and learner quotation response contract.
+- This verifies automated checks for the tested commit only. Later documentation-only commits do not change the application code; Preview deployment and browser acceptance remain pending.
