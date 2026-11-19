@@ -254,3 +254,5 @@ The fragment prevents the browser from including the bearer token in the initial
 - [ ] Confirm an unrelated Admin's session remains valid when another user's account is edited.
 
 Static RBAC contract assertions were added for session-version increments on Admin account PATCH and disable operations. These are source checks only; the live Preview tests above remain pending.
+
+- [x] Development CI run `44638857897` passed all checks for the Admin session-revocation contract commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`. Live Preview session invalidation tests remain unchecked.
