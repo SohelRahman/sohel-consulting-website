@@ -54,3 +54,8 @@
 - Stage 17 CI initially failed twice on stale assertions expecting the former GET/query-string design; both assertions were updated. A successful CI run for the corrected test commit has not yet been confirmed. See the Stage 17 CI follow-up in `DEVELOPMENT_HANDOVER_PROMPT.md`.
 
 - Stage 17 automated CI passed in run `44588832549` for commit `42d58e24ff59fe728dd59b043c879783b7b948b8`. Preview deployment and browser acceptance are still pending.
+
+
+## 2026-11-20 — Admin account session revocation hardening
+- Admin account PATCH now increments `session_version` on every successful edit; account disable also increments it in the same update. This prevents a disabled account's old session from becoming valid again after re-enablement and revokes sessions after role/permission/password changes.
+- Added RBAC contract assertions. CI and Preview live-session tests are pending. No schema change or Production operation was performed.
