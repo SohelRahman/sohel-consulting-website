@@ -1,5 +1,9 @@
 
 
+> **Current development status — 2026-11-19**
+>
+> Course discount and registration-fee consistency is implemented on `current-focus-development`: shared server-side pricing calculation, API-derived price breakdown, aligned English/Bangla course display, stricter discount validation and zero-fee visibility in Admin. CI and Preview acceptance remain pending; see Section 11 of `DEVELOPMENT_HANDOVER_PROMPT.md`.
+>
 > **Current CMS status — 2026-11-19**
 >
 > The bilingual static-page CMS is implemented on `current-focus-development`. Preview D1 migration 0012 was applied manually by the user and the user-reported verification showed four imported English homepage records, four published history rows, all six legacy CMS tables preserved, and migration ledger entries 0001–0012. These are user-supplied D1 Console results, not a direct database inspection by the repository maintainer.
