@@ -34,3 +34,8 @@
 > **Learner quotation response — 2026-11-19**
 >
 > Implemented on `current-focus-development`: one-time high-entropy response tokens with SHA-256-only storage, seven-day expiry, bilingual learner response page, Admin issuance for draft quotations, and learner accept/decline API. No email provider is configured; Admin must share the generated URL manually. Acceptance approves registration and sets payment pending while leaving enrollment unchanged; decline leaves those statuses unchanged. Migration 0013 must be applied manually to Preview D1. CI and Preview acceptance are pending; Production and `main` untouched. See Section 14 of `DEVELOPMENT_HANDOVER_PROMPT.md`.
+
+
+> **Quotation response security hardening — 2026-11-19**
+>
+> Added `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive` to the learner quotation response page response. Added a no-referrer meta policy and extended the CI contract test. Preview header/browser verification is pending. User-reported Preview D1 output confirms the migration 0013 table, columns, FK cascade and indexes; learner accept/decline behavior remains unverified. Production and `main` untouched. See Sections 14–15 of `DEVELOPMENT_HANDOVER_PROMPT.md`.
