@@ -221,3 +221,16 @@ The following normal-path checks were completed from user-supplied Preview brows
 - [x] Replay the consumed replacement link; learner page rejected the second use.
 
 Cross-origin rejection, rate limiting, response headers, raw-token exposure review, non-sent/cancelled-registration cases and full bilingual/accessibility acceptance remain open.
+
+
+
+### Quotation bearer-token URL exposure reduction — Preview acceptance
+- [ ] Issue a fresh learner response link and confirm the token appears after `#token=`, not after `?token=`.
+- [ ] Open the link and confirm the page immediately removes the fragment/query token from the address bar using history replacement.
+- [ ] Confirm the quotation details load through a same-origin POST request to `/api/quotation-response`; inspect the request payload only in a controlled local Preview session and do not copy the token into chat or tickets.
+- [ ] Confirm no token-bearing GET request is made to `/api/quotation-response`.
+- [ ] Accept and decline separate test quotations and verify the expected state changes and audit events.
+- [ ] Confirm expiry, reissue revocation and replay rejection still work with newly issued fragment-based links.
+- [ ] Confirm legacy query-string links are cleaned from the address bar and still load through the POST details path during the compatibility period.
+
+The fragment prevents the browser from including the bearer token in the initial HTML request URL. The page then removes the fragment from the current history entry. This does not guarantee that the token is absent from browser memory, screenshots, clipboard contents or the administrator's original issuance response. Treat the link as a bearer credential.
