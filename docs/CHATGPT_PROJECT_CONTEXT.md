@@ -50,3 +50,5 @@
 - See Stage 17 in `DEVELOPMENT_HANDOVER_PROMPT.md` and the corresponding Preview checklist in `TESTING.md`.
 
 - Follow-up source review corrected the accept/decline POST path by restoring its own quote/token/registration lookup after the details action. Added static contract assertions for this branch. CI and Preview browser verification remain pending.
+
+- Stage 17 CI initially failed twice on stale assertions expecting the former GET/query-string design; both assertions were updated. A successful CI run for the corrected test commit has not yet been confirmed. See the Stage 17 CI follow-up in `DEVELOPMENT_HANDOVER_PROMPT.md`.
