@@ -25,3 +25,12 @@
 - Development branch commit for the on-page editor and follow-up correction: `754507b0a28290cc972929f61bef891fbe9b880c`.
 - Remaining: verify final GitHub Actions validation, confirm Cloudflare Preview has deployed this exact commit, and perform authenticated browser tests for dashboard editing, inline editing, save, preview and publication. The earlier Cloudflare Ready screenshot referred to an earlier deployment and does not verify this commit.
 - No Production migration/deployment, merge to `main`, or Production data change was performed or authorized.
+
+## 2026-11-19 — CMS history and publication feedback fix
+
+- Fixed CMS version restore controls by using delegated click handling on the persistent history container. Restore buttons are rendered asynchronously and previously had listeners attached before they existed.
+- History now displays a loading state and an explicit empty-history message; errors are shown in the history panel.
+- After publishing, the Dashboard now reads the public CMS endpoint with `cache: no-store`, compares the public item count with the publish result, and provides a direct link to the selected public page with a cache-busting query parameter.
+- Commit: `d28bd1e21473ea3b3b984b056d7e1404774a154c`.
+- Preview deployment and browser verification are still pending. The public API count check verifies stored publication visibility, not that every content key maps to the intended visible DOM element.
+- No Production deployment, migration or database change was performed.

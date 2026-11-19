@@ -330,3 +330,7 @@ The on-page editor is an additional editing route, not a replacement for the Das
 - [ ] Complete page-by-page, bilingual, responsive and accessibility regression testing.
 
 Do not mark unchecked items complete based on a Git commit or a successful CI syntax check.
+
+### History and publish feedback correction
+
+The current development implementation uses delegated click handling for asynchronously rendered version restore buttons. After publication, the Dashboard reads the public content endpoint without cache and displays a direct link to the selected page. This is diagnostic feedback, not a substitute for checking the rendered DOM. Preview browser tests for both behaviors remain pending.

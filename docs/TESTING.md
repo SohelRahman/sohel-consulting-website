@@ -142,6 +142,10 @@ Record test evidence using the existing Test evidence format above. Do not mark 
 - [ ] Open the same preview URL signed out and confirm draft content is not disclosed.
 - [ ] Publish one English page and confirm the Bangla page and other pages remain unchanged.
 - [ ] Confirm Dashboard editing and inline editing update the same CMS record.
+- [ ] Click History for a key with versions; confirm the version list loads and Restore to Draft works after the list is rendered.
+- [ ] Click History for a key with no versions; confirm an explicit empty-history message appears.
+- [ ] Publish a page/language; confirm the Dashboard public API count matches the published count and use its direct link to verify the rendered page after refresh.
+- [ ] Confirm the published value is present in the public API and the intended DOM element displays it. A matching API count alone is not sufficient.
 - [ ] Test missing permission, expired session, cross-origin request and invalid content key/type/value handling.
 - [ ] Test keyboard access, focus order, close action, status announcements and narrow mobile viewport for the inline panel.
 

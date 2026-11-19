@@ -106,3 +106,11 @@ No Production migration, deployment or merge to `main` is authorized by this imp
 - The Cloudflare screenshot previously supplied showed a Ready deployment for an earlier commit. It does not prove that commit `754507b` or later changes are deployed.
 - The on-page editor requires a new Preview deployment and live browser testing. CI for the final follow-up commit has not yet been confirmed.
 - No Production migration, deployment, or merge to `main` is authorized.
+
+## History and publication feedback correction — 2026-11-19
+
+- The History UI previously created Restore to Draft buttons asynchronously, but attempted to attach their click listeners before those buttons existed. The handler now uses event delegation on the persistent history container.
+- History requests now show loading, empty and error states.
+- After a successful publish request, the Dashboard fetches the public `/api/cms-content` endpoint with `cache: no-store`, compares the returned item count with the publish response, and displays a direct public-page link with a cache-busting query parameter.
+- This verifies that the public API exposes the expected number of published items. It does not prove every content key maps to the intended visible page element; browser QA is still required.
+- Fix committed as `d28bd1e21473ea3b3b984b056d7e1404774a154c`. Preview deployment and live browser testing have not yet been confirmed.
