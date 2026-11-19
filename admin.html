@@ -300,7 +300,7 @@ loadDashboard();
 (()=> {
  const host=document.getElementById("view-content");if(!host)return;
  const card=document.createElement("section");card.className="admin-card";card.id="cms-editor";
- card.innerHTML='<h2>Bilingual page content manager</h2><p class="admin-message">Save edits as drafts. Publishing affects only the selected page and language. Courses, page styles and custom pages remain managed by their own modules.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0"><label class="admin-message">Page<select id="cms-page" class="admin-action" style="display:block;width:100%;margin-top:6px"><option value="home">Home</option><option value="about">About</option><option value="services">Services</option><option value="training">Training</option><option value="course">Course</option><option value="register">Registration</option><option value="contact">Contact</option><option value="case-studies">Case studies</option><option value="faq">FAQ</option><option value="privacy">Privacy policy</option><option value="terms">Terms</option><option value="refund">Refund policy</option><option value="global">Global/shared</option></select></label><label class="admin-message">Language<select id="cms-language" class="admin-action" style="display:block;width:100%;margin-top:6px"><option value="en">English</option><option value="bn">বাংলা</option></select></label></div><p class="admin-message">Element keys follow DOM order: h1.1, h2.1, p.1, a.1, li.1, small.1, span.1, button.1, img.1. Text nodes in mixed markup use keys such as h1.1.text.1; inline elements have their own keys such as em.1. Shared keys start with header. or footer. SEO keys: meta.title and meta.description.</p><form id="cms-form" class="admin-form" style="max-width:620px"><label>Content key<input name="key" required maxlength="120" placeholder="h1.1"></label><label>Content type<select name="type"><option value="text">Short text</option><option value="textarea">Long text</option><option value="url">URL</option><option value="image">Image URL</option><option value="richtext">Plain text</option></select></label><label>Draft value<textarea name="value" rows="5" maxlength="10000" required></textarea></label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="admin-action" type="submit" id="cms-save">Save draft</button><button class="button primary" type="button" id="cms-publish">Publish selected page + language</button><button class="admin-action" type="button" id="cms-preview">Preview draft</button><button class="admin-action" type="button" id="cms-inspect">Inspect content keys</button><button class="admin-action" type="button" id="cms-clear">Clear editor</button></div></form><p id="cms-message" class="admin-message" role="status"></p><h3>Content items</h3><div id="cms-items" class="admin-message">Select a page and language to load content.</div><div id="cms-history" class="admin-message"></div>';
+ card.innerHTML='<h2>Bilingual page content manager</h2><p class="admin-message">Save edits as drafts. Publishing affects only the selected page and language. Courses, page styles and custom pages remain managed by their own modules.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0"><label class="admin-message">Page<select id="cms-page" class="admin-action" style="display:block;width:100%;margin-top:6px"><option value="home">Home</option><option value="about">About</option><option value="services">Services</option><option value="training">Training</option><option value="course">Course</option><option value="register">Registration</option><option value="contact">Contact</option><option value="case-studies">Case studies</option><option value="faq">FAQ</option><option value="privacy">Privacy policy</option><option value="terms">Terms</option><option value="refund">Refund policy</option><option value="global">Global/shared</option></select></label><label class="admin-message">Language<select id="cms-language" class="admin-action" style="display:block;width:100%;margin-top:6px"><option value="en">English</option><option value="bn">বাংলা</option></select></label></div><p class="admin-message">Element keys follow DOM order: h1.1, h2.1, p.1, a.1, li.1, small.1, span.1, button.1, img.1. Text nodes in mixed markup use keys such as h1.1.text.1; inline elements have their own keys such as em.1. Shared keys start with header. or footer. SEO keys: meta.title and meta.description.</p><form id="cms-form" class="admin-form" style="max-width:620px"><label>Content key<input name="key" required maxlength="120" placeholder="h1.1"></label><label>Content type<select name="type"><option value="text">Short text</option><option value="textarea">Long text</option><option value="url">URL</option><option value="image">Image URL</option><option value="richtext">Plain text</option></select></label><label>Draft value<textarea name="value" rows="5" maxlength="10000" required></textarea></label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="admin-action" type="submit" id="cms-save">Save draft</button><button class="button primary" type="button" id="cms-publish">Publish selected page + language</button><button class="admin-action" type="button" id="cms-preview">Preview draft</button><button class="admin-action" type="button" id="cms-inspect">Inspect content keys</button><button class="admin-action" type="button" id="cms-initialize">Initialize from page HTML</button><button class="admin-action" type="button" id="cms-clear">Clear editor</button></div></form><p id="cms-message" class="admin-message" role="status"></p><h3>Content items</h3><div id="cms-items" class="admin-message">Select a page and language to load content.</div><div id="cms-history" class="admin-message"></div>';
  host.append(card);
  const $cms=id=>document.getElementById(id),form=$cms("cms-form");
  const page=()=> $cms("cms-page").value,lang=()=> $cms("cms-language").value;
@@ -344,6 +344,49 @@ loadDashboard();
   finally{button.disabled=false;}
  });
  $cms("cms-preview").addEventListener("click",()=>{const p=page()==="home"?(lang()==="bn"?"/bn/":"/"):((lang()==="bn"?"/bn/":"/")+page()+".html");window.open(p+"?cmsPreview=1","_blank","noopener");});
+ $cms("cms-initialize").addEventListener("click",async()=>{
+  const selectedPage=page(),selectedLanguage=lang();
+  if(selectedPage==="global"&&!confirm("Initialize shared header and footer content for "+selectedLanguage+"? Existing records will be preserved."))return;
+  if(selectedPage!=="global"&&!confirm("Read the current "+selectedLanguage+" page HTML and create missing CMS draft records for "+selectedPage+"? Existing records and drafts will not be overwritten."))return;
+  const button=$cms("cms-initialize");button.disabled=true;msg("Reading page HTML and preparing missing content items…");
+  try{
+   const route=selectedPage==="global"?(selectedLanguage==="bn"?"/bn/":"/"):(selectedLanguage==="bn"?"/bn/":"/")+(selectedPage==="home"?"":selectedPage+".html");
+   const response=await fetch(route,{credentials:"same-origin",cache:"no-store"});if(!response.ok)throw new Error("Could not load source page HTML ("+response.status+").");
+   const html=await response.text(),doc=new DOMParser().parseFromString(html,"text/html");
+   const tags=["h1","h2","h3","h4","h5","h6","p","a","li","small","span","button","strong","em","b","i","img"];
+   const items=[],seen=new Set();
+   function add(key,type,value){if(!key||!value||!String(value).trim()||seen.has(key))return;seen.add(key);items.push({key,type,value:String(value).trim().slice(0,10000)});}
+   function collect(root,prefix,excludeShared){
+    for(const tag of tags){
+     let index=0;
+     root.querySelectorAll(tag).forEach(el=>{
+      if(excludeShared&&(el.closest("header.site-header")||el.closest("footer.footer")))return;
+      if(el.closest("form")||el.closest("#sr-chat-panel")||el.closest("#sr-chat-launcher")||el.closest("#sr-consent-banner")||el.closest("#sr-consent-manage"))return;
+      if(["brand-mark","status-dot","nav-symbol"].some(c=>el.classList?.contains(c)))return;
+      if((tag!=="img"&&!el.textContent.trim())||el.hasAttribute("data-cms-ignore"))return;
+      index++;const key=(prefix?prefix+".":"")+tag+"."+index;
+      if(tag==="img"){add(key,"image",el.getAttribute("src")||"");return;}
+      const children=[...el.childNodes].filter(n=>n.nodeType===3&&n.nodeValue.trim());
+      if(el.children.length&&children.length)children.forEach((node,n)=>add(key+".text."+(n+1),"text",node.nodeValue));
+      else if(!el.children.length)add(key,"text",el.textContent);
+     });
+    }
+   }
+   if(selectedPage==="global"){
+    const header=doc.querySelector("header.site-header"),footer=doc.querySelector("footer.footer");
+    if(header)collect(header,"header",false);if(footer)collect(footer,"footer",false);
+   }else{
+    collect(doc,"",true);
+    add("meta.title","text",doc.title);
+    add("meta.description","text",doc.querySelector('meta[name="description"]')?.content||"");
+   }
+   if(!items.length)throw new Error("No eligible static content was found in this page HTML.");
+   const result=await request("/api/admin/cms/initialize",{method:"POST",body:JSON.stringify({page:selectedPage,language:selectedLanguage,items})});
+   await load();
+   msg("Initialization complete: "+result.created+" new draft items created; "+result.skipped+" existing items preserved. Review the drafts, then publish when ready.");
+  }catch(error){msg("Initialization failed: "+error.message);}
+  finally{button.disabled=false;}
+ });
  $cms("cms-inspect").addEventListener("click",()=>{const p=page()==="home"?(lang()==="bn"?"/bn/":"/"):((lang()==="bn"?"/bn/":"/")+page()+".html");window.open(p+"?cmsKeys=1","_blank","noopener");});
  $cms("cms-clear").addEventListener("click",()=>form.reset());
  $cms("cms-page").addEventListener("change",load);$cms("cms-language").addEventListener("change",load);
