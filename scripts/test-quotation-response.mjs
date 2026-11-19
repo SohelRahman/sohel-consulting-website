@@ -9,7 +9,7 @@ assert.ok(worker.includes("t.used_at IS NULL AND t.revoked_at IS NULL"));
 assert.ok(worker.includes("datetime(t.expires_at)>datetime('now')"));
 assert.ok(worker.includes("registration_status='approved',payment_status='pending'"));
 assert.ok(worker.includes("quotation_learner_"));
-assert.ok(worker.includes('responseUrl:url.origin+"/quote-response.html?token="'));
+assert.ok(worker.includes('responseUrl:url.origin+"/quote-response.html#token="'));
 assert.ok(admin.includes("Secure learner response link"));
 assert.ok(admin.includes("function showQuotationResponseLink(responseUrl)"));
 assert.ok(admin.includes("Copy link") && admin.includes('aria-modal','true'));
