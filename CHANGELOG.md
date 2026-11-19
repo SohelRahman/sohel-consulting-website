@@ -103,3 +103,13 @@
 - Verified learner decline against Preview D1 using a separate quotation: quote declined, registration/payment/enrollment unchanged, and token consumed.
 - Verified the Admin copy dialog could copy a link that opened the learner response page.
 - Decline audit event and security edge cases (expiry, revocation, replay, origin checks, rate limiting, response headers and bilingual/accessibility checks) remain pending. No Production or `main` changes were made.
+
+
+## 2026-11-19 — Preview quotation response security verification
+
+- Verified expired-token rejection: the learner page rejected an expired response link; D1 confirmed the token remained unused and unrevoked and the quotation remained sent.
+- Verified link reissue revocation: the original link was rejected after reissue, while the replacement link remained accessible.
+- Accepted the replacement link and verified the quotation became accepted, registration approved, payment pending, enrollment unchanged and token consumed.
+- Reopened the consumed replacement link and confirmed replay was rejected.
+- Confirmed the decline audit event `quotation_learner_declined`.
+- Cross-origin rejection, rate limiting, response-header checks, raw-token exposure review and full bilingual/accessibility checks remain pending. No Production or `main` changes were made.
