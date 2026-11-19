@@ -81,3 +81,11 @@
 - Learners can accept or decline; acceptance approves the registration and sets payment to pending while leaving enrollment unchanged. Decline leaves registration/payment/enrollment statuses unchanged.
 - Added token expiry, single-use, revocation, same-origin POST and rate-limit checks plus learner decision audit events.
 - Added migration 0013 and development CI contract tests. Preview D1 migration and browser/API acceptance remain pending; Production and `main` were not changed.
+
+
+## 2026-11-19 — Quotation response bearer-link security hardening
+
+- Added no-store, no-referrer and noindex response headers to the learner quotation response page.
+- Added a no-referrer meta policy as defense in depth.
+- Extended the learner quotation response contract test to check the security headers.
+- Preview header and browser verification remain pending. No D1 migration, Production deployment or `main` change was made.
