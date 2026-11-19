@@ -125,3 +125,5 @@
 - CI and Preview browser acceptance remain pending. No migration, D1 operation, deployment, Production change or `main` change was made.
 
 - Follow-up source review restored the separate quotation lookup required by accept/decline after the POST details branch; contract coverage now checks that path. Preview and CI verification remain pending.
+
+- Corrected two stale quotation-response contract assertions that still expected the former GET/query-string implementation. The latest CI result for the corrected assertions is pending; no passing result is claimed.
