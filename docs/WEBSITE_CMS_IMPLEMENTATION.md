@@ -17,9 +17,9 @@ The CMS does not replace the Courses module, Registration workflows, Page Styles
 Migration `0012_bilingual_static_cms.sql` creates:
 
 - `cms_content`: one row per page, language and stable content key; stores draft and published values separately.
-- `cms_content_versions`: append-only draft and published snapshots for each content key.
+- `cms_static_content_versions`: append-only draft and published snapshots for each content key. This namespaced table avoids colliding with the older, empty `cms_content_versions` table already present in Preview.
 
-The migration copies currently published `site_content` rows into the English homepage CMS context. Existing records are not deleted. The existing custom `pages` and `page_styles` tables are not altered.
+The migration copies currently published `site_content` rows into the English homepage CMS context. Existing records are not deleted. The existing custom `pages` and `page_styles` tables are not altered. The older six-table CMS schema already present in Preview is retained unchanged; its tables are not used by this static-page CMS implementation.
 
 ## Publication and recovery behavior
 
