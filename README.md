@@ -108,6 +108,18 @@ The initial D1 migration `0001_initial_schema.sql` was applied to `consulting-db
 - `GET /api/admin/inquiries`
 - `PATCH /api/admin/inquiries/:id`
 
+## Bilingual static-page CMS
+
+The CMS manages approved static website content for all 12 English pages, their 12 Bangla counterparts, and shared header/footer content in a separate Global context. It uses the existing static HTML pages and Worker/D1 architecture.
+
+Editing options:
+- **Dashboard editor:** select page and language, inspect or enter a content key, edit the value, and save a draft.
+- **On-page editor:** open a page with `?cmsKeys=1`, click a highlighted eligible element, and edit it in the inline panel. The editor shows the content key and saves through the same CMS draft API.
+
+Both paths save drafts only. Public content changes only after an authorized administrator publishes the selected page/language. Draft preview requires an authenticated admin session. The CMS does not replace Courses, Registration, Page Styles, Media Library, custom Pages, chat or other operational modules.
+
+Implementation and operational limits: [Bilingual CMS implementation notes](docs/WEBSITE_CMS_IMPLEMENTATION.md), [CMS Admin UI workflow](docs/CMS_ADMIN_UI_WORKFLOW.md), [CMS API routes](docs/API.md#static-page-cms).
+
 ## Payment status
 
 No payment gateway is connected. Registration records use a `not_configured` payment status. Gateway selection, merchant onboarding, payment initiation and server-side transaction verification are a later phase after the website is fully developed and tested.
@@ -129,8 +141,9 @@ Never publish unconfirmed client names, project outcomes, prices or credentials.
 
 - [Stage 9A CMS schema review](docs/CMS_SCHEMA_REVIEW_STAGE_9A.md) — review findings and required schema revisions.
 - [Stage 9A.4 final CMS schema review](docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md) — conditional design acceptance, unresolved Preview evidence and migration approval gates.
-- [CMS Admin UI and workflow specification](docs/CMS_ADMIN_UI_WORKFLOW.md) — Stage 8 planning baseline; CMS is not implemented yet.
-- [Master ChatGPT project context](docs/CHATGPT_PROJECT_CONTEXT.md) — reusable project handover prompt covering objectives, architecture, features, status, pending work and working/release rules. Keep this document current; use it to start new project chats.
+- [CMS Admin UI and workflow specification](docs/CMS_ADMIN_UI_WORKFLOW.md) — original Stage 8 requirements, implementation mapping, and acceptance tests.
+- [Master ChatGPT project context](docs/CHATGPT_PROJECT_CONTEXT.md) — current project handover context and development/release rules.
+- [Development handover prompt](docs/DEVELOPMENT_HANDOVER_PROMPT.md) — reusable instructions for continuing work in a new ChatGPT conversation.
 
 The maintained technical documentation is in [`docs/`](docs/):
 
@@ -146,3 +159,13 @@ The maintained technical documentation is in [`docs/`](docs/):
 - [Changelog](CHANGELOG.md) — significant development and maintenance history.
 
 **Maintenance requirement:** Update the relevant documentation and changelog in the same development change whenever code, APIs, database schema, configuration, security behavior, testing or deployment procedures change. Documentation must describe verified implementation; unresolved details must be marked as pending verification.
+
+> **Current CMS status — 2026-11-19**
+>
+> The bilingual static-page CMS is implemented on `current-focus-development`. Preview D1 migration 0012 was applied manually by the user and the user-reported verification showed four imported English homepage records, four published history rows, all six legacy CMS tables preserved, and migration ledger entries 0001–0012. These are user-supplied D1 Console results, not a direct database inspection by the repository maintainer.
+>
+> The CMS supports 12 English and 12 Bangla static pages plus a separate Global context. The Admin Dashboard supports page/language selection, draft save, page/language publish, authenticated draft preview, key inspection, soft archive/restore, version history and restore-to-draft. The public binding layer targets eligible static text nodes, image sources, links and SEO metadata; it deliberately excludes forms, dynamically generated course data, chat and other interactive controls.
+>
+> **Two editing paths:** (1) Dashboard editing by selecting or entering a content key; (2) on-page editing from the `?cmsKeys=1` inspector by clicking a highlighted element and using the inline editor panel. Both save drafts through the same authenticated `POST /api/admin/cms/save` endpoint. Inline editing was committed in `assets/cms.js` at commit `754507b0a28290cc972929f61bef891fbe9b880c`; it still requires a fresh Preview deployment and live browser acceptance testing. A successful CI run for the final follow-up commit and live inline-editor behavior have not yet been confirmed.
+>
+> Do not treat the earlier Cloudflare “Ready” screenshot as deployment evidence for commit `754507b`; it showed an earlier commit. No Production deployment, migration, merge to `main`, or Production data change is authorized.

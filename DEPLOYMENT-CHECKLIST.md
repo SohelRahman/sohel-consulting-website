@@ -29,13 +29,16 @@ See [Version Control and Release Management Policy](docs/VERSION_CONTROL_RELEASE
 ## Preview environment
 
 - [ ] Confirm Preview D1 binding points to `consulting-preview-db`, not Production
-- [ ] Confirm migrations `0001` through `0005` are applied to the Preview D1 database
+- [x] User-reported Preview D1 migration ledger contains migrations `0001` through `0012`; user also reported four imported homepage records and four published history records. Verify target identity and ledger again before any future migration
 - [ ] Confirm Preview admin email, password and session secret are configured
 - [ ] Sign in to the Preview administrator dashboard
 - [ ] Test course creation, editing, activation and deactivation
 - [ ] Test registration submission and administrator status updates
 - [ ] Test inquiry submission and administrator status updates
-- [ ] Test website content and homepage style draft/publish workflows
+- [ ] Test static CMS Dashboard editing and page/language draft/publish workflows
+- [ ] Test `?cmsKeys=1` on-page editing for text, link destinations and image sources
+- [ ] Verify inline and Dashboard editing update the same content key
+- [ ] Verify authenticated draft preview and signed-out draft isolation
 - [ ] Test page creation, editing, draft preview, publishing and deletion
 - [ ] Test English and Bangla pages and course-language switching
 - [ ] Test mobile navigation and responsive layouts
@@ -68,3 +71,14 @@ See [Version Control and Release Management Policy](docs/VERSION_CONTROL_RELEASE
 - [ ] Select and onboard a payment provider
 - [ ] Implement payment initiation, server-side verification, reconciliation and refund handling
 - [ ] Publish final payment and refund terms before accepting payments
+
+## Current CMS Preview deployment gate
+
+- [ ] Confirm Cloudflare has deployed commit `754507b0a28290cc972929f61bef891fbe9b880c` or a later development commit containing the on-page editor.
+- [ ] Confirm the deployed Preview is bound to the Preview D1 database, not Production.
+- [ ] Sign in to Preview Admin and verify the Dashboard editor.
+- [ ] Open an English and a Bangla page with `?cmsKeys=1`; test click-to-edit and draft save.
+- [ ] Verify draft preview, public-content isolation and explicit publication.
+- [ ] Complete the CMS acceptance checklist in [Testing and QA](docs/TESTING.md).
+
+A prior Cloudflare screenshot showing a Ready deployment for an earlier commit is not evidence that the on-page editor commit is deployed. Production remains excluded.

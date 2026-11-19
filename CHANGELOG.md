@@ -14,3 +14,14 @@
 - Next: test migration 0011's `syllabus_file_url` addition and Cloudinary PDF URL transfer with synthetic data.
 - Next: follow the Stage 9A.7 plan for isolated 0010/0011 compatibility scenarios and CMS schema tests on the disposable target.
 - Documentation-only repository changes. No migration 0004 or later, Preview or Production database mutation, application code change, or deployment was performed.
+
+## 2026-11-19 — Bilingual CMS and dual editing workflows
+
+- Implemented the bilingual static-page CMS for 12 English pages, 12 Bangla pages and a separate Global content context.
+- Added draft/published content separation, page/language-scoped publishing, authenticated draft preview, content-key inspection, soft archive/restore and version-history recovery.
+- Added the on-page editing path to the existing dashboard editor: when the page is opened with `?cmsKeys=1`, clicking an eligible highlighted element opens an inline editor. It saves drafts through the existing authenticated CMS save endpoint; it does not publish automatically.
+- Preserved the legacy six-table CMS schema in Preview; the new version history uses `cms_static_content_versions`.
+- User-reported Preview D1 results: migration ledger contains 0001–0012; four existing published English homepage values were imported; four published version rows were created; all six legacy CMS tables remain present. The assistant did not directly access D1.
+- Development branch commit for the on-page editor and follow-up correction: `754507b0a28290cc972929f61bef891fbe9b880c`.
+- Remaining: verify final GitHub Actions validation, confirm Cloudflare Preview has deployed this exact commit, and perform authenticated browser tests for dashboard editing, inline editing, save, preview and publication. The earlier Cloudflare Ready screenshot referred to an earlier deployment and does not verify this commit.
+- No Production migration/deployment, merge to `main`, or Production data change was performed or authorized.

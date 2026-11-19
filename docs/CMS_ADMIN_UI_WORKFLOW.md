@@ -1,7 +1,7 @@
 # Stage 8 — CMS Admin Panel UI and User Workflow Specification
 
-**Status:** Planning specification. Not implemented.  
-**Applies to:** `current-focus-development` and Preview only during future implementation.  
+**Status:** Original planning specification; implementation mapping and current gaps are recorded below.  
+**Applies to:** `current-focus-development` and Preview. Production changes require separate explicit approval.  
 **Production:** No Production change is authorized by this document.
 
 ## 1. Purpose and design constraints
@@ -286,3 +286,47 @@ Before implementation:
 6. Confirm page registry keys/routes against actual source files and existing page records.
 
 No CMS UI, backend, migration or database change is implemented by this specification. Production remains untouched.
+
+## 16. Implementation mapping and current status
+
+The original requirements above remain the design baseline. The current implementation is a static-page content binding CMS, not the full structural page/section builder described in every planning section.
+
+| Requirement area | Current implementation |
+| --- | --- |
+| Page registry | Fixed page/language selector for Home, About, Services, Training, Course, Register, Contact, Case Studies, FAQ, Privacy, Terms, Refund and Global |
+| Bilingual editing | Separate `en` and `bn` content contexts |
+| Content key editing | Dashboard key/value editor and on-page key inspector |
+| Direct editing | `?cmsKeys=1` highlights eligible page elements; clicking one opens an inline draft editor |
+| Draft save | `POST /api/admin/cms/save`; authenticated session and `content.manage` permission |
+| Publish | Whole selected page/language scope; separate Dashboard action |
+| Preview | Authenticated draft preview using `?cmsPreview=1` |
+| History/recovery | Version history and restore historical value to draft |
+| Archive/restore | Soft delete and restore; publishing is separate |
+| Global content | Separate Global context; shared header/footer keys use `header.` and `footer.` prefixes |
+
+The on-page editor is an additional editing route, not a replacement for the Dashboard editor. Both save into the same `cms_content` records and append draft history to `cms_static_content_versions`. The inline Save Draft action never publishes.
+
+### Explicit implementation limits
+
+- The CMS does not currently provide arbitrary page/section creation, structural reordering, route editing or a general-purpose page builder through this static-content editor.
+- Course records, registration data, forms, chat, analytics and other dynamic/interactive modules remain outside this CMS.
+- Inline editing is limited to eligible static text, anchor text/URL and image source bindings. It does not edit arbitrary CSS/layout or form controls.
+- Generated keys depend on eligible DOM tag order; review keys after markup changes.
+- The original proposed permission names in Section 10 were planning names. Current implementation uses existing `content.view` and `content.manage` permissions; Worker checks remain authoritative.
+- Preview D1 migration 0012 and seed verification were reported by the user. Final Preview deployment and live browser tests of both editing methods remain pending.
+
+### Updated acceptance status
+
+- [x] Existing Dashboard content editor retained.
+- [x] Page/language selector covers the 13 listed contexts.
+- [x] Separate English and Bangla contexts.
+- [x] Save Draft and separate Publish actions.
+- [x] Authenticated draft preview.
+- [x] Content key inspection.
+- [x] On-page click-to-edit workflow committed to the development branch.
+- [ ] Verify the latest inline-editor commit is deployed to Cloudflare Preview.
+- [ ] Browser-test click selection, key accuracy, text editing, anchor destination editing and image URL editing.
+- [ ] Browser-test draft save, reload, preview and public-content isolation.
+- [ ] Complete page-by-page, bilingual, responsive and accessibility regression testing.
+
+Do not mark unchecked items complete based on a Git commit or a successful CI syntax check.

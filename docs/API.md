@@ -94,48 +94,28 @@ When changing an endpoint, document:
 - D1 tables read or changed
 - Whether the English and Bangla clients use the endpoint
 
+## Static-page CMS
 
-## Planned CMS API contract (not implemented)
+The implemented static CMS uses the following routes. The Worker remains authoritative for authentication, permission checks, validation and publication behavior.
 
-The following API design is a planning specification from Stages 6–7. These routes are **not implemented** and must not be treated as available endpoints. Final route names and payloads must be reconciled with the current Worker before coding.
-
-| Method | Proposed path | Purpose |
+| Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/admin/cms/pages` | List CMS page registry and per-language status |
-| GET | `/api/admin/cms/pages/:pageKey` | Retrieve page metadata |
-| GET | `/api/admin/cms/pages/:pageKey/:language` | Retrieve page structure and admin content values |
-| POST | `/api/admin/cms/pages` | Create/register a page |
-| PUT | `/api/admin/cms/pages/:pageKey/:language` | Update language-specific page metadata |
-| POST / PUT | `/api/admin/cms/sections`, `/api/admin/cms/sections/:id` | Create/update sections |
-| POST / PUT | `/api/admin/cms/elements`, `/api/admin/cms/elements/:id` | Create/update content elements |
-| PUT | `/api/admin/cms/elements/:id/draft` | Save draft value only |
-| POST | `/api/admin/cms/elements/:id/default` | Restore immutable default into draft |
-| POST | `/api/admin/cms/elements/:id/delete` | Soft-delete an eligible element |
-| POST | `/api/admin/cms/elements/:id/restore` | Restore a soft-deleted element |
-| POST | `/api/admin/cms/pages/:pageKey/:language/publish` | Publish one whole page in one language |
-| GET | `/api/admin/cms/pages/:pageKey/:language/versions` | List page versions |
-| GET | `/api/admin/cms/versions/:id` | Retrieve a version snapshot |
-| POST | `/api/admin/cms/versions/:id/restore` | Restore historical snapshot into Draft |
-| GET | `/api/admin/cms/audit-log` | Retrieve CMS audit history |
-| GET | `/api/admin/cms/pages/:pageKey/:language/preview` | Protected draft preview (proposed) |
-| GET | `/api/cms/pages/:pageKey/:language` | Published public content only (proposed) |
+| GET | `/api/cms-content?page=...&lang=...` | Public published values for one page/language |
+| GET | `/api/admin/cms?page=...&lang=...` | Admin draft/published content list; requires `content.view` |
+| POST | `/api/admin/cms/save` | Save one draft value and append a draft version; requires `content.manage` |
+| POST | `/api/admin/cms/publish` | Publish the selected page/language; requires `content.manage` |
+| POST | `/api/admin/cms/delete` | Soft-delete a content key; requires `content.manage` |
+| POST | `/api/admin/cms/restore` | Restore an archived key to draft; requires `content.manage` |
+| GET | `/api/admin/cms/history` | Read version history; requires `content.view` |
+| GET | `/api/admin/cms/preview?page=...&lang=...` | Authenticated draft preview; requires `content.view` |
+| POST | `/api/admin/cms/restore-version` | Restore a historical value to draft; requires `content.manage` |
 
-### Confirmed CMS behaviour decisions
+The Dashboard editor and on-page editor share `POST /api/admin/cms/save`. The on-page editor is opened from a page URL containing `?cmsKeys=1`; it does not introduce a separate API or data store. The preview binding uses `?cmsPreview=1` and the protected preview route.
 
-- Publishing scope: entire selected page in one language.
-- Content created through approved CMS/page-builder workflows is automatically registered.
-- Historical versions restore into Draft; publishing is a separate action and creates a new version.
-- Element deletion is soft-delete. Existing public content remains visible until the next successful publication of that page/language; the deleted element is excluded from that publication.
-- Legacy APIs remain available during gradual page-by-page integration.
+CMS mutation endpoints enforce same-origin checks. URL and image values accept HTTP/HTTPS URLs only. Public content responses expose published values only. Publishing is scoped to one page and one language. See [CMS implementation notes](WEBSITE_CMS_IMPLEMENTATION.md).
 
-### Contract and security requirements
+### CMS data model
 
-- Draft/default/history fields are admin-only; public responses contain published content only.
-- Every admin endpoint must authenticate the session and enforce server-side permissions.
-- Proposed permission names are `cms.view`, `cms.edit`, `cms.structure.manage`, `cms.publish`, `cms.delete`, `cms.restore` and `cms.history.view`. These are not confirmed as seeded permissions.
-- Publication is transactional and isolated to one page/language. A failed publication leaves the prior published version active.
-- Use optimistic concurrency/version checks to prevent stale publication.
-- Validate and sanitize all content server-side; do not allow executable HTML or scripts.
-- The existing page-builder, `site_content` and `page_styles` APIs must remain compatible during migration.
-
-See [CMS Admin UI and workflow specification](CMS_ADMIN_UI_WORKFLOW.md) for the planned Admin Panel experience. The final API contract remains subject to Stage 6 schema approval, Preview D1 inspection and code-level route review.
+- `cms_content`: draft and published values keyed by page, language and content key.
+- `cms_static_content_versions`: append-only draft/published history for the static CMS.
+- The legacy `cms_content_versions` table belongs to the pre-existing legacy CMS schema and is not used by this implementation.

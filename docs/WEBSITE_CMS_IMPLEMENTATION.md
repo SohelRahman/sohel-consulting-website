@@ -1,6 +1,6 @@
 # Bilingual Website CMS – Development Implementation Notes
 
-Status: Development implementation prepared on `current-focus-development`. It is not production-ready until migration and Preview verification are completed.
+Status: CMS foundation committed on `current-focus-development`; Preview D1 migration 0012 and initial data checks were reported successful by the user. Final Preview deployment and browser acceptance tests remain pending.
 
 ## Scope
 
@@ -31,6 +31,23 @@ The migration copies currently published `site_content` rows into the English ho
 - Restoring an archived item returns it to draft state; it does not publish automatically.
 - Historical versions can be restored to draft. A separate publication is required to make the restored value public.
 - Draft preview uses an authenticated admin API. Adding `?cmsPreview=1` to a page URL does not expose drafts to unauthenticated visitors.
+
+## Editing workflows
+
+### Dashboard editor
+
+The Admin Dashboard provides page and language selectors, a content-key field, content type/value fields, Save Draft, Publish, Preview Draft, key inspection, archive/restore and version-history controls. The dashboard editor and the on-page editor use the same CMS records and Worker endpoints; they are not separate content stores.
+
+### On-page editor
+
+1. From the CMS Dashboard, select the page and language and use **Inspect content keys**, or open the corresponding Preview page with `?cmsKeys=1` while signed in as an administrator.
+2. Eligible static elements are outlined. Click an outlined element to open the fixed inline editing panel.
+3. The panel displays the selected content key, page/language context, content type and current visible value.
+4. Save Draft calls `POST /api/admin/cms/save` with the selected page, language, key, type and value. The Worker session and `content.manage` permission remain authoritative.
+5. Preview Draft opens the same page with `?cmsPreview=1`; the protected preview API supplies draft values to an authenticated administrator.
+6. Publishing remains a separate action in the Dashboard. Inline Save Draft never publishes.
+
+For an anchor, the inline panel defaults to editing its visible text; select the URL content type and enter a valid HTTP/HTTPS URL when the link destination itself is to be changed. For an image, the panel edits the image URL. The inline editor currently handles eligible static text, anchor text/URL and image source values only; it is not a general-purpose visual page builder.
 
 ## Content key conventions
 
@@ -81,3 +98,11 @@ The generated ordering is based on the existing HTML structure. If a developer c
 12. Regression-test Courses, registration, contact forms, Page Styles, Media Library and custom Pages.
 
 No Production migration, deployment or merge to `main` is authorized by this implementation.
+
+## Current implementation and verification status
+
+- CMS code and the on-page editor are committed on `current-focus-development`; latest known commit for the inline editor follow-up is `754507b0a28290cc972929f61bef891fbe9b880c`.
+- The user supplied Preview D1 Console results showing migration ledger entries 0001–0012, four imported `home/en` records, four published history records, and the six legacy CMS tables still present. Treat these as user-reported evidence, not direct database access.
+- The Cloudflare screenshot previously supplied showed a Ready deployment for an earlier commit. It does not prove that commit `754507b` or later changes are deployed.
+- The on-page editor requires a new Preview deployment and live browser testing. CI for the final follow-up commit has not yet been confirmed.
+- No Production migration, deployment, or merge to `main` is authorized.

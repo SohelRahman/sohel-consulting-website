@@ -84,9 +84,9 @@ For each QA cycle, record:
 Do not mark a manual test as passed based only on static analysis or CI success.
 
 
-## Planned CMS acceptance tests (not implemented)
+## CMS acceptance tests
 
-These cases define future QA scope. They have not been executed because the CMS is not implemented.
+The static-page CMS is implemented on the development branch. The following tests are required for Preview acceptance; unchecked items have not been verified unless test evidence is recorded.
 
 ### Page registry and bilingual editing
 - [ ] Confirm all approved page records are listed.
@@ -124,3 +124,25 @@ These cases define future QA scope. They have not been executed because the CMS 
 - [ ] Run responsive, keyboard and accessibility checks for English and Bangla CMS screens.
 
 Record test evidence using the existing Test evidence format above. Do not mark any CMS test as passed before implementation and execution in Preview.
+
+### Dashboard and on-page editing — Preview acceptance
+
+- [ ] Confirm the CMS Dashboard shows all 13 contexts: Home, About, Services, Training, Course, Register, Contact, Case Studies, FAQ, Privacy, Terms, Refund and Global.
+- [ ] Confirm each page can be selected independently in English and Bangla.
+- [ ] In the Dashboard editor, save a draft for one non-homepage text key; reload and confirm the draft persists.
+- [ ] Confirm the public page remains unchanged before publication.
+- [ ] Open the selected page with `?cmsKeys=1` while authenticated; confirm eligible elements are highlighted.
+- [ ] Click a highlighted heading and confirm the inline editor opens with the correct key and visible text.
+- [ ] Edit text inline, save draft, reload the Dashboard editor and confirm the same key/value appears there.
+- [ ] Edit an anchor's visible text; confirm its destination remains unchanged.
+- [ ] Change an anchor destination using content type `url`; verify only HTTP/HTTPS URLs are accepted and the draft preview points to the new destination.
+- [ ] Change an image source using content type `image`; verify URL validation and draft preview.
+- [ ] Confirm Save Draft never publishes.
+- [ ] Use Preview Draft and confirm the saved draft appears for an authenticated administrator.
+- [ ] Open the same preview URL signed out and confirm draft content is not disclosed.
+- [ ] Publish one English page and confirm the Bangla page and other pages remain unchanged.
+- [ ] Confirm Dashboard editing and inline editing update the same CMS record.
+- [ ] Test missing permission, expired session, cross-origin request and invalid content key/type/value handling.
+- [ ] Test keyboard access, focus order, close action, status announcements and narrow mobile viewport for the inline panel.
+
+Record browser, viewport, Preview deployment commit SHA and screenshots/results. These tests are currently pending; a commit or CI pass is not a substitute for browser verification.

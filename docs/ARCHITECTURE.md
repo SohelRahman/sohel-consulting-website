@@ -48,19 +48,17 @@ Development uses the `current-focus-development` branch and its Worker Preview c
 
 See [Deployment](DEPLOYMENT.md) before changing Cloudflare resources.
 
+## Implemented static-page CMS
 
-## Proposed CMS architecture (planning only)
+The static-page CMS extends the existing architecture without replacing static page templates or operational modules.
 
-The website-wide CMS is a planned extension, not part of the current implemented architecture.
+- `assets/cms.js` discovers eligible static content elements and assigns deterministic content keys based on tag order.
+- Public pages request published content from `GET /api/cms-content`.
+- The Admin Dashboard edits draft values through the protected CMS API.
+- The on-page editor is activated with `?cmsKeys=1`; clicking a highlighted eligible element opens an inline panel and saves through the same draft endpoint as the Dashboard.
+- Authenticated draft preview is activated with `?cmsPreview=1`.
+- `cms_content` stores page/language/key draft and published values.
+- `cms_static_content_versions` stores version snapshots.
+- English, Bangla and Global are separate content contexts.
 
-The proposed design adds a CMS content-resolution and administration layer to the existing Cloudflare Worker/D1 application:
-- The existing static website and page templates remain responsible for presentation.
-- The Worker remains the API entry point and enforces session authentication, RBAC, validation and publication transactions.
-- Proposed CMS records separate logical pages, language-specific page records, sections, elements, default/draft/published values and version snapshots.
-- Public page delivery reads published values only.
-- Admin preview reads draft values only after authorization.
-- English and Bangla are separate publication scopes.
-- Existing `pages`, `site_content` and `page_styles` remain compatible during gradual page-by-page migration.
-- Courses, registrations, inquiries, media assets, chat and analytics remain separate operational domains.
-
-This proposal depends on Stage 6 schema approval and Preview D1 verification. It must not be interpreted as implemented or as authorization to create tables or change public rendering. See [CMS Admin UI and workflow specification](CMS_ADMIN_UI_WORKFLOW.md), [API Reference](API.md) and [Database Reference](DATABASE.md).
+The CMS intentionally excludes forms, dynamic course records, registration records, chat, analytics and other interactive/operational data. It does not replace the custom Pages builder or Page Styles module. See [CMS implementation](WEBSITE_CMS_IMPLEMENTATION.md) and [API reference](API.md).
