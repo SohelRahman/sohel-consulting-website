@@ -59,3 +59,5 @@
 ## 2026-11-20 — Admin account session revocation hardening
 - Admin account PATCH now increments `session_version` on every successful edit; account disable also increments it in the same update. This prevents a disabled account's old session from becoming valid again after re-enablement and revokes sessions after role/permission/password changes.
 - Added RBAC contract assertions. CI and Preview live-session tests are pending. No schema change or Production operation was performed.
+
+- Stage 18 RBAC automated CI passed in run `44638857897` for commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`. Preview live-session revocation testing remains pending.
