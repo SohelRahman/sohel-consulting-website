@@ -13,5 +13,10 @@ assert.ok(worker.includes('responseUrl:url.origin+"/quote-response.html?token="'
 assert.ok(admin.includes("secure learner response link"));
 assert.ok(page.includes("Accept quotation") && page.includes("Decline quotation"));
 assert.ok(page.includes("/api/quotation-response"));
+assert.ok(page.includes('<meta name="referrer" content="no-referrer">'));
+assert.ok(worker.includes('url.pathname === "/quote-response.html"'));
+assert.ok(worker.includes('headers.set("cache-control", "no-store, max-age=0")'));
+assert.ok(worker.includes('headers.set("referrer-policy", "no-referrer")'));
+assert.ok(worker.includes('headers.set("x-robots-tag", "noindex, nofollow, noarchive")'));
 assert.ok(migration.includes("token_hash TEXT NOT NULL UNIQUE") && migration.includes("ON DELETE CASCADE"));
 console.log("Learner quotation response contract tests passed.");
