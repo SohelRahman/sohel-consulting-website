@@ -186,8 +186,9 @@ The development workflow runs `node scripts/test-quotation-response.mjs`. These 
 - [ ] Open the link signed out and confirm only quotation amount, currency, description, course title and registration reference are shown.
 - [ ] Accept a valid quotation; verify quote status becomes accepted, registration becomes approved, payment becomes pending and enrollment remains unchanged.
 - [ ] Repeat with a separate quote and decline it; verify registration/payment/enrollment statuses remain unchanged.
-- [ ] Reuse a consumed link and verify it is rejected.
-- [ ] Test an expired link, a revoked link, a non-sent quotation and a cancelled/rejected registration.
+- [x] Reuse a consumed link and verify it is rejected (Preview replay test, 2026-11-19).
+- [x] Test an expired link and a revoked link (Preview expiry and reissue tests, 2026-11-19).
+- [ ] Test a non-sent quotation and a cancelled/rejected registration.
 - [ ] Verify cross-origin POST is rejected and public response rate limiting applies.
 - [ ] Confirm raw tokens do not appear in D1 rows, audit details or application logs.
 - [ ] Confirm `/quote-response.html` returns `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive`.
@@ -212,6 +213,11 @@ The following normal-path checks were completed from user-supplied Preview brows
 - [x] Accept quotation `42e60e83-2d96-4c51-b75f-0d519a52c154`: D1 showed `accepted`, registration `approved`, payment `pending`, enrollment `awaiting_confirmation`, and token `used_at` populated.
 - [x] Confirm acceptance audit events `quotation_learner_accepted` and `registration_approved_by_learner_quote`.
 - [x] Decline separate quotation `cc76844e-89a2-4cbe-9022-474b80303ae1`: D1 showed `declined`, while registration `approved`, payment `pending`, and enrollment `awaiting_confirmation` remained unchanged; token `used_at` was populated and `revoked_at` remained NULL.
-- [ ] Verify decline audit event `quotation_learner_declined`.
+- [x] Verify decline audit event `quotation_learner_declined`.
+- [x] Verify expired-token rejection: quotation `1b82e740-0f81-4c15-8a5e-ef26251894b1` remained `sent`; token expiry was `2026-11-18 00:00:00`, with `used_at` and `revoked_at` NULL; learner page rejected the link.
+- [x] Verify link reissue revokes the previous token for quotation `954d469c-57d0-47b9-9620-404c722c96b4`; D1 showed original token `542c0aa8-6475-4f02-b494-c56d7ecbfc2c` revoked and replacement token `3b2c3d6f-a597-48c9-8ddd-9438f76ed0de` active.
+- [x] Verify original revoked link is rejected and replacement link remains accessible.
+- [x] Accept the replacement link; D1 showed quote `accepted`, registration `approved`, payment `pending`, enrollment `awaiting_confirmation`, and replacement token `used_at` populated.
+- [x] Replay the consumed replacement link; learner page rejected the second use.
 
-The remaining security and compatibility checklist above is still open. These normal-path results do not establish expiry, revocation, replay protection, cross-origin rejection, rate limiting, response headers, or complete bilingual/accessibility acceptance.
+Cross-origin rejection, rate limiting, response headers, raw-token exposure review, non-sent/cancelled-registration cases and full bilingual/accessibility acceptance remain open.
