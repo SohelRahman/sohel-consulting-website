@@ -195,3 +195,10 @@ The development workflow runs `node scripts/test-quotation-response.mjs`. These 
 - [ ] Verify English and Bangla learner pages, keyboard controls and mobile layout.
 
 The seven-day response URL is a bearer credential: anyone possessing it can view and respond to the quotation until it expires or is used. Share it only with the intended learner. Production remains out of scope.
+
+
+### Admin learner-link copy dialog
+- [ ] In Preview Admin, create or select a draft/sent quotation and issue/reissue its learner response link.
+- [ ] Confirm a dialog displays the complete URL in a read-only selectable field.
+- [ ] Click **Copy link** and paste into a local text field or address bar to verify the full URL was copied; do not paste a live token into chat or tickets.
+- [ ] Confirm the dialog can be closed and the link remains one-time and seven-day limited.
