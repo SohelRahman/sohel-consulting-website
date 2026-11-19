@@ -1,3 +1,4 @@
+import { calculateCoursePrice, validateCourseDiscount } from "./course-pricing.js";
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
 });
@@ -201,7 +202,8 @@ async function handleApi(request, env) {
 
   if (path === "/api/courses" && method === "GET") {
     const {results=[]} = await env.DB.prepare("SELECT id,slug,title_en,title_bn,summary_en,summary_bn,level,delivery_modes,languages,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at,syllabus_url,syllabus_file_url FROM courses WHERE active=1 ORDER BY title_en").all();
-    return json({courses:results});
+    const today=new Date().toISOString().slice(0,10);
+    return json({courses:results.map(course=>({...course,...calculateCoursePrice(course,today)}))});
   }
 
 
@@ -280,15 +282,8 @@ async function handleApi(request, env) {
     const course=await env.DB.prepare("SELECT id,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at FROM courses WHERE id=? AND active=1").bind(courseId).first();
     if (!course) return json({error:"Please select an available course."},400);
     if (pricingType==="fixed" && (course.pricing_type==="custom" || !course.fixed_fee_minor)) return json({error:"A fixed fee is not configured for this course. Please request a customized quotation."},400);
-    let registrationFee=course.fixed_fee_minor;
-    const today=new Date().toISOString().slice(0,10);
-    const discountActive=course.discount_type&&course.discount_type!=="none"&&Number(course.discount_value)>0&&(!course.discount_starts_at||today>=course.discount_starts_at)&&(!course.discount_ends_at||today<=course.discount_ends_at);
-    if(pricingType==="fixed"&&discountActive){
-      registrationFee=course.discount_type==="percentage"
-        ? Math.round(course.fixed_fee_minor*(1-course.discount_value/100))
-        : course.fixed_fee_minor-course.discount_value;
-      registrationFee=Math.max(0,registrationFee);
-    }
+    const registrationPricing=calculateCoursePrice(course);
+    const registrationFee=registrationPricing.final_fee_minor;
     const learnerId=id(), registrationId=id();
     const reference="SR-"+crypto.randomUUID().replace(/-/g,"").slice(0,10).toUpperCase();
     await env.DB.batch([
@@ -547,12 +542,11 @@ async function handleApi(request, env) {
       if (fixedFee!==null && (!Number.isFinite(fixedFee) || fixedFee<1)) return json({error:"Enter a valid positive fixed fee."},400);
       if (data?.pricingType==="fixed" && fixedFee===null) return json({error:"A fixed-fee course needs a fee amount."},400);
       const discountType=["none","percentage","fixed"].includes(data?.discountType)?data.discountType:"none";
-      const discountValue=discountType==="none"?null:(discountType==="fixed"?Math.round(Number(data.discountValue)*100):Math.round(Number(data.discountValue)));
+      const rawDiscountValue=Number(data?.discountValue);
+      const discountValue=discountType==="none"?null:(discountType==="fixed"?Math.round(rawDiscountValue*100):(Number.isInteger(rawDiscountValue)?rawDiscountValue:NaN));
       const discountStart=clean(data?.discountStartsAt,10)||null, discountEnd=clean(data?.discountEndsAt,10)||null;
-      const validDate=v=>!v||/^\d{4}-\d{2}-\d{2}$/.test(v);
-      if(discountType!=="none"&&fixedFee===null)return json({error:"A fixed course fee is required before applying a discount."},400);
-      if(discountType!=="none"&&(!Number.isFinite(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>100)||(discountType==="fixed"&&discountValue>=fixedFee)))return json({error:"Enter a valid discount. Percentage must be 1–100; fixed discount must be less than the course fee."},400);
-      if(!validDate(discountStart)||!validDate(discountEnd)||(discountStart&&discountEnd&&discountEnd<discountStart))return json({error:"Enter valid discount dates. The end date cannot be earlier than the start date."},400);
+      const discountError=validateCourseDiscount({fixedFeeMinor:fixedFee,discountType,discountValue,discountStartsAt:discountStart,discountEndsAt:discountEnd});
+      if(discountError)return json({error:discountError},400);
       const syllabusUrl=clean(data?.syllabusUrl,1000), syllabusFileUrl=clean(data?.syllabusFileUrl,1000);
       const safeUrl=value=>{if(!value)return "";try{const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error();return u.href;}catch{return null;}};
       const safeSyllabus=safeUrl(syllabusUrl), safeSyllabusFile=safeUrl(syllabusFileUrl);
@@ -601,15 +595,14 @@ async function handleApi(request, env) {
       const fixedFee=data?.fixedFee===""||data?.fixedFee==null?null:Math.round(Number(data.fixedFee)*100);
       const pricingType=["fixed","custom","both"].includes(data?.pricingType)?data.pricingType:null;
       const discountType=["none","percentage","fixed"].includes(data?.discountType)?data.discountType:"none";
-      const discountValue=discountType==="none"?null:(discountType==="fixed"?Math.round(Number(data.discountValue)*100):Math.round(Number(data.discountValue)));
+      const rawDiscountValue=Number(data?.discountValue);
+      const discountValue=discountType==="none"?null:(discountType==="fixed"?Math.round(rawDiscountValue*100):(Number.isInteger(rawDiscountValue)?rawDiscountValue:NaN));
       const discountStart=clean(data?.discountStartsAt,10)||null, discountEnd=clean(data?.discountEndsAt,10)||null;
-      const validDate=v=>!v||/^\d{4}-\d{2}-\d{2}$/.test(v);
       if (!title || !slug || !pricingType) return json({error:"Course title, valid URL slug and pricing model are required."},400);
       if (fixedFee!==null && (!Number.isFinite(fixedFee)||fixedFee<1)) return json({error:"Enter a valid positive fixed fee."},400);
       if (pricingType==="fixed" && fixedFee===null) return json({error:"A fixed-fee course needs a fee amount."},400);
-      if(discountType!=="none"&&fixedFee===null)return json({error:"A fixed course fee is required before applying a discount."},400);
-      if(discountType!=="none"&&(!Number.isFinite(discountValue)||discountValue<1||(discountType==="percentage"&&discountValue>100)||(discountType==="fixed"&&discountValue>=fixedFee)))return json({error:"Enter a valid discount. Percentage must be 1–100; fixed discount must be less than the course fee."},400);
-      if(!validDate(discountStart)||!validDate(discountEnd)||(discountStart&&discountEnd&&discountEnd<discountStart))return json({error:"Enter valid discount dates. The end date cannot be earlier than the start date."},400);
+      const discountError=validateCourseDiscount({fixedFeeMinor:fixedFee,discountType,discountValue,discountStartsAt:discountStart,discountEndsAt:discountEnd});
+      if(discountError)return json({error:discountError},400);
       const syllabusUrl=clean(data?.syllabusUrl,1000), syllabusFileUrl=clean(data?.syllabusFileUrl,1000);
       const safeUrl=value=>{if(!value)return "";try{const u=new URL(value);if(!["https:","http:"].includes(u.protocol))throw new Error();return u.href;}catch{return null;}};
       const safeSyllabus=safeUrl(syllabusUrl), safeSyllabusFile=safeUrl(syllabusFileUrl);
