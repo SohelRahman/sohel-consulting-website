@@ -2,10 +2,10 @@
  * Updates text nodes with textContent/nodeValue only; HTML is never injected.
  */
 (()=> {
- const path=location.pathname.replace(/^\\/+|\\/+$/g,""),parts=path.split("/").filter(Boolean);
+ const path=location.pathname.replace(/^\/+|\/+$/g,""),parts=path.split("/").filter(Boolean);
  const language=parts[0]==="bn"?"bn":"en";
  const slug=(parts[0]==="bn"?parts[1]:parts[0])||"index.html";
- const page=slug.replace(/\\.html$/i,"")==="index"?"home":slug.replace(/\\.html$/i,"");
+ const page=slug.replace(/\.html$/i,"")==="index"?"home":slug.replace(/\.html$/i,"");
  const tags=["h1","h2","h3","h4","h5","h6","p","a","li","small","span","button","strong","em","b","i","img"];
  function collect(root,prefix,excludeShared){
   const nodes={};
