@@ -95,3 +95,11 @@
 - Replaced the browser alert/prompt link handoff with an accessible dialog containing a read-only, selectable URL field and a dedicated Copy link button.
 - Added clipboard API support with a legacy copy fallback and a manual-selection fallback.
 - Added a contract assertion for the Admin copy dialog. Preview browser verification remains pending; no D1 migration, Production deployment or `main` change was made.
+
+
+## 2026-11-19 — Preview quotation response workflow verification
+
+- Verified learner acceptance against Preview D1: quote accepted, registration approved, payment pending, enrollment unchanged, token consumed, and both acceptance audit events present.
+- Verified learner decline against Preview D1 using a separate quotation: quote declined, registration/payment/enrollment unchanged, and token consumed.
+- Verified the Admin copy dialog could copy a link that opened the learner response page.
+- Decline audit event and security edge cases (expiry, revocation, replay, origin checks, rate limiting, response headers and bilingual/accessibility checks) remain pending. No Production or `main` changes were made.
