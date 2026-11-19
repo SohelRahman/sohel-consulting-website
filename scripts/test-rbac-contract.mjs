@@ -38,6 +38,8 @@ check("Self-service password changes require a 12-character minimum", /next\.len
 check("Password storage uses Cloudflare Workers-compatible PBKDF2 with 100,000 iterations", /iterations:100000,hash:"SHA-256"/.test(worker));
 check("Sessions are bound to account session_version", /sessionVersion/.test(worker) && /session_version/.test(worker));
 check("Session version is incremented after password change", /nextVersion=Number\(user\.session_version\)\+1/.test(worker));
+check("Admin account edits always increment session_version to invalidate existing sessions", /session_version=session_version\+1,updated_at=CURRENT_TIMESTAMP WHERE id=\?/.test(worker));
+check("Disabling an Admin account increments session_version so old sessions stay revoked after reactivation", /UPDATE admin_users SET is_active=0,session_version=session_version\+1,updated_at=CURRENT_TIMESTAMP WHERE id=\?/.test(worker));
 check("Dashboard exposes role-based User Access controls", /User Access/i.test(adminHtml) && /permissions/i.test(adminHtml));
 check("RBAC migration creates admin_users with constrained roles", /CREATE TABLE IF NOT EXISTS admin_users/.test(migration) && /CHECK \(role IN \('admin','user'\)\)/.test(migration));
 check("RBAC migration stores active state and session version", /is_active INTEGER/.test(migration) && /session_version INTEGER/.test(migration));
