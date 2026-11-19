@@ -306,3 +306,27 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - CI contract test: `scripts/test-quotation-response.mjs`.
 - Apply migration 0013 manually to Preview D1 only after reviewing the SQL. Then perform the Preview tests in `docs/TESTING.md`. Do not use Wrangler migration commands. No Production/main changes are authorized.
 - Security note: the URL is a bearer credential. Anyone possessing it can view/respond to the quote until expiry or use. Share it only with the intended learner.
+
+
+### Stage 14 Preview database verification update
+
+**Status: Preview D1 schema verified from user-supplied SQL output; application workflow remains unverified.**
+
+- User confirmed `quotation_response_tokens` exists in Preview D1.
+- `PRAGMA table_info` confirmed the seven expected columns and `created_at DEFAULT CURRENT_TIMESTAMP`.
+- `PRAGMA foreign_key_list` confirmed `quote_id` references `quotations.id` with `ON DELETE CASCADE`.
+- `PRAGMA index_list` confirmed the expiry and quote lookup indexes, unique token-hash index, and primary-key index.
+- These results verify the table structure only. They do not verify link issuance, public token lookup, learner acceptance/decline, expiry, revocation, rate limiting or browser behavior.
+- Preview application acceptance remains pending. Do not mark Stage 14 complete until the checklist in `docs/TESTING.md` has been executed.
+
+## 15. Quotation response bearer-link security hardening
+
+**Status: Implemented and committed on development; CI and Preview response-header verification pending.**
+
+- The Worker now wraps the `/quote-response.html` asset response with `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive`.
+- The learner page also declares a no-referrer meta policy as defense in depth.
+- The existing quotation-response JSON helper already sets `Cache-Control: no-store`.
+- Extended the learner quotation response contract test to assert these protections.
+- No D1 migration or SQL change was required. No Production deployment or `main` change was made.
+- Preview verification must inspect the response headers and confirm the page has no third-party resources that could receive the bearer-token URL.
+- Stage 14's accept/decline workflow remains unverified until the learner journey is tested in Preview.
