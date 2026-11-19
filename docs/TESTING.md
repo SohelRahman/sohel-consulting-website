@@ -190,6 +190,8 @@ The development workflow runs `node scripts/test-quotation-response.mjs`. These 
 - [ ] Test an expired link, a revoked link, a non-sent quotation and a cancelled/rejected registration.
 - [ ] Verify cross-origin POST is rejected and public response rate limiting applies.
 - [ ] Confirm raw tokens do not appear in D1 rows, audit details or application logs.
+- [ ] Confirm `/quote-response.html` returns `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive`.
+- [ ] Confirm the learner page includes a no-referrer meta policy and no third-party resources that could receive the bearer-token URL.
 - [ ] Verify English and Bangla learner pages, keyboard controls and mobile layout.
 
 The seven-day response URL is a bearer credential: anyone possessing it can view and respond to the quotation until it expires or is used. Share it only with the intended learner. Production remains out of scope.
