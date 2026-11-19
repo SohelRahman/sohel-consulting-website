@@ -129,3 +129,10 @@
 - Corrected two stale quotation-response contract assertions that still expected the former GET/query-string implementation. The latest CI result for the corrected assertions is pending; no passing result is claimed.
 
 - Development CI run `44588832549` passed all automated checks for commit `42d58e24ff59fe728dd59b043c879783b7b948b8`; Preview deployment and browser acceptance remain pending.
+
+
+## 2026-11-20 — Admin account session revocation hardening
+
+- Admin account edits now increment `session_version`, revoking the target account's existing sessions after role, permission, active-state or password changes.
+- Account disable now increments `session_version` together with setting `is_active=0`, so re-enabling an account does not revive a previously issued session.
+- Added RBAC source-contract assertions for both paths. CI and Preview live-session acceptance remain pending. No migration or Production change was made.
