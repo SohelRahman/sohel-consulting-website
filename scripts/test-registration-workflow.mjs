@@ -20,7 +20,7 @@ assert.ok(worker.includes('const quoteStatusMatch=path.match'));
 assert.ok(worker.includes('Administrators can issue response links only for draft quotations'));
 assert.ok(worker.includes('registration_status=\'approved\',payment_status=\'pending\''));
 assert.ok(worker.includes('quotation_learner_'));
-assert.ok(worker.includes('enrollment_status<>'cancelled''));
+assert.ok(worker.includes("enrollment_status<>'cancelled'"));
 assert.ok(admin.includes('secure learner response link'));
 assert.ok(!admin.includes("Allowed next status:"));
 console.log("Quotation lifecycle and learner-response contracts passed.");
