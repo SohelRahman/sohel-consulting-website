@@ -17,7 +17,7 @@ assert.ok(admin.includes("Quote history"));
 console.log("All registration workflow contract tests passed.");
 
 assert.ok(worker.includes('const quoteStatusMatch=path.match'));
-assert.ok(worker.includes('Administrators can issue response links only for draft quotations'));
+assert.ok(worker.includes('Administrators can issue response links only for draft or sent quotations'));
 assert.ok(worker.includes('registration_status=\'approved\',payment_status=\'pending\''));
 assert.ok(worker.includes('quotation_learner_'));
 assert.ok(worker.includes("enrollment_status<>'cancelled'"));
