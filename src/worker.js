@@ -966,15 +966,15 @@ async function handleApi(request, env) {
     if (quoteStatusMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
-      if (data?.status!=="sent") return json({error:"Administrators can issue response links only for draft quotations. Learners must accept or decline using the secure link."},400);
+      if (data?.status!=="sent") return json({error:"Administrators can issue response links only for draft or sent quotations. Learners must accept or decline using the secure link."},400);
       const quote=await env.DB.prepare("SELECT id,registration_id,status FROM quotations WHERE id=? AND registration_id=?").bind(quoteStatusMatch[2],quoteStatusMatch[1]).first();
       if (!quote) return json({error:"Quotation not found."},404);
-      if (quote.status!=="draft") return json({error:"Only a draft quotation can be sent."},409);
+      if (!["draft","sent"].includes(quote.status)) return json({error:"Only a draft or sent quotation can receive a response link."},409);
       const expiresAt=new Date(Date.now()+7*24*60*60*1000),expiresSql=expiresAt.toISOString().slice(0,19).replace("T"," "),validUntil=expiresAt.toISOString().slice(0,10);
       const rawToken=b64url(crypto.getRandomValues(new Uint8Array(32))),tokenHash=await chatTokenHash(rawToken),tokenId=id();
       const batch=await env.DB.batch([
         env.DB.prepare("UPDATE quotation_response_tokens SET revoked_at=CURRENT_TIMESTAMP WHERE quote_id=? AND used_at IS NULL AND revoked_at IS NULL").bind(quote.id),
-        env.DB.prepare("UPDATE quotations SET status='sent',valid_until=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status='draft'").bind(validUntil,quote.id,quote.registration_id),
+        env.DB.prepare("UPDATE quotations SET status='sent',valid_until=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status=?").bind(validUntil,quote.id,quote.registration_id,quote.status),
         env.DB.prepare("INSERT INTO quotation_response_tokens (id,quote_id,token_hash,expires_at) SELECT ?,?,?,? WHERE EXISTS (SELECT 1 FROM quotations WHERE id=? AND status='sent' AND valid_until=?)").bind(tokenId,quote.id,tokenHash,expiresSql,quote.id,validUntil)
       ]);
       if (!batch[1]?.meta?.changes || !batch[2]?.meta?.changes) return json({error:"The quotation changed before its response link could be issued. Reload and try again."},409);
