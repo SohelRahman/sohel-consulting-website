@@ -202,3 +202,16 @@ The seven-day response URL is a bearer credential: anyone possessing it can view
 - [ ] Confirm a dialog displays the complete URL in a read-only selectable field.
 - [ ] Click **Copy link** and paste into a local text field or address bar to verify the full URL was copied; do not paste a live token into chat or tickets.
 - [ ] Confirm the dialog can be closed and the link remains one-time and seven-day limited.
+
+
+### Preview execution record — 2026-11-19
+
+The following normal-path checks were completed from user-supplied Preview browser screenshots and D1 query results:
+
+- [x] Issue and copy a learner response link using the Admin copy dialog; open it signed out and display quotation details.
+- [x] Accept quotation `42e60e83-2d96-4c51-b75f-0d519a52c154`: D1 showed `accepted`, registration `approved`, payment `pending`, enrollment `awaiting_confirmation`, and token `used_at` populated.
+- [x] Confirm acceptance audit events `quotation_learner_accepted` and `registration_approved_by_learner_quote`.
+- [x] Decline separate quotation `cc76844e-89a2-4cbe-9022-474b80303ae1`: D1 showed `declined`, while registration `approved`, payment `pending`, and enrollment `awaiting_confirmation` remained unchanged; token `used_at` was populated and `revoked_at` remained NULL.
+- [ ] Verify decline audit event `quotation_learner_declined`.
+
+The remaining security and compatibility checklist above is still open. These normal-path results do not establish expiry, revocation, replay protection, cross-origin rejection, rate limiting, response headers, or complete bilingual/accessibility acceptance.
