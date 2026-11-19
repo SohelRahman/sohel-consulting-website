@@ -940,7 +940,7 @@ async function handleApi(request, env) {
         if (["rejected","cancelled"].includes(registration.registration_status) || registration.enrollment_status==="cancelled") return json({error:"A rejected, cancelled or cancelled-enrollment registration cannot accept a quotation."},409);
         const updates=await env.DB.batch([
           env.DB.prepare("UPDATE quotations SET status='accepted',updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status='sent'").bind(quote.id,quote.registration_id),
-          env.DB.prepare("UPDATE registrations SET registration_status='approved',payment_status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(quote.registration_id)
+          env.DB.prepare("UPDATE registrations SET registration_status='approved',payment_status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=? AND EXISTS (SELECT 1 FROM quotations WHERE id=? AND status='accepted')").bind(quote.registration_id,quote.id)
         ]);
         if (!updates[0]?.meta?.changes) return json({error:"The quotation changed before this update. Reload and try again."},409);
         await audit(env,session.email,"quotation_accepted","quotation",quote.id,"Registration approved; payment set to pending; enrollment remains unchanged");
