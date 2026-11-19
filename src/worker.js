@@ -199,6 +199,10 @@ async function handleApi(request, env) {
     }
     const decision=data?.decision;
     if (!["accepted","declined"].includes(decision)) return json({error:"Invalid response."},400);
+    const quote=await env.DB.prepare(`SELECT q.id,q.registration_id,q.valid_until,r.registration_status,r.enrollment_status
+      FROM quotation_response_tokens t JOIN quotations q ON q.id=t.quote_id JOIN registrations r ON r.id=q.registration_id
+      WHERE t.token_hash=? AND t.used_at IS NULL AND t.revoked_at IS NULL
+        AND datetime(t.expires_at)>datetime('now') AND q.status='sent'`).bind(tokenHash).first();
     if (!quote) return json({error:"This quotation link is invalid, expired or already used."},409);
     if (quote.valid_until && new Date(quote.valid_until+"T23:59:59Z").getTime()<Date.now()) {
       await env.DB.prepare("UPDATE quotations SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='sent'").bind(quote.id).run();
