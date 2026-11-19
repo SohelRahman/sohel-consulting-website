@@ -181,29 +181,24 @@ async function handleApi(request, env) {
     return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.published_json)},cms:Object.fromEntries(results.map(x=>[x.content_key,{value:x.published_value,type:x.content_type}]))});
   }
 
-  if (path === "/api/quotation-response" && method === "GET") {
-    const token=clean(url.searchParams.get("token"),100);
-    if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return json({error:"This quotation link is invalid or no longer available."},404);
-    const tokenHash=await chatTokenHash(token);
-    const quote=await env.DB.prepare(`SELECT q.amount_minor,q.currency,q.description,q.valid_until,r.reference_code,r.language_preference,c.title_en,c.title_bn
-      FROM quotation_response_tokens t JOIN quotations q ON q.id=t.quote_id
-      JOIN registrations r ON r.id=q.registration_id JOIN courses c ON c.id=r.course_id
-      WHERE t.token_hash=? AND t.used_at IS NULL AND t.revoked_at IS NULL
-        AND datetime(t.expires_at)>datetime('now') AND q.status='sent'
-        AND (q.valid_until IS NULL OR date(q.valid_until)>=date('now'))`).bind(tokenHash).first();
-    if (!quote) return json({error:"This quotation link is invalid or no longer available."},404);
-    return json({quotation:{amount_minor:quote.amount_minor,currency:quote.currency,description:quote.description||"",valid_until:quote.valid_until,reference_code:quote.reference_code,course_title:quote.language_preference==="bn"?(quote.title_bn||quote.title_en):quote.title_en,language:quote.language_preference==="bn"?"bn":"en"}});
-  }
   if (path === "/api/quotation-response" && method === "POST") {
     if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
     if (!(await rateLimit(env,request,"quotation-response",8,15*60*1000))) return json({error:"Too many attempts. Please try again later."},429);
-    const data=await request.json().catch(()=>null),token=clean(data?.token,100),decision=data?.decision;
-    if (!/^[A-Za-z0-9_-]{40,60}$/.test(token) || !["accepted","declined"].includes(decision)) return json({error:"Invalid response."},400);
+    const data=await request.json().catch(()=>null),token=clean(data?.token,100);
+    if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return json({error:"Invalid response."},400);
     const tokenHash=await chatTokenHash(token);
-    const quote=await env.DB.prepare(`SELECT q.id,q.registration_id,q.valid_until,r.registration_status,r.enrollment_status
-      FROM quotation_response_tokens t JOIN quotations q ON q.id=t.quote_id JOIN registrations r ON r.id=q.registration_id
-      WHERE t.token_hash=? AND t.used_at IS NULL AND t.revoked_at IS NULL
-        AND datetime(t.expires_at)>datetime('now') AND q.status='sent'`).bind(tokenHash).first();
+    if (data?.action==="details") {
+      const quote=await env.DB.prepare(`SELECT q.amount_minor,q.currency,q.description,q.valid_until,r.reference_code,r.language_preference,c.title_en,c.title_bn
+        FROM quotation_response_tokens t JOIN quotations q ON q.id=t.quote_id
+        JOIN registrations r ON r.id=q.registration_id JOIN courses c ON c.id=r.course_id
+        WHERE t.token_hash=? AND t.used_at IS NULL AND t.revoked_at IS NULL
+          AND datetime(t.expires_at)>datetime('now') AND q.status='sent'
+          AND (q.valid_until IS NULL OR date(q.valid_until)>=date('now'))`).bind(tokenHash).first();
+      if (!quote) return json({error:"This quotation link is invalid or no longer available."},404);
+      return json({quotation:{amount_minor:quote.amount_minor,currency:quote.currency,description:quote.description||"",valid_until:quote.valid_until,reference_code:quote.reference_code,course_title:quote.language_preference==="bn"?(quote.title_bn||quote.title_en):quote.title_en,language:quote.language_preference==="bn"?"bn":"en"}});
+    }
+    const decision=data?.decision;
+    if (!["accepted","declined"].includes(decision)) return json({error:"Invalid response."},400);
     if (!quote) return json({error:"This quotation link is invalid, expired or already used."},409);
     if (quote.valid_until && new Date(quote.valid_until+"T23:59:59Z").getTime()<Date.now()) {
       await env.DB.prepare("UPDATE quotations SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='sent'").bind(quote.id).run();
@@ -979,7 +974,7 @@ async function handleApi(request, env) {
       ]);
       if (!batch[1]?.meta?.changes || !batch[2]?.meta?.changes) return json({error:"The quotation changed before its response link could be issued. Reload and try again."},409);
       await audit(env,session.email,"quotation_response_link_issued","quotation",quote.id,"Seven-day learner response link issued");
-      return json({ok:true,status:"sent",validUntil,responseUrl:url.origin+"/quote-response.html?token="+encodeURIComponent(rawToken)});
+      return json({ok:true,status:"sent",validUntil,responseUrl:url.origin+"/quote-response.html#token="+encodeURIComponent(rawToken)});
     }
     const paymentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/payment$/);
     if (paymentMatch && method === "PATCH") {
