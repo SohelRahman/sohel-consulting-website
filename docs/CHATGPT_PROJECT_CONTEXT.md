@@ -48,3 +48,5 @@
 - The page temporarily supports old query-string links, cleans the URL and then uses the POST details endpoint.
 - Contract tests were extended. CI and Preview browser acceptance are pending; no deployment or D1 operation was performed.
 - See Stage 17 in `DEVELOPMENT_HANDOVER_PROMPT.md` and the corresponding Preview checklist in `TESTING.md`.
+
+- Follow-up source review corrected the accept/decline POST path by restoring its own quote/token/registration lookup after the details action. Added static contract assertions for this branch. CI and Preview browser verification remain pending.
