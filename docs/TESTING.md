@@ -234,3 +234,8 @@ Cross-origin rejection, rate limiting, response headers, raw-token exposure revi
 - [ ] Confirm legacy query-string links are cleaned from the address bar and still load through the POST details path during the compatibility period.
 
 The fragment prevents the browser from including the bearer token in the initial HTML request URL. The page then removes the fragment from the current history entry. This does not guarantee that the token is absent from browser memory, screenshots, clipboard contents or the administrator's original issuance response. Treat the link as a bearer credential.
+
+
+### Stage 17 automated contract follow-up
+- The quotation response contract test now checks that the POST details action returns before the accept/decline branch and that the latter performs its own sent-quotation/token/registration lookup.
+- This is a source-contract assertion only. Run the full development workflow and complete the Preview browser acceptance checklist above before marking the feature verified.
