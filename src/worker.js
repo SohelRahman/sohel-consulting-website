@@ -67,7 +67,8 @@ function requiredPermission(path, method) {
   if(path.startsWith("/api/admin/registrations/"))return method==="GET"?"registrations.view":"registrations.manage";
   if(path==="/api/admin/inquiries")return "inquiries.view";
   if(path.startsWith("/api/admin/inquiries/"))return method==="GET"?"inquiries.view":"inquiries.manage";
-  if(path==="/api/admin/site-content")return method==="GET"?"content.view":"content.manage";
+  if(path==="/api/admin/site-content" || path==="/api/admin/cms" || path==="/api/admin/cms/history" || path==="/api/admin/cms/preview")return method==="GET"?"content.view":"content.manage";
+  if(path.startsWith("/api/admin/cms/"))return "content.manage";
   if(path.startsWith("/api/admin/site-content/"))return "content.manage";
   if(path==="/api/admin/page-styles")return method==="GET"?"styles.view":"styles.manage";
   if(path==="/api/admin/pages" || path.startsWith("/api/admin/pages/"))return method==="GET"?"pages.view":"pages.manage";
@@ -162,6 +163,13 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT content_key,content_value FROM site_content WHERE published=1").all();
       return json({content:Object.fromEntries(results.map(row=>[row.content_key,row.content_value]))});
     } catch { return json({error:"Website content is not initialized."},503); }
+  }
+
+  if (path === "/api/cms-content" && method === "GET") {
+    const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en";
+    if(!/^[a-z0-9._-]+$/.test(page))return json({error:"Invalid page identifier."},400);
+    try { const {results=[]}=await env.DB.prepare("SELECT content_key,published_value,content_type FROM cms_content WHERE page_key=? AND language=? AND published_value IS NOT NULL ORDER BY content_key").bind(page,language).all(); return json({page,language,content:Object.fromEntries(results.map(row=>[row.content_key,{value:row.published_value,type:row.content_type}]))}); }
+    catch { return json({error:"Website CMS is not initialized."},503); }
   }
 
   if (path === "/api/courses" && method === "GET") {
@@ -666,6 +674,64 @@ async function handleApi(request, env) {
       if(!result.meta.changes)return json({error:"Page not found."},404);
       await audit(env,session.email,"page_deleted","page",pageAdminSlug,"");
       return json({ok:true});
+    }
+    if (path === "/api/admin/cms" && method === "GET") {
+      const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en";
+      if(!/^[a-z0-9._-]+$/.test(page))return json({error:"Invalid page identifier."},400);
+      const {results=[]}=await env.DB.prepare("SELECT content_key,content_type,draft_value,published_value,is_deleted,updated_at,updated_by FROM cms_content WHERE page_key=? AND language=? ORDER BY content_key").bind(page,language).all();
+      return json({page,language,content:results});
+    }
+    if (path === "/api/admin/cms/save" && method === "POST") {
+      if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),value=String(data?.value??"").slice(0,10000),type=["text","textarea","url","image","richtext"].includes(data?.type)?data.type:"text";
+      if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!value.trim())return json({error:"A valid page, content key and non-empty value are required."},400);
+      if(type==="url"){try{const parsed=new URL(value);if(!["https:","http:"].includes(parsed.protocol))throw new Error();}catch{return json({error:"Enter a valid HTTP or HTTPS URL."},400);}}
+      await env.DB.prepare("INSERT INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP) ON CONFLICT(page_key,language,content_key) DO UPDATE SET content_type=excluded.content_type,draft_value=excluded.draft_value,is_deleted=0,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP").bind(page,language,key,type,value,session.email).run();
+      await env.DB.prepare("INSERT INTO cms_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,type,value,session.email).run();
+      await audit(env,session.email,"cms_draft_saved","cms_content",page+":"+language+":"+key,type);return json({ok:true});
+    }
+    if (path === "/api/admin/cms/publish" && method === "POST") {
+      if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en";
+      if(!/^[a-z0-9._-]+$/.test(page))return json({error:"Invalid page identifier."},400);
+      const {results=[]}=await env.DB.prepare("SELECT content_key,content_type,draft_value,is_deleted FROM cms_content WHERE page_key=? AND language=?").bind(page,language).all();
+      if(!results.length)return json({error:"There is no content to publish."},400);
+      await env.DB.batch(results.map(row=>env.DB.prepare("UPDATE cms_content SET published_value=?,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=?").bind(row.is_deleted?null:row.draft_value,session.email,page,language,row.content_key)));
+      for(const row of results)if(!row.is_deleted)await env.DB.prepare("INSERT INTO cms_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'published',?)").bind(page,language,row.content_key,row.content_type,row.draft_value,session.email).run();
+      await audit(env,session.email,"cms_page_published","cms_page",page+":"+language,"Published "+results.filter(row=>!row.is_deleted).length+" items");return json({ok:true,publishedCount:results.filter(row=>!row.is_deleted).length});
+    }
+    if (path === "/api/admin/cms/delete" && method === "POST") {
+      if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase();
+      const result=await env.DB.prepare("UPDATE cms_content SET is_deleted=1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=?").bind(session.email,page,language,key).run();
+      if(!result.meta.changes)return json({error:"Content item not found."},404);await audit(env,session.email,"cms_content_archived","cms_content",page+":"+language+":"+key,"Soft delete");return json({ok:true});
+    }
+    if (path === "/api/admin/cms/restore" && method === "POST") {
+      if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase();
+      const result=await env.DB.prepare("UPDATE cms_content SET is_deleted=0,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=?").bind(session.email,page,language,key).run();
+      if(!result.meta.changes)return json({error:"Content item not found."},404);await audit(env,session.email,"cms_content_restored","cms_content",page+":"+language+":"+key,"Restored as draft");return json({ok:true});
+    }
+    if (path === "/api/admin/cms/preview" && method === "GET") {
+      const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en";
+      if(!/^[a-z0-9._-]+$/.test(page))return json({error:"Invalid page identifier."},400);
+      const {results=[]}=await env.DB.prepare("SELECT content_key,content_type,draft_value FROM cms_content WHERE page_key=? AND language=? AND is_deleted=0 ORDER BY content_key").bind(page,language).all();
+      return json({page,language,preview:true,content:Object.fromEntries(results.map(row=>[row.content_key,{value:row.draft_value,type:row.content_type}]))});
+    }
+    if (path === "/api/admin/cms/restore-version" && method === "POST") {
+      if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),versionId=Number(data?.versionId);
+      if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!Number.isInteger(versionId)||versionId<1)return json({error:"Invalid version reference."},400);
+      const version=await env.DB.prepare("SELECT content_type,value FROM cms_content_versions WHERE id=? AND page_key=? AND language=? AND content_key=?").bind(versionId,page,language,key).first();
+      if(!version)return json({error:"Version not found."},404);
+      await env.DB.prepare("INSERT INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP) ON CONFLICT(page_key,language,content_key) DO UPDATE SET content_type=excluded.content_type,draft_value=excluded.draft_value,is_deleted=0,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP").bind(page,language,key,version.content_type,version.value,session.email).run();
+      await env.DB.prepare("INSERT INTO cms_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,version.content_type,version.value,session.email).run();
+      await audit(env,session.email,"cms_version_restored","cms_content",page+":"+language+":"+key,"Restored version "+versionId+" to draft");
+      return json({ok:true});
+    }
+    if (path === "/api/admin/cms/history" && method === "GET") {
+      const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en",key=clean(url.searchParams.get("key"),120).toLowerCase();
+      const {results=[]}=await env.DB.prepare("SELECT id,content_type,value,version_type,created_by,created_at FROM cms_content_versions WHERE page_key=? AND language=? AND content_key=? ORDER BY id DESC LIMIT 50").bind(page,language,key).all();return json({history:results});
     }
     if (path === "/api/admin/site-content" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT content_key,content_value,content_type,published,updated_at FROM site_content ORDER BY content_key").all();
