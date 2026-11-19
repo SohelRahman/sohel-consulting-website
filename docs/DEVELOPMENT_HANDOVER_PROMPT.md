@@ -418,3 +418,9 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - Added static contract assertions for both Admin account update and disable SQL. These assertions do not replace a live session-revocation test.
 - No migration or D1 SQL is required. No deployment, merge to `main` or Production change was made.
 - Pending: confirm CI, then test in Preview by logging in as a test user, disabling the account, re-enabling it, and confirming the old cookie remains rejected; also test permission/role changes invalidate existing sessions.
+
+
+### Stage 18 CI result — passed
+- GitHub Actions run `44638857897` completed successfully for RBAC test commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`.
+- All workflow checks passed, including Worker syntax, site validation, RBAC contract, course pricing, registration workflow and quotation response tests.
+- This confirms automated source-contract and syntax checks only. Live Preview account disable/re-enable and session invalidation tests remain pending.
