@@ -52,3 +52,13 @@
 - Preserved custom-quotation behavior and made zero-fee registrations visible in the Admin registration list.
 - Added course-pricing unit and integration-contract tests to the development CI workflow.
 - Preview deployment, API/browser acceptance and registration persistence checks remain pending. No D1 migration or Production change was made.
+
+
+## 2026-11-19 — Registration workflow integrity
+
+- Custom quotation changes now create draft records in the existing quotations table and update the registration's current fee snapshot in the same D1 batch.
+- Added quotation-history API and Admin history view; quotation currency follows the course/registration currency.
+- Added audited manual payment-status updates and exposed payment status in the Admin registration table.
+- Added Admin controls to update the existing enrollment states.
+- Added registration workflow contract tests to development CI. No migration or Production change was made.
+- Payment processing, automated verification, quote sending and quote acceptance remain out of scope.

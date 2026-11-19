@@ -32,3 +32,5 @@ jobs:
         run: node scripts/test-rbac-contract.mjs
       - name: Course pricing unit tests
         run: node scripts/test-course-pricing.mjs
+      - name: Registration workflow contract tests
+        run: node scripts/test-registration-workflow.mjs

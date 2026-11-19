@@ -250,3 +250,30 @@ Next actions:
 4. Open its course detail link and confirm the correct course loads.
 5. Confirm the registration page still lists the course and preselects it when arriving from the course detail page.
 6. Record user testing and final status here.
+
+
+## 12. Registration workflow integrity
+
+**Status: Committed on development; CI and Preview acceptance pending.**
+
+### Repository findings
+- Registration, payment and enrollment statuses are separate fields with SQLite CHECK constraints.
+- Existing registration status endpoint accepts the four schema-defined registration states and writes an audit log.
+- Existing enrollment endpoint accepts the three schema-defined enrollment states and writes an audit log.
+- The custom quote endpoint previously overwrote the current registration fee and forced currency to BDT without writing a quotation record, despite the existing `quotations` table.
+- The Admin screen did not expose payment status, even though `payment_status` exists in the registration schema.
+
+### Implementation
+- Custom quote updates now create a new `quotations` record with status `draft`, amount, course currency and optional description, and update the registration's current fee snapshot in one D1 batch.
+- Prior quotation records remain in the `quotations` table. Added an authorized quotation-history API and Admin action to view the history.
+- Quote currency is taken from the course/registration instead of being hardcoded to BDT.
+- Added a manual payment-status endpoint for the existing values: `not_configured`, `pending`, `paid`, `failed`, `refunded`. It writes an audit event. This records an administrator's status entry only; it does not verify or process a payment.
+- Admin now displays payment status and provides controls to update payment and enrollment states.
+- Added registration workflow contract tests to the development CI workflow.
+
+### Limitations and acceptance
+- No payment gateway, automated payment verification, quote email delivery, quote acceptance flow or invoice generation was added.
+- Existing registrations are not rewritten and no quote-history backfill is attempted.
+- No schema migration is expected because the existing `quotations` table and registration payment field are reused.
+- Pending: CI result, Preview deployment, authenticated API tests, quotation history persistence, currency verification and Admin browser tests.
+- Test custom quote creation twice and confirm two quotation rows are retained while the registration shows the latest quote. Test invalid amounts and unauthorized access. Test each permitted payment state and confirm audit entries.

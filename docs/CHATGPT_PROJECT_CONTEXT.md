@@ -2,6 +2,8 @@
 
 > **Current development status — 2026-11-19**
 >
+> Registration workflow integrity has now been implemented on `current-focus-development`: custom quotes are recorded as draft quotation history, payment status can be updated manually with audit logging, and Admin exposes quote history/payment/enrollment controls. CI and Preview acceptance are pending; see Section 12 of `DEVELOPMENT_HANDOVER_PROMPT.md`.
+>
 > Course discount and registration-fee consistency is implemented on `current-focus-development`: shared server-side pricing calculation, API-derived price breakdown, aligned English/Bangla course display, stricter discount validation and zero-fee visibility in Admin. CI and Preview acceptance remain pending; see Section 11 of `DEVELOPMENT_HANDOVER_PROMPT.md`.
 >
 > **Current CMS status — 2026-11-19**

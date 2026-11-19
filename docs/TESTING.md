@@ -155,3 +155,8 @@ Record browser, viewport, Preview deployment commit SHA and screenshots/results.
 ## Course pricing automated tests
 
 The development workflow runs `node scripts/test-course-pricing.mjs`. It covers no discount, percentage and fixed discounts, percentage rounding, 100% discounts, inclusive date boundaries, invalid calendar dates, reversed date ranges, invalid discount values and consistency contracts across the Worker, English/Bangla course pages and Admin registration fee display. These checks do not replace Preview API and browser acceptance tests.
+
+
+## Registration workflow tests
+
+The development workflow runs `node scripts/test-registration-workflow.mjs`. It checks the quotation-history insert and read route, atomic registration fee snapshot update, currency propagation, payment-status allowlist and Admin controls. These contract checks do not replace Preview database and browser acceptance tests.
