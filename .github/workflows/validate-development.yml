@@ -30,3 +30,5 @@ jobs:
         run: node scripts/validate-site.mjs
       - name: Check RBAC security contract
         run: node scripts/test-rbac-contract.mjs
+      - name: Course pricing unit tests
+        run: node scripts/test-course-pricing.mjs
