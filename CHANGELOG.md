@@ -123,3 +123,5 @@
 - Retained a temporary page-side fallback for previously issued query-string links; the page cleans the URL and retrieves details through POST.
 - Extended the quotation response contract test for fragment issuance, history cleanup and POST details retrieval.
 - CI and Preview browser acceptance remain pending. No migration, D1 operation, deployment, Production change or `main` change was made.
+
+- Follow-up source review restored the separate quotation lookup required by accept/decline after the POST details branch; contract coverage now checks that path. Preview and CI verification remain pending.
