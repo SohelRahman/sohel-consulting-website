@@ -118,7 +118,9 @@ async function seedBuilderPageCms(env, email, slug, language, title, seoTitle, s
   }
   for(const [key,type,value] of items){
     if(!value.trim()) continue;
-    await env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)")
+    const inserted=await env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)")
+      .bind(slug,language,key,type,value,email).run();
+    if(inserted.meta.changes)await env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)")
       .bind(slug,language,key,type,value,email).run();
   }
 }

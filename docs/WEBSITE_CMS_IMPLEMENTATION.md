@@ -122,7 +122,7 @@ Custom pages created from **Admin → Pages → Create Page** are registered aut
 
 - The Content Manager loads the custom-page registry from the permission-protected `GET /api/admin/cms/pages` endpoint and adds those pages to a separate **Custom pages** option group.
 - Each custom page is registered under its configured language. The selector switches to that language when a custom page is selected.
-- On creation, the system seeds draft CMS keys for the page title and SEO metadata. When sections are saved, stable section IDs are used to register heading, body, button label/link, split-column and card fields.
+- On creation, the system seeds draft CMS keys for the page title and SEO metadata. When sections are saved, stable section IDs are used to register heading, body, button label/link, split-column and card fields. Newly registered keys also receive a draft version-history entry.
 - Registration uses insert-if-absent semantics. Existing CMS drafts and published values are not overwritten by a later structural save.
 - The custom page renderer applies published CMS values on public pages and draft CMS values in authenticated preview. Text is rendered as text, and URLs continue through the page renderer's HTTP/HTTPS URL validation.
 - The page builder remains responsible for section structure and visual layout. Use the Content Manager for registered text and link content. Publish the page structure through the Pages editor, and publish its CMS content through the Content Manager.
