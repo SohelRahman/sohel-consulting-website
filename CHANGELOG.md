@@ -113,3 +113,13 @@
 - Reopened the consumed replacement link and confirmed replay was rejected.
 - Confirmed the decline audit event `quotation_learner_declined`.
 - Cross-origin rejection, rate limiting, response-header checks, raw-token exposure review and full bilingual/accessibility checks remain pending. No Production or `main` changes were made.
+
+
+## 2026-11-20 — Learner quotation bearer-token URL exposure reduction
+
+- Changed newly issued learner response links to carry the token in the URL fragment rather than the query string.
+- The learner page reads the fragment and immediately removes the token from the current browser history entry.
+- Moved quotation detail retrieval from a token-bearing GET query to a same-origin POST request body; removed the token-bearing GET API handler.
+- Retained a temporary page-side fallback for previously issued query-string links; the page cleans the URL and retrieves details through POST.
+- Extended the quotation response contract test for fragment issuance, history cleanup and POST details retrieval.
+- CI and Preview browser acceptance remain pending. No migration, D1 operation, deployment, Production change or `main` change was made.
