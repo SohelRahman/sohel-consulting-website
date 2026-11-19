@@ -34,3 +34,11 @@
 - Commit: `d28bd1e21473ea3b3b984b056d7e1404774a154c`.
 - Preview deployment and browser verification are still pending. The public API count check verifies stored publication visibility, not that every content key maps to the intended visible DOM element.
 - No Production deployment, migration or database change was performed.
+
+
+## 2026-11-19 — Custom page CMS integration
+
+- Automatically register custom pages in the Content Manager page selector.
+- Seed page title, SEO and section content keys when custom pages are created or their structure is saved.
+- Render published CMS values on public custom pages and draft CMS values in authenticated previews.
+- Preserve existing CMS records when page structure is saved; delete associated CMS records and history when a custom page is deleted.

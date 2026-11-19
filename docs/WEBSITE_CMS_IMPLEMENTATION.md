@@ -114,3 +114,18 @@ No Production migration, deployment or merge to `main` is authorized by this imp
 - After a successful publish request, the Dashboard fetches the public `/api/cms-content` endpoint with `cache: no-store`, compares the returned item count with the publish response, and displays a direct public-page link with a cache-busting query parameter.
 - This verifies that the public API exposes the expected number of published items. It does not prove every content key maps to the intended visible page element; browser QA is still required.
 - Fix committed as `d28bd1e21473ea3b3b984b056d7e1404774a154c`. Preview deployment and live browser testing have not yet been confirmed.
+
+
+## Custom Page Builder ↔ Content Manager integration
+
+Custom pages created from **Admin → Pages → Create Page** are registered automatically in the bilingual Content Manager.
+
+- The Content Manager loads the custom-page registry from the permission-protected `GET /api/admin/cms/pages` endpoint and adds those pages to a separate **Custom pages** option group.
+- Each custom page is registered under its configured language. The selector switches to that language when a custom page is selected.
+- On creation, the system seeds draft CMS keys for the page title and SEO metadata. When sections are saved, stable section IDs are used to register heading, body, button label/link, split-column and card fields.
+- Registration uses insert-if-absent semantics. Existing CMS drafts and published values are not overwritten by a later structural save.
+- The custom page renderer applies published CMS values on public pages and draft CMS values in authenticated preview. Text is rendered as text, and URLs continue through the page renderer's HTTP/HTTPS URL validation.
+- The page builder remains responsible for section structure and visual layout. Use the Content Manager for registered text and link content. Publish the page structure through the Pages editor, and publish its CMS content through the Content Manager.
+- Deleting a custom page also deletes its active CMS records and version history for that slug, preventing orphaned records or history from appearing if the slug is reused.
+
+Custom pages have one configured language per page record. To publish a translated counterpart, create a separate page with its own slug and select the other language. Static-page CMS language behavior remains unchanged.

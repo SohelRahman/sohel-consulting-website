@@ -67,7 +67,7 @@ function requiredPermission(path, method) {
   if(path.startsWith("/api/admin/registrations/"))return method==="GET"?"registrations.view":"registrations.manage";
   if(path==="/api/admin/inquiries")return "inquiries.view";
   if(path.startsWith("/api/admin/inquiries/"))return method==="GET"?"inquiries.view":"inquiries.manage";
-  if(path==="/api/admin/site-content" || path==="/api/admin/cms" || path==="/api/admin/cms/history" || path==="/api/admin/cms/preview")return method==="GET"?"content.view":"content.manage";
+  if(path==="/api/admin/site-content" || path==="/api/admin/cms" || path==="/api/admin/cms/history" || path==="/api/admin/cms/preview" || path==="/api/admin/cms/pages")return method==="GET"?"content.view":"content.manage";
   if(path.startsWith("/api/admin/cms/"))return "content.manage";
   if(path.startsWith("/api/admin/site-content/"))return "content.manage";
   if(path==="/api/admin/page-styles")return method==="GET"?"styles.view":"styles.manage";
@@ -99,6 +99,30 @@ function sameOrigin(request) {
   const origin = request.headers.get("origin");
   return Boolean(origin) && origin === new URL(request.url).origin;
 }
+async function seedBuilderPageCms(env, email, slug, language, title, seoTitle, seoDescription, sections) {
+  const items = [["page.title","text",title],["meta.title","text",seoTitle || title],["meta.description","textarea",seoDescription || ""]];
+  for (const section of sections || []) {
+    const sid=clean(section?.id,60).toLowerCase();
+    if (!/^[a-z0-9._-]+$/.test(sid)) continue;
+    const add=(suffix,type,value)=>items.push(["section."+sid+"."+suffix,type,String(value??"")]);
+    add("heading","text",section.heading); add("body","textarea",section.body);
+    add("button.text","text",section.buttonText); add("button.url","url",section.buttonUrl);
+    if(section.type==="split"){
+      add("left.heading","text",section.left?.heading); add("left.body","textarea",section.left?.body);
+      add("right.heading","text",section.right?.heading); add("right.body","textarea",section.right?.body);
+    }
+    if(section.type==="cards")(section.items||[]).slice(0,6).forEach((card,index)=>{
+      add("card."+index+".heading","text",card.heading); add("card."+index+".body","textarea",card.body);
+      add("card."+index+".button.text","text",card.buttonText); add("card."+index+".button.url","url",card.buttonUrl);
+    });
+  }
+  for(const [key,type,value] of items){
+    if(!value.trim()) continue;
+    await env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)")
+      .bind(slug,language,key,type,value,email).run();
+  }
+}
+
 async function audit(env, email, action, entityType, entityId, details = "") {
   await env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES (?,?,?,?,?,?)")
     .bind(id(),email,action,entityType,entityId,details).run();
@@ -150,7 +174,8 @@ async function handleApi(request, env) {
   if (/^[a-z0-9-]+$/.test(pagePublicSlug) && method === "GET") {
     const page=await env.DB.prepare("SELECT slug,title,language,published_json,seo_title,seo_description FROM pages WHERE slug=? AND status='published' AND published_json IS NOT NULL").bind(pagePublicSlug).first();
     if (!page) return json({error:"Page not found."},404);
-    return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.published_json)}});
+    const {results=[]}=await env.DB.prepare("SELECT content_key,published_value,content_type FROM cms_content WHERE page_key=? AND language=? AND published_value IS NOT NULL").bind(page.slug,page.language).all();
+    return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.published_json)},cms:Object.fromEntries(results.map(x=>[x.content_key,{value:x.published_value,type:x.content_type}]))});
   }
   if (path === "/api/health" && method === "GET") return json({ok:true, database:"connected", payments:"not_configured"});
   if (path === "/api/page-styles" && method === "GET") {
@@ -620,7 +645,8 @@ async function handleApi(request, env) {
     if (pagePreviewMatch && method === "GET") {
       const page=await env.DB.prepare("SELECT slug,title,language,seo_title,seo_description,draft_json FROM pages WHERE slug=?").bind(pagePreviewMatch[1]).first();
       if (!page) return json({error:"Page not found."},404);
-      return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.draft_json)}});
+      const {results=[]}=await env.DB.prepare("SELECT content_key,draft_value,content_type FROM cms_content WHERE page_key=? AND language=? AND is_deleted=0").bind(page.slug,page.language).all();
+      return json({page:{slug:page.slug,title:page.title,language:page.language,seo_title:page.seo_title,seo_description:page.seo_description,...JSON.parse(page.draft_json)},cms:Object.fromEntries(results.map(x=>[x.content_key,{value:x.draft_value,type:x.content_type}]))});
     }
     if (path === "/api/admin/pages" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT id,slug,title,language,status,seo_title,seo_description,updated_at,published_at,draft_json FROM pages ORDER BY updated_at DESC").all();
@@ -635,8 +661,9 @@ async function handleApi(request, env) {
       const pageId=id();
       try { await env.DB.prepare("INSERT INTO pages (id,slug,title,language,draft_json,seo_title,seo_description) VALUES (?,?,?,?,?,?,?)").bind(pageId,slug,title,language,JSON.stringify({sections:[]}),clean(data?.seoTitle,160),clean(data?.seoDescription,300)).run(); }
       catch { return json({error:"That page URL already exists."},409); }
+      await seedBuilderPageCms(env,session.email,slug,language,title,clean(data?.seoTitle,160),clean(data?.seoDescription,300),[]);
       await audit(env,session.email,"page_created","page",pageId,slug);
-      return json({ok:true,id:pageId,slug},201);
+      return json({ok:true,id:pageId,slug,language,cmsRegistered:true},201);
     }
     const pageAdminSlug=path.startsWith("/api/admin/pages/")?path.slice("/api/admin/pages/".length):"";
     if (/^[a-z0-9-]+$/.test(pageAdminSlug) && method === "PUT") {
@@ -665,15 +692,24 @@ async function handleApi(request, env) {
       const result=await env.DB.prepare("UPDATE pages SET title=?,language=?,seo_title=?,seo_description=?,draft_json=?,published_json=CASE WHEN ?=1 THEN ? ELSE published_json END,status=CASE WHEN ?=1 THEN 'published' ELSE status END,published_at=CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE published_at END,updated_at=CURRENT_TIMESTAMP WHERE slug=?")
         .bind(title,language,clean(data?.seoTitle,160),clean(data?.seoDescription,300),JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageAdminSlug).run();
       if(!result.meta.changes)return json({error:"Page not found."},404);
-      await audit(env,session.email,publish?"page_published":"page_draft_saved","page",pageAdminSlug,String(safeSections.length)+" sections");
+      await seedBuilderPageCms(env,session.email,pageAdminSlug,language,title,clean(data?.seoTitle,160),clean(data?.seoDescription,300),safeSections);
+      await audit(env,session.email,publish?"page_published":"page_draft_saved","page",pageAdminSlug,String(safeSections.length)+" sections; CMS keys registered");
       return json({ok:true,published:publish});
     }
     if (/^[a-z0-9-]+$/.test(pageAdminSlug) && method === "DELETE") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const result=await env.DB.prepare("DELETE FROM pages WHERE slug=?").bind(pageAdminSlug).run();
       if(!result.meta.changes)return json({error:"Page not found."},404);
-      await audit(env,session.email,"page_deleted","page",pageAdminSlug,"");
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM cms_content WHERE page_key=?").bind(pageAdminSlug),
+        env.DB.prepare("DELETE FROM cms_static_content_versions WHERE page_key=?").bind(pageAdminSlug)
+      ]);
+      await audit(env,session.email,"page_deleted","page",pageAdminSlug,"Page, active CMS records and associated version history deleted");
       return json({ok:true});
+    }
+    if (path === "/api/admin/cms/pages" && method === "GET") {
+      const {results=[]}=await env.DB.prepare("SELECT slug,title,language,status FROM pages ORDER BY title COLLATE NOCASE").all();
+      return json({pages:results});
     }
     if (path === "/api/admin/cms" && method === "GET") {
       const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en";
