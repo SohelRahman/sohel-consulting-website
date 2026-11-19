@@ -358,3 +358,28 @@ Implemented on `current-focus-development`; not yet deployed or verified against
   - Revocation test quotation `954d469c-57d0-47b9-9620-404c722c96b4`: reissuing revoked original token `542c0aa8-6475-4f02-b494-c56d7ecbfc2c`; its old link was rejected. Replacement token `3b2c3d6f-a597-48c9-8ddd-9438f76ed0de` remained active, loaded successfully and was then accepted.
   - After acceptance, D1 showed quotation `accepted`, registration `approved`, payment `pending`, enrollment `awaiting_confirmation`, and replacement token `used_at` populated. Reopening the same replacement link produced the expected used-link rejection, verifying replay protection.
 - Remaining: cross-origin POST rejection, rate limiting, response-header checks, raw-token exposure review, and English/Bangla, keyboard and mobile accessibility checks. Do not claim complete security acceptance or Production readiness.
+
+
+
+## Stage 17 — quotation bearer-token URL exposure reduction (2026-11-20)
+
+**Status: Implemented and committed to `current-focus-development`; automated CI and Preview browser verification pending.**
+
+### Security concern and change
+- Previous learner response links placed the bearer token in the page query string, and the page then sent it to the details API in a GET query string. This exposed the token to URL-based handling and made it more likely to remain in browser history or edge request logs.
+- New response links place the token in the URL fragment (`#token=...`). Browsers do not send fragments in the HTTP request for the HTML page.
+- The learner page reads the fragment token and immediately replaces the current history entry with the clean page path. Legacy query-string links remain accepted by the page as a compatibility fallback, then are cleaned from the visible history entry.
+- Quotation details are now retrieved by a same-origin POST to `/api/quotation-response` with `{token, action:"details"}` in the request body. The previous token-bearing GET API route was removed.
+- Decision submissions continue to use the same same-origin POST endpoint and request-body token. The existing rate limit applies to both details and decision requests.
+- No raw token is written to D1 by this change; the existing SHA-256 token-hash storage remains unchanged.
+
+### Files and commits
+- `src/worker.js`: fragment URL issuance and POST details action. Commit `ced592547cfa6ceca6638c148282bfa369bb22ca`.
+- `quote-response.html`: fragment parsing, immediate history cleanup, POST details retrieval. Commit `48a585b9d7ca1b8f02c8282958d85f10c7132dfe`.
+- `scripts/test-quotation-response.mjs`: contract assertions for fragment links, history cleanup, POST details and removal of the token-bearing GET route. Commit `fffae938770bf6b7bea4839ffa2d9c0afcc24729`.
+
+### Verification and limitations
+- Source inspection confirms the new code path is implemented; this is not yet evidence of a passing CI run or a deployed Preview.
+- Pending: confirm CI passes; deploy the exact development commit to Preview; issue a fresh response link; confirm the URL contains a fragment, the address bar is cleaned after page load, details load successfully, accept/decline still work, and replay/expiry/revocation remain rejected.
+- Existing previously issued query-string links remain supported by the page fallback, but should be reissued to obtain fragment-based links.
+- No migration or D1 SQL is required. No deployment, Production change or merge to `main` was performed.
