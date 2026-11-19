@@ -391,3 +391,9 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - Worker correction commit: `d13b9547bf16d42c2e3c879dd17a1ffae3fe307`.
 - Test commit: `15310cdf55fb857a5339ba7d55a3c5e5129b5df0`.
 - This correction was identified by static source review; it has not yet been exercised in Preview. CI status is not yet confirmed.
+
+
+### Stage 17 CI follow-up
+- GitHub Actions run `44588560410` failed in the quotation response contract step because an earlier test assertion still expected the removed token-bearing GET endpoint. Worker syntax, site validation, RBAC, pricing and registration workflow steps passed in that run.
+- After updating the stale GET assertion, run `44588687993` failed on a second stale assertion that still expected `?token=` in the issued URL. The test was corrected to expect `#token=` in commit `42d58e24ff59fe728dd59b043c879783b7b948b8`.
+- The CI failure was in outdated test expectations, not a confirmed runtime test. A passing run for the corrected test commit has not yet been observed. Do not mark Stage 17 CI-passed until the latest workflow run is confirmed.
