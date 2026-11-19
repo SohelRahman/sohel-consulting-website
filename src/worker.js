@@ -436,8 +436,8 @@ async function handleApi(request, env) {
         const password=typeof data?.password==="string"?data.password:null;
         if(password!==null&&(password.length<12||password.length>256))return json({error:"A new password must contain at least 12 characters."},400);
         const hash=password?await passwordHash(password):null;
-        await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),session_version=session_version+CASE WHEN ? IS NULL THEN 0 ELSE 1 END,updated_at=CURRENT_TIMESTAMP WHERE id=?")
-          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||(target.role==="admin"?[]:permissionsFor(target)))),hash,hash,userMatch[1]).run();
+        await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||(target.role==="admin"?[]:permissionsFor(target)))),hash,userMatch[1]).run();
         await audit(env,session.email,"admin_user_updated","admin_user",userMatch[1],JSON.stringify({role,is_active:!!active,password_reset:!!password}));
         return json({ok:true});
       }
@@ -450,7 +450,7 @@ async function handleApi(request, env) {
           const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM admin_users WHERE role='admin' AND is_active=1").first();
           if(Number(count?.n||0)<=1)return json({error:"At least one active administrator must remain."},409);
         }
-        await env.DB.prepare("UPDATE admin_users SET is_active=0,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(userMatch[1]).run();
+        await env.DB.prepare("UPDATE admin_users SET is_active=0,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(userMatch[1]).run();
         await audit(env,session.email,"admin_user_disabled","admin_user",userMatch[1],"Account disabled");
         return json({ok:true});
       }
