@@ -919,6 +919,40 @@ async function handleApi(request, env) {
       await audit(env,session.email,"custom_quote_created","registration",quoteMatch[1],JSON.stringify({quoteId,amountMinor,currency}));
       return json({ok:true,quoteId,amountMinor,currency,status:"draft"});
     }
+    const quoteStatusMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/quotes\/([a-f0-9-]+)\/status$/);
+    if (quoteStatusMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      const nextStatus=data?.status;
+      if (!["sent","accepted","declined","expired"].includes(nextStatus)) return json({error:"Invalid quotation status."},400);
+      const quote=await env.DB.prepare("SELECT id,registration_id,status,valid_until FROM quotations WHERE id=? AND registration_id=?").bind(quoteStatusMatch[2],quoteStatusMatch[1]).first();
+      if (!quote) return json({error:"Quotation not found."},404);
+      const transitions={draft:["sent"],sent:["accepted","declined","expired"]};
+      if (!(transitions[quote.status]||[]).includes(nextStatus)) return json({error:"This quotation status transition is not allowed."},409);
+      if (nextStatus==="accepted") {
+        if (quote.valid_until && new Date(quote.valid_until+"T23:59:59Z").getTime()<Date.now()) {
+          await env.DB.prepare("UPDATE quotations SET status='expired',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='sent'").bind(quote.id).run();
+          await audit(env,session.email,"quotation_expired","quotation",quote.id,"Expired before acceptance");
+          return json({error:"This quotation has expired."},409);
+        }
+        const registration=await env.DB.prepare("SELECT registration_status,enrollment_status FROM registrations WHERE id=?").bind(quote.registration_id).first();
+        if (!registration) return json({error:"Registration not found."},404);
+        if (["rejected","cancelled"].includes(registration.registration_status) || registration.enrollment_status==="cancelled") return json({error:"A rejected, cancelled or cancelled-enrollment registration cannot accept a quotation."},409);
+        const updates=await env.DB.batch([
+          env.DB.prepare("UPDATE quotations SET status='accepted',updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status='sent'").bind(quote.id,quote.registration_id),
+          env.DB.prepare("UPDATE registrations SET registration_status='approved',payment_status='pending',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(quote.registration_id)
+        ]);
+        if (!updates[0]?.meta?.changes) return json({error:"The quotation changed before this update. Reload and try again."},409);
+        await audit(env,session.email,"quotation_accepted","quotation",quote.id,"Registration approved; payment set to pending; enrollment remains unchanged");
+        await audit(env,session.email,"registration_approved_by_quote","registration",quote.registration_id,quote.id);
+        return json({ok:true,status:"accepted",registrationStatus:"approved",paymentStatus:"pending",enrollmentStatus:registration.enrollment_status});
+      }
+      const updated=await env.DB.prepare("UPDATE quotations SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND registration_id=? AND status=?")
+        .bind(nextStatus,quote.id,quote.registration_id,quote.status).run();
+      if (!updated.meta.changes) return json({error:"The quotation changed before this update. Reload and try again."},409);
+      await audit(env,session.email,"quotation_status_changed","quotation",quote.id,nextStatus);
+      return json({ok:true,status:nextStatus});
+    }
     const paymentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/payment$/);
     if (paymentMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);

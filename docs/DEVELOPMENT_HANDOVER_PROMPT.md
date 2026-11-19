@@ -277,3 +277,18 @@ Next actions:
 - No schema migration is expected because the existing `quotations` table and registration payment field are reused.
 - Pending: CI result, Preview deployment, authenticated API tests, quotation history persistence, currency verification and Admin browser tests.
 - Test custom quote creation twice and confirm two quotation rows are retained while the registration shows the latest quote. Test invalid amounts and unauthorized access. Test each permitted payment state and confirm audit entries.
+
+
+
+## 13. Registration lifecycle and quotation acceptance
+
+**Status: Implemented on development; automated CI and Preview acceptance pending.**
+
+- Quotation lifecycle transitions are constrained to draft → sent, then sent → accepted/declined/expired.
+- Acceptance is allowed only from sent status and only while the quotation is valid. If valid_until is set and is before the current UTC date, acceptance is rejected and the quote is marked expired.
+- Accepting a sent quote approves the linked registration and sets payment status to pending. Enrollment status is deliberately left unchanged; it requires manual Admin confirmation.
+- Rejected/cancelled registrations and cancelled enrollments cannot accept a quote.
+- Quote status and registration updates are batched; audit events record the accepted quotation and registration transition.
+- Admin quote history allows an operator to select a quote and advance it through an allowed transition.
+- No migration is required. No D1 SQL, Preview deployment or Production change was performed by the assistant.
+- Preview tests must cover valid acceptance, invalid transitions, decline, expiry, cancelled/rejected registrations, audit records and authorization.

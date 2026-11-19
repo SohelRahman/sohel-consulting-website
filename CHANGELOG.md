@@ -62,3 +62,12 @@
 - Added Admin controls to update the existing enrollment states.
 - Added registration workflow contract tests to development CI. No migration or Production change was made.
 - Payment processing, automated verification, quote sending and quote acceptance remain out of scope.
+
+
+## 2026-11-19 — Registration lifecycle and quotation acceptance
+
+- Added guarded quotation transitions: draft to sent, then sent to accepted, declined or expired.
+- Accepting a valid sent quotation approves the registration and sets payment to pending; enrollment remains unchanged for manual confirmation.
+- Prevented acceptance for rejected/cancelled registrations or cancelled enrollments and rejected expired quotations.
+- Added Admin controls to advance quotation status and audit events for quotation and linked registration changes.
+- Added registration lifecycle contract tests and Preview acceptance cases. No schema migration or Production change was made.

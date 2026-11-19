@@ -160,3 +160,17 @@ The development workflow runs `node scripts/test-course-pricing.mjs`. It covers 
 ## Registration workflow tests
 
 The development workflow runs `node scripts/test-registration-workflow.mjs`. It checks the quotation-history insert and read route, atomic registration fee snapshot update, currency propagation, payment-status allowlist and Admin controls. These contract checks do not replace Preview database and browser acceptance tests.
+
+
+## Registration and quotation lifecycle acceptance
+
+- [ ] Create a custom quotation; confirm its initial status is `draft` and the registration fee snapshot matches.
+- [ ] Mark the draft quotation as `sent`; confirm draft-to-sent succeeds.
+- [ ] Accept a valid sent quotation; confirm quotation status becomes `accepted`, registration becomes `approved`, payment becomes `pending`, and enrollment remains `awaiting_confirmation`.
+- [ ] Confirm a draft quotation cannot be accepted directly and a sent quotation cannot be accepted twice.
+- [ ] Decline a sent quotation; confirm registration/payment/enrollment statuses remain unchanged.
+- [ ] Expire a sent quotation; confirm it cannot subsequently be accepted.
+- [ ] Attempt acceptance for rejected/cancelled registrations and cancelled enrollments; confirm the request is rejected.
+- [ ] Verify quotation status changes and linked registration changes are audited.
+- [ ] Verify unauthorized users cannot read or change quotation status.
+

@@ -15,3 +15,11 @@ assert.ok(admin.includes("data-quotes"));
 assert.ok(admin.includes("Update payment status"));
 assert.ok(admin.includes("Quote history"));
 console.log("All registration workflow contract tests passed.");
+
+assert.ok(worker.includes('const quoteStatusMatch=path.match'));
+assert.ok(worker.includes('transitions={draft:["sent"],sent:["accepted","declined","expired"]}'));
+assert.ok(worker.includes("registration_status='approved',payment_status='pending'"));
+assert.ok(worker.includes('enrollmentStatus:registration.enrollment_status'));
+assert.ok(worker.includes('quotation_accepted'));
+assert.ok(admin.includes("Allowed next status:"));
+console.log("Quotation lifecycle contract tests passed.");
