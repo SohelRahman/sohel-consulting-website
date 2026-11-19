@@ -342,3 +342,15 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - Added contract assertions in `scripts/test-quotation-response.mjs`.
 - No D1 schema change or SQL is required. Do not deploy to Production or merge to `main` without explicit approval.
 - After deploying Preview, issue/reissue a test link, verify the dialog, click Copy link, paste locally to verify, and then test the learner response separately. Treat generated URLs as bearer credentials; never share live tokens in screenshots or chat.
+
+
+### Stage 14 Preview learner workflow verification update — 2026-11-19
+
+**Status: Learner acceptance and decline paths verified in Preview using user-supplied browser screenshots and Preview D1 query results. Other security edge cases remain pending.**
+
+- Acceptance test quotation `42e60e83-2d96-4c51-b75f-0d519a52c154`: quotation became `accepted`; registration became `approved`; payment became `pending`; enrollment remained `awaiting_confirmation`; the active response token received `used_at`; previous issued tokens were revoked. Audit records `quotation_learner_accepted` and `registration_approved_by_learner_quote` were confirmed at 2026-11-19 11:53:34.
+- Decline test quotation `cc76844e-89a2-4cbe-9022-474b80303ae1`: quotation became `declined`; registration remained `approved`; payment remained `pending`; enrollment remained `awaiting_confirmation`; the active token received `used_at` and `revoked_at` remained NULL.
+- The learner page displayed the expected success messages for both decisions.
+- Decline audit event has not yet been queried. Next verification: query `audit_logs` for `quotation_learner_declined` using the decline quotation ID.
+- The Preview Admin link-copy dialog was exercised: user confirmed the link was copied and opened successfully.
+- These checks verify the two normal decision paths only. Expiry, revocation, consumed-link replay, same-origin rejection, rate limiting, security headers and full bilingual/accessibility checks remain outstanding. Do not claim complete security acceptance or Production readiness.
