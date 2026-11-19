@@ -346,11 +346,15 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 
 ### Stage 14 Preview learner workflow verification update — 2026-11-19
 
-**Status: Learner acceptance and decline paths verified in Preview using user-supplied browser screenshots and Preview D1 query results. Other security edge cases remain pending.**
+**Status: Learner acceptance, decline, expiry, revocation and replay paths verified in Preview using user-supplied browser screenshots and Preview D1 query results. Origin, rate-limit, response-header and bilingual/accessibility checks remain pending.**
 
 - Acceptance test quotation `42e60e83-2d96-4c51-b75f-0d519a52c154`: quotation became `accepted`; registration became `approved`; payment became `pending`; enrollment remained `awaiting_confirmation`; the active response token received `used_at`; previous issued tokens were revoked. Audit records `quotation_learner_accepted` and `registration_approved_by_learner_quote` were confirmed at 2026-11-19 11:53:34.
 - Decline test quotation `cc76844e-89a2-4cbe-9022-474b80303ae1`: quotation became `declined`; registration remained `approved`; payment remained `pending`; enrollment remained `awaiting_confirmation`; the active token received `used_at` and `revoked_at` remained NULL.
 - The learner page displayed the expected success messages for both decisions.
-- Decline audit event has not yet been queried. Next verification: query `audit_logs` for `quotation_learner_declined` using the decline quotation ID.
+- The decline audit event `quotation_learner_declined` was confirmed in Preview D1 for the decline quotation.
 - The Preview Admin link-copy dialog was exercised: user confirmed the link was copied and opened successfully.
-- These checks verify the two normal decision paths only. Expiry, revocation, consumed-link replay, same-origin rejection, rate limiting, security headers and full bilingual/accessibility checks remain outstanding. Do not claim complete security acceptance or Production readiness.
+- Additional Preview security tests completed on 2026-11-19:
+  - Expired-link test quotation `1b82e740-0f81-4c15-8a5e-ef26251894b1`: token expiry was set to `2026-11-18 00:00:00`; the learner page rejected the link. D1 showed quotation remained `sent`, token `used_at` NULL and `revoked_at` NULL.
+  - Revocation test quotation `954d469c-57d0-47b9-9620-404c722c96b4`: reissuing revoked original token `542c0aa8-6475-4f02-b494-c56d7ecbfc2c`; its old link was rejected. Replacement token `3b2c3d6f-a597-48c9-8ddd-9438f76ed0de` remained active, loaded successfully and was then accepted.
+  - After acceptance, D1 showed quotation `accepted`, registration `approved`, payment `pending`, enrollment `awaiting_confirmation`, and replacement token `used_at` populated. Reopening the same replacement link produced the expected used-link rejection, verifying replay protection.
+- Remaining: cross-origin POST rejection, rate limiting, response-header checks, raw-token exposure review, and English/Bangla, keyboard and mobile accessibility checks. Do not claim complete security acceptance or Production readiness.
