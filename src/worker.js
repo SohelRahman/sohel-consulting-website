@@ -893,18 +893,42 @@ async function handleApi(request, env) {
       await audit(env,session.email,"inquiry_status_changed","inquiry",inquiryMatch[1],data.status);
       return json({ok:true});
     }
+    const quoteHistoryMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/quotes$/);
+    if (quoteHistoryMatch && method === "GET") {
+      const {results=[]}=await env.DB.prepare("SELECT id,amount_minor,currency,description,status,valid_until,created_at FROM quotations WHERE registration_id=? ORDER BY created_at DESC").bind(quoteHistoryMatch[1]).all();
+      return json({quotations:results});
+    }
     const quoteMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/quote$/);
     if (quoteMatch && method === "PATCH") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null);
       const amount=Number(data?.amount);
+      if (!Number.isFinite(amount) || amount<=0 || amount>1000000000) return json({error:"Enter a valid quotation amount."},400);
       const amountMinor=Math.round(amount*100);
-      if (!Number.isFinite(amountMinor) || amountMinor<1 || amountMinor>100000000000) return json({error:"Enter a valid quotation amount in BDT."},400);
-      const result=await env.DB.prepare("UPDATE registrations SET pricing_type='custom',quoted_fee_minor=?,currency='BDT',updated_at=CURRENT_TIMESTAMP WHERE id=?")
-        .bind(amountMinor,quoteMatch[1]).run();
+      if (!Number.isSafeInteger(amountMinor) || amountMinor<1 || amountMinor>100000000000) return json({error:"Enter a valid quotation amount."},400);
+      const registration=await env.DB.prepare("SELECT r.id,r.currency,c.currency AS course_currency FROM registrations r JOIN courses c ON c.id=r.course_id WHERE r.id=?").bind(quoteMatch[1]).first();
+      if (!registration) return json({error:"Registration not found."},404);
+      const currency=registration.course_currency||registration.currency||"BDT";
+      const quoteId=id();
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO quotations (id,registration_id,amount_minor,currency,description,status) VALUES (?,?,?,?,?,'draft')")
+          .bind(quoteId,quoteMatch[1],amountMinor,currency,clean(data?.description,500)),
+        env.DB.prepare("UPDATE registrations SET pricing_type='custom',quoted_fee_minor=?,currency=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind(amountMinor,currency,quoteMatch[1])
+      ]);
+      await audit(env,session.email,"custom_quote_created","registration",quoteMatch[1],JSON.stringify({quoteId,amountMinor,currency}));
+      return json({ok:true,quoteId,amountMinor,currency,status:"draft"});
+    }
+    const paymentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/payment$/);
+    if (paymentMatch && method === "PATCH") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null);
+      if (!["not_configured","pending","paid","failed","refunded"].includes(data?.paymentStatus)) return json({error:"Invalid payment status."},400);
+      const result=await env.DB.prepare("UPDATE registrations SET payment_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+        .bind(data.paymentStatus,paymentMatch[1]).run();
       if (!result.meta.changes) return json({error:"Registration not found."},404);
-      await audit(env,session.email,"custom_quote_set","registration",quoteMatch[1],String(amount));
-      return json({ok:true});
+      await audit(env,session.email,"payment_status_changed","registration",paymentMatch[1],data.paymentStatus);
+      return json({ok:true,paymentStatus:data.paymentStatus});
     }
     const enrollmentMatch=path.match(/^\/api\/admin\/registrations\/([a-f0-9-]+)\/enrollment$/);
     if (enrollmentMatch && method === "PATCH") {
