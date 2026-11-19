@@ -1027,6 +1027,16 @@ export default {
     }
     if (url.pathname.startsWith("/src/") || url.pathname.startsWith("/migrations/") || url.pathname === "/wrangler.toml") return new Response("Not found",{status:404});
 
+    // Quotation response URLs contain bearer credentials; prevent caching and referrer disclosure.
+    if (url.pathname === "/quote-response.html") {
+      const response = await env.ASSETS.fetch(request);
+      const headers = new Headers(response.headers);
+      headers.set("cache-control", "no-store, max-age=0");
+      headers.set("referrer-policy", "no-referrer");
+      headers.set("x-robots-tag", "noindex, nofollow, noarchive");
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
+
     // Serve the static homepage explicitly because html_handling is disabled.
     if (url.pathname === "/") return env.ASSETS.fetch(new Request(new URL("/index.html",url),request));
 
