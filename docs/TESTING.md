@@ -243,3 +243,14 @@ The fragment prevents the browser from including the bearer token in the initial
 - CI history for Stage 17: runs `44588560410` and `44588687993` failed because the contract test retained old GET/query-string expectations after the API change. The assertions were corrected in commit `42d58e24ff59fe728dd59b043c879783b7b948b8`. A passing workflow run for that corrected commit is still pending confirmation.
 
 - [x] Development CI run `44588832549` passed all checks for commit `42d58e24ff59fe728dd59b043c879783b7b948b8`, including Worker syntax, site validation, RBAC, pricing, registration workflow and quotation response contracts. This is automated verification only; Preview browser acceptance remains pending.
+
+
+### Admin account session revocation hardening — Preview acceptance
+- [ ] Create a test User account and sign in in a separate browser profile.
+- [ ] As Admin, disable that account, then re-enable it before the original session expires.
+- [ ] Confirm the original session cookie is still rejected after re-enablement and the user must sign in again.
+- [ ] Change a test user's role or permissions and confirm the old session is rejected; sign in again and verify the new permissions apply.
+- [ ] Reset a test user's password and confirm their old session is rejected.
+- [ ] Confirm an unrelated Admin's session remains valid when another user's account is edited.
+
+Static RBAC contract assertions were added for session-version increments on Admin account PATCH and disable operations. These are source checks only; the live Preview tests above remain pending.
