@@ -62,6 +62,7 @@ function requiredPermission(path, method) {
   if(path==="/api/admin/pages" || path.startsWith("/api/admin/pages/"))return method==="GET"?"pages.view":"pages.manage";
   if(path==="/api/admin/media")return method==="GET"?"media.view":"media.manage";
   if(path==="/api/admin/media/audit")return method==="GET"?"media.view":null;
+  if(path==="/api/admin/media/inventory")return method==="GET"?"media.view":null;
   if(path.startsWith("/api/admin/media/"))return "media.manage";
   if(path==="/api/admin/analytics")return "analytics.view";
   if(path==="/api/admin/chat/conversations")return "chat.view";
@@ -552,6 +553,51 @@ async function handleApi(request, env) {
         return json({generated_at:new Date().toISOString(),scope:"Database-registered Media Library assets plus attached course syllabus URLs. Cloudinary remote existence is not checked.",media:{items:audited,total,page:requestedPage,page_size:requestedLimit,total_pages:Math.max(1,Math.min(200,Math.ceil(total/requestedLimit))),truncated:total>200*requestedLimit},syllabi:{items:syllabi,total:Number(syllabusCount?.total||0),limit:100,truncated:Number(syllabusCount?.total||0)>100},upload_operations:{items:uploads,counts:uploadCounts,returned:uploads.length,limit:100,truncated:uploads.length===100},deletion_journal:journalCounts,summary:{registered_media_assets:total,potential_orphan_candidates:audited.filter(x=>x.classification==="potential_orphan_candidate").length,media_assets_with_references:audited.filter(x=>x.classification==="reference_found").length,syllabus_records_returned:syllabi.length,upload_operations_needing_attention:uploads.length}});
       } catch {
         return json({error:"Asset audit could not complete. Check that migrations 0006, 0014 and 0016 are applied and retry."},503);
+      }
+    }
+    if (path === "/api/admin/media/inventory" && method === "GET") {
+      if (!(await rateLimit(env,request,"media-remote-inventory",10,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
+      const resourceType=url.searchParams.get("resource_type")||"image";
+      const nextCursor=clean(url.searchParams.get("next_cursor"),2048);
+      if (!["image","raw"].includes(resourceType) || (url.searchParams.has("next_cursor") && (!nextCursor || !/^[A-Za-z0-9._-]+$/.test(nextCursor)))) return json({error:"Use resource_type=image or raw and a valid cursor returned by Cloudinary."},400);
+      try {
+        const remoteUrl=new URL("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/resources/"+resourceType+"/upload");
+        remoteUrl.searchParams.set("prefix","sohel-consulting/");
+        remoteUrl.searchParams.set("max_results","100");
+        if(nextCursor)remoteUrl.searchParams.set("next_cursor",nextCursor);
+        const credentials=btoa(env.CLOUDINARY_API_KEY+":"+env.CLOUDINARY_API_SECRET);
+        const response=await fetch(remoteUrl.toString(),{headers:{authorization:"Basic "+credentials,accept:"application/json"}});
+        const payload=await response.json().catch(()=>null);
+        if(!response.ok || !Array.isArray(payload?.resources)) return json({error:payload?.error?.message||"Cloudinary inventory request failed."},502);
+        const resources=payload.resources.filter(item=>typeof item?.public_id==="string" && item.public_id.startsWith("sohel-consulting/"));
+        const publicIds=resources.map(item=>item.public_id);
+        const placeholders=publicIds.map(()=>"?").join(",");
+        let mediaRows=[],uploadRows=[];
+        if(publicIds.length){
+          const mediaResult=await env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id IN ("+placeholders+")").bind(...publicIds).all();
+          const uploadResult=await env.DB.prepare("SELECT public_id,purpose,status,last_error FROM cloudinary_upload_operations WHERE public_id IN ("+placeholders+")").bind(...publicIds).all();
+          mediaRows=mediaResult.results||[];uploadRows=uploadResult.results||[];
+        }
+        const mediaById=new Map(mediaRows.map(item=>[item.public_id,item]));
+        const uploadById=new Map(uploadRows.map(item=>[item.public_id,item]));
+        const syllabusById=new Map();
+        const {results:syllabi=[]}=await env.DB.prepare("SELECT id,title_en,syllabus_file_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' ORDER BY id LIMIT 500").all();
+        for(const course of syllabi){
+          const syllabusId=cloudinaryPublicIdFromUrl(course.syllabus_file_url,env.CLOUDINARY_CLOUD_NAME);
+          if(syllabusId && publicIds.includes(syllabusId)){
+            if(!syllabusById.has(syllabusId))syllabusById.set(syllabusId,[]);
+            syllabusById.get(syllabusId).push({course_id:course.id,title:course.title_en});
+          }
+        }
+        const items=resources.map(asset=>{
+          const media=mediaById.get(asset.public_id),upload=uploadById.get(asset.public_id),syllabusCourses=syllabusById.get(asset.public_id)||[];
+          const registered=Boolean(media),journaled=Boolean(upload),attached=syllabusCourses.length>0;
+          return {public_id:asset.public_id,resource_type:asset.resource_type||resourceType,format:asset.format||null,bytes:Number(asset.bytes||0),secure_url:asset.secure_url||null,classification:registered?"registered_media_asset":attached?"attached_syllabus_asset":journaled?"upload_journal_only":"unregistered_remote_candidate",media_record:registered,upload_operation:upload?{purpose:upload.purpose,status:upload.status,last_error:upload.last_error}:null,syllabus_courses:syllabusCourses};
+        });
+        return json({generated_at:new Date().toISOString(),scope:"One Cloudinary resource-type page under the sohel-consulting/ public-ID prefix.",resource_type:resourceType,items,next_cursor:payload.next_cursor||null,page_complete:!payload.next_cursor,scan_complete:false,remote_total:payload.total_count??null,warning:"This is a paginated page, not a complete inventory. An unregistered remote candidate may still be referenced outside the database. Missing-remote assets cannot be concluded from this page.",database_syllabus_scan_limit:500});
+      } catch {
+        return json({error:"Remote inventory comparison could not complete. Check Cloudinary Admin API access and required D1 migrations."},503);
       }
     }
     if (path === "/api/admin/media/delete" && method === "POST") {
