@@ -1,3 +1,9 @@
+## 2026-11-22 — Branch divergence and Preview workflow review
+- Recompared `current-focus-development` with `main`: development is 575 commits ahead and 14 commits behind; the branches remain diverged at merge base `5260b56751f2e1d1a946d619b2d8f68dd633c2fd`.
+- Reviewed the 14-commit main-side difference. The changed-file comparison identifies six Preview/Cloudflare workflow files; five are byte-identical on both branches. The remaining file, `.github/workflows/migrate-preview-d1.yml`, differs: `main` retains the invalid single-bracket Preview D1 parser, while development contains the reviewed double-bracket parser fix.
+- Draft PR #1 remains open, unmerged and based on `main`; its description contains initial-project setup and test statements that are stale relative to the current development branch.
+- No branch reconciliation, merge, deployment, migration, secret access or Production change was performed. A release reconciliation strategy still requires separate review and approval.
+
 ## 2026-11-22 — Preview migration 0013 review
 - Reviewed migration 0013 SQL, the Worker token issuance/response logic, the learner response page, and the existing quotation-response contract test.
 - No blocking SQL/application incompatibility was identified by static review. The migration is additive and stores only SHA-256 token hashes; the Worker uses one-time, expiring, revocable bearer tokens with same-origin and rate-limit checks.
