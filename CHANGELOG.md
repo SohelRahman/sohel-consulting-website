@@ -1,7 +1,7 @@
 ## 2026-11-22 — Read-only Cloudinary asset audit
 - Added a permission-protected, rate-limited Admin report for registered Media Library assets, database reference findings, attached course syllabus URLs and deletion-journal status counts.
 - Added bounded pagination and labels unreferenced registered assets as potential orphan candidates only; the report does not delete assets or claim Cloudinary remote existence.
-- Documented reference-scan limits, unsupported external/hard-coded references and Preview acceptance checks.
+- Documented reference-scan limits, unsupported external/hard-coded references, the rate-limit counter write and Preview acceptance checks.
 - Preview migrations and deployment remain pending. No Preview or Production resources or data were changed.
 
 ## 2026-11-22 — Cloudinary upload security review
