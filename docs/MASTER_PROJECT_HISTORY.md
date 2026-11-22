@@ -150,13 +150,13 @@ A migration file being present does not establish that it has been applied to Pr
 
 ## 5. GitHub branch and release baseline
 
-GitHub compare metadata retrieved during this audit reported:
+GitHub compare metadata retrieved during the initial audit reported 558 commits ahead and 12 behind. A follow-up comparison on 2026-11-22 reported:
 
 - Base: `main`
 - Head: `current-focus-development`
 - Status: **diverged**
-- Development ahead: **558 commits**
-- Development behind: **12 commits**
+- Development ahead: **575 commits**
+- Development behind: **14 commits**
 - Merge base: `5260b56751f2e1d1a946d619b2d8f68dd633c2fd`
 
 Draft PR #1 remains recorded in the repository:
@@ -176,6 +176,18 @@ The Preview secrets workflow:
 - Uses Wrangler `4.160.1` for Preview secret writes.
 
 The workflow file referencing the `production` environment does not prove that required reviewers or environment protection rules are configured. Those settings require separate GitHub Settings verification. The Wrangler version usage is inconsistent and should be standardized in a reviewed change.
+
+
+### 2026-11-22 follow-up — branch divergence review
+
+A fresh GitHub compare reports `current-focus-development` 575 commits ahead of `main` and 14 commits behind it. The merge base remains `5260b56751f2e1d1a946d619b2d8f68dd633c2fd`. The 14-commit main-side comparison identifies six Preview/Cloudflare workflow files:
+
+- Five workflows are byte-identical on both branches: the three Preview Admin diagnostic workflows, Cloudflare token verification and Preview migration audit.
+- `.github/workflows/migrate-preview-d1.yml` differs. `main` uses a single-bracket `[previews.d1_databases]` parser, which does not match the actual `[[previews.d1_databases]]` declaration in `wrangler.toml`. Development has the reviewed parser that reads the array-of-table section and requires the exact Preview UUID.
+
+The open draft PR #1 remains based on `main`, unmerged, and its description still contains initial-project setup/test statements that do not describe the current Website 4 implementation or acceptance status. Its description should be refreshed as part of a separately reviewed release proposal, not as a substitute for branch reconciliation.
+
+**Disposition:** the file-level review suggests the main-only changes are largely duplicated workflow files plus an older migration-workflow version; however, the commit histories remain divergent. This is not sufficient evidence to rebase, merge or force-update either branch. Prepare a reviewed reconciliation plan and obtain explicit approval before changing branch history. No branch changes, deployment, migration, secret access or Production action occurred during this follow-up.
 
 ## 6. Feature inventory and acceptance gaps
 
