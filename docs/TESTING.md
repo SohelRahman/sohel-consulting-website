@@ -557,3 +557,10 @@ A follow-up source review tightened the persistent inventory endpoint and its co
 - [ ] Production and `main` remain unchanged.
 
 This is a source-level review and release plan only. No Preview migration, deployment, live Cloudinary request, or browser test was performed.
+
+
+### Additional consistency and concurrency notes
+
+- Migration 0017 now installs a partial unique index allowing at most one row with `status='running'`. The Worker handles a concurrent start collision by returning the active scan ID.
+- Cloudinary pagination is not a transactional point-in-time snapshot. Assets can be added, removed or changed while image/raw pages are being collected. Treat missing-remote rows as reconciliation leads, not proof of deletion; rerun the scan before taking corrective action.
+- The 500-page limit applies separately to image and raw resources. The comparison query has a combined 50,000-row cap; a larger combined snapshot is retained but its missing-remote comparison is withheld.
