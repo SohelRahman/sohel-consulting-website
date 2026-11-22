@@ -24,6 +24,27 @@ function check(name, condition) {
   catch (error) { failures.push(error.message); console.error("FAIL " + name); }
 }
 
+
+const mutationHandlers = worker.split("\n");
+const mutationRoutes = [];
+for (let index = 0; index < mutationHandlers.length; index++) {
+  if (/method\s*===?\s*["'](?:POST|PUT|PATCH|DELETE)["']/.test(mutationHandlers[index])) {
+    mutationRoutes.push({ line: index + 1, source: mutationHandlers.slice(index + 1, index + 5).join("\n") });
+  }
+}
+check("Every declared POST, PUT, PATCH and DELETE handler enforces same-origin requests", mutationRoutes.length > 0 && mutationRoutes.every(route => /sameOrigin\(request\)/.test(route.source)));
+check("Every Admin API path family has an explicit permission mapping or an Admin-only account-management boundary", [
+  'path==="/api/admin/me" || path==="/api/admin/users"',
+  'path.startsWith("/api/admin/courses/")',
+  'path.startsWith("/api/admin/registrations/")',
+  'path.startsWith("/api/admin/inquiries/")',
+  'path.startsWith("/api/admin/cms/")',
+  'path.startsWith("/api/admin/site-content/")',
+  'path.startsWith("/api/admin/media/")',
+  'path.startsWith("/api/admin/pages/")',
+  'path.startsWith("/api/admin/chat/conversations/")'
+].every(route => worker.includes(route)));
+
 check("All documented RBAC permissions are defined", permissions.every(p => worker.includes('"'+p+'"')));
 check("Admin role receives the complete permission set", /if\(user\?\.role==="admin"\)return ADMIN_PERMISSIONS/.test(worker));
 check("Unknown admin API routes fail closed for User accounts", /const allowed=Boolean\(required &&/.test(worker) && /if\(!isAdmin && !allowed\)return json\(\{error:"You do not have permission/.test(worker));
