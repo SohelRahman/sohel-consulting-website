@@ -61,6 +61,7 @@ function requiredPermission(path, method) {
   if(path==="/api/admin/page-styles")return method==="GET"?"styles.view":"styles.manage";
   if(path==="/api/admin/pages" || path.startsWith("/api/admin/pages/"))return method==="GET"?"pages.view":"pages.manage";
   if(path==="/api/admin/media")return method==="GET"?"media.view":"media.manage";
+  if(path==="/api/admin/media/audit")return method==="GET"?"media.view":null;
   if(path.startsWith("/api/admin/media/"))return "media.manage";
   if(path==="/api/admin/analytics")return "analytics.view";
   if(path==="/api/admin/chat/conversations")return "chat.view";
@@ -508,6 +509,28 @@ async function handleApi(request, env) {
       } catch { return json({error:"Media library is not initialized. Apply migration 0006_cloudinary_media.sql to the Preview database."},503); }
     }
 
+    if (path === "/api/admin/media/audit" && method === "GET") {
+      if (!(await rateLimit(env,request,"media-audit",20,60*60*1000))) return json({error:"Asset audit limit reached. Please try again later."},429);
+      const requestedLimit=Number(url.searchParams.get("limit")||25), requestedPage=Number(url.searchParams.get("page")||1);
+      if (!Number.isInteger(requestedLimit)||requestedLimit<1||requestedLimit>50||!Number.isInteger(requestedPage)||requestedPage<1||requestedPage>200) return json({error:"Use a page from 1 to 200 and a page size from 1 to 50."},400);
+      try {
+        const totalRow=await env.DB.prepare("SELECT COUNT(*) AS total FROM media_assets").first();
+        const total=Number(totalRow?.total||0),offset=(requestedPage-1)*requestedLimit;
+        const {results:assets=[]}=await env.DB.prepare("SELECT public_id,secure_url,bytes,format,width,height,created_at FROM media_assets ORDER BY created_at DESC,public_id ASC LIMIT ? OFFSET ?").bind(requestedLimit,offset).all();
+        const audited=[];
+        for (const asset of assets) {
+          const references=await findCloudinaryReferences(env,asset.public_id);
+          audited.push({...asset,reference_count_sample:references.length,references,classification:references.length?"reference_found":"potential_orphan_candidate",remote_existence:"unknown"});
+        }
+        const {results:syllabi=[]}=await env.DB.prepare("SELECT id AS course_id,title_en,syllabus_file_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' ORDER BY title_en LIMIT 100").all();
+        const {results:journal=[]}=await env.DB.prepare("SELECT status,COUNT(*) AS total FROM cloudinary_delete_operations GROUP BY status").all();
+        const journalCounts={pending:0,failed:0,completed:0};
+        for (const row of journal) if (Object.hasOwn(journalCounts,row.status)) journalCounts[row.status]=Number(row.total||0);
+        return json({generated_at:new Date().toISOString(),scope:"Database-registered Media Library assets plus attached course syllabus URLs. Cloudinary remote existence is not checked.",media:{items:audited,total,page:requestedPage,page_size:requestedLimit,total_pages:Math.ceil(total/requestedLimit)},syllabi:{items:syllabi,total:syllabi.length,limit:100,truncated:syllabi.length===100},deletion_journal:journalCounts,summary:{registered_media_assets:total,potential_orphan_candidates:audited.filter(x=>x.classification==="potential_orphan_candidate").length,media_assets_with_references:audited.filter(x=>x.classification==="reference_found").length,syllabus_records_returned:syllabi.length}});
+      } catch {
+        return json({error:"Asset audit could not complete. Check that migrations 0006 and 0014 are applied and retry."},503);
+      }
+    }
     if (path === "/api/admin/media/delete" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured for image deletion."},503);
