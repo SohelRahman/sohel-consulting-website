@@ -179,6 +179,7 @@ async function runMediaAudit(page=1){
   if(data.syllabi.items?.length){const h=document.createElement('h4');h.textContent='Attached course syllabus files (up to 100)';results.append(h);const list=document.createElement('ul');data.syllabi.items.forEach(item=>{const li=document.createElement('li');li.textContent=item.title_en+' — '+item.course_id+' — '+item.syllabus_file_url;list.append(li);});results.append(list);}
   if(data.syllabi.truncated){const note=document.createElement('p');note.className='admin-message';note.textContent='Syllabus list reached its 100-record limit and may be incomplete.';results.append(note);}
   $('#media-audit-page').textContent='Page '+mediaAuditPage+' of '+mediaAuditPages;
+  if(data.media.truncated){const note=document.createElement('p');note.className='admin-message';note.textContent='The 200-page API cap was reached. This report does not include every registered media asset.';results.append(note);}
   $('#media-audit-prev').disabled=mediaAuditPage<=1;$('#media-audit-next').disabled=mediaAuditPage>=mediaAuditPages;
  }catch(error){summary.textContent='Audit failed: '+error.message;}
  finally{button.disabled=false;}
