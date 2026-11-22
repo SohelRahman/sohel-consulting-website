@@ -69,7 +69,7 @@ check("Dashboard exposes role-based User Access controls", /User Access/i.test(a
 check("RBAC migration creates admin_users with constrained roles", /CREATE TABLE IF NOT EXISTS admin_users/.test(migration) && /CHECK \(role IN \('admin','user'\)\)/.test(migration));
 check("RBAC migration stores active state and session version", /is_active INTEGER/.test(migration) && /session_version INTEGER/.test(migration));
 
-check("Cloudinary uploads are proxied through an authenticated same-origin Worker endpoint", /path === "\/api\/admin\/media\/upload" && method === "POST"/.test(worker) && /if \(!sameOrigin\(request\)\)/.test(worker) && /request\.formData\(\)/.test(worker) && /\/image\/upload/.test(worker));
+check("Cloudinary uploads are proxied through an authenticated same-origin Worker endpoint", /path === "\/api\/admin\/media\/upload" && method === "POST"/.test(worker) && /if \(!sameOrigin\(request\)\)/.test(worker) && /request\.formData\(\)/.test(worker) && /resourceType\+"\/upload"/.test(worker));
 check("Worker enforces 3 MB image and 10 MB PDF size limits", /3\*1024\*1024/.test(worker) && /10\*1024\*1024/.test(worker) && /file\.size>maxBytes/.test(worker));
 check("Worker validates actual file signatures for PDF, JPEG, PNG, GIF and WebP", /%PDF-/.test(worker) && /0xff,0xd8,0xff/.test(worker) && /0x89,0x50,0x4e,0x47/.test(worker) && /GIF87a/.test(worker) && /RIFF/.test(worker) && /WEBP/.test(worker));
 check("Upload signatures and Cloudinary API credentials are no longer returned to the browser", !worker.includes("/api/admin/media/signature") && !adminHtml.includes("/api/admin/media/signature") && !adminHtml.includes("signed.apiKey"));
