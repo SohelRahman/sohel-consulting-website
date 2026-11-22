@@ -649,14 +649,25 @@ async function handleApi(request, env) {
         const last=assetParts.length-1,extensionIndex=assetParts[last].lastIndexOf(".");if(extensionIndex>0&&/^[a-zA-Z0-9]+$/.test(assetParts[last].slice(extensionIndex+1)))assetParts[last]=assetParts[last].slice(0,extensionIndex);publicId=assetParts.join("/");
         if(!publicId.startsWith("sohel-consulting/")||!/^[a-zA-Z0-9_./-]+$/.test(publicId)||publicId.split("/").some(part=>!part||part==="."||part===".."))throw new Error();
       } catch { return json({error:"The saved syllabus URL is not a valid Cloudinary asset in the approved folder. The course record was not changed."},400); }
-      const timestamp=Math.floor(Date.now()/1000),params={invalidate:"true",public_id:publicId,timestamp},signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET),form=new FormData();
-      form.set("api_key",env.CLOUDINARY_API_KEY);form.set("timestamp",String(timestamp));form.set("public_id",publicId);form.set("invalidate","true");form.set("signature",signature);
-      let result;
-      try {const response=await fetch("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/image/destroy",{method:"POST",body:form});result=await response.json().catch(()=>null);if(!response.ok||!["ok","not found"].includes(result?.result))return json({error:result?.error?.message||"Cloudinary could not delete the uploaded syllabus. The course record was not changed."},502);}
-      catch{return json({error:"Could not reach Cloudinary. The course record was not changed."},502);}
-      const updated=await env.DB.prepare("UPDATE courses SET syllabus_file_url=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND syllabus_file_url=?").bind(course.id,course.syllabus_file_url).run();
-      if(!updated.meta.changes)return json({error:"The Cloudinary file was deleted, but the course record changed concurrently. Refresh the course list."},409);
-      await audit(env,session.email,"course_syllabus_deleted","course",course.id,publicId);return json({ok:true,public_id:publicId});
+      const operationId=id();
+      try {
+        await env.DB.prepare("INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,previous_url,status) VALUES (?,?, 'course_syllabus',?,?,'pending')")
+          .bind(operationId,publicId,course.id,course.syllabus_file_url).run();
+      } catch { return json({error:"Could not record the syllabus deletion request. The Cloudinary file was not changed."},503); }
+      const result=await destroyCloudinaryAsset(env,publicId);
+      if (!result.ok) {
+        await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.error,operationId).run();
+        return json({error:result.error,operation_id:operationId,recovery:"The deletion is recorded and can be retried from the Admin media recovery action."},502);
+      }
+      try {
+        await finalizeCloudinaryDeletion(env,{id:operationId,public_id:publicId,target_type:"course_syllabus",target_id:course.id,previous_url:course.syllabus_file_url});
+      } catch {
+        await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind("Cloudinary deletion succeeded; course record finalization needs retry.",operationId).run();
+        return json({error:"Cloudinary deleted the syllabus, but the course record update is pending recovery.",operation_id:operationId},503);
+      }
+      await audit(env,session.email,"course_syllabus_deleted","course",course.id,publicId);
+      return json({ok:true,public_id:publicId});
     }
     const courseEditMatch=path.match(/^\/api\/admin\/courses\/([a-f0-9-]+)$/);
     if (courseEditMatch && method === "PATCH") {
