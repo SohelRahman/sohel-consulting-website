@@ -520,3 +520,40 @@ Migration `0017_cloudinary_inventory_snapshots.sql` adds durable scan metadata a
 - [ ] Confirm no Cloudinary deletion or D1 business-record mutation occurs.
 
 Automated source-contract checks are not runtime acceptance. Preview migration, deployment and browser testing remain pending. Production and `main` remain untouched.
+
+
+## Cloudinary inventory reconciliation hardening — 2026-11-22
+
+A follow-up source review tightened the persistent inventory endpoint and its comparison rules:
+
+- The endpoint explicitly rejects methods other than GET and POST. Scan mutations require same-origin POST.
+- Local media and upload-journal records use literal prefix matching with SQLite `instr(...)=1`; SQL `LIKE` is not used for the underscore-containing folder prefix.
+- The missing-remote comparison is withheld if any in-scope local media/upload record or recognized syllabus asset cannot be assigned to image/raw resource type. This avoids silently dropping uncertain local records.
+- A remote snapshot cap or unknown resource type retains its specific reason in the API response and Admin UI.
+- Automated contract checks cover these conditions.
+
+### Preview rollout sequence (not yet authorized or executed)
+
+1. **Preflight identity:** confirm the intended Cloudflare account, Preview Worker name, Preview D1 database name and exact Preview database ID. Confirm the Production D1 ID is different. Do not use a production binding or production credentials.
+2. **Migration ledger:** inspect `d1_migrations` read-only on Preview. Confirm all prerequisite migrations 0001–0016 are recorded. If any are missing, stop and prepare a separate ordered migration review; do not apply 0017 out of sequence.
+3. **Review migration:** inspect `0017_cloudinary_inventory_snapshots.sql`; confirm it creates only the two inventory tables and index definitions, with no existing business-table mutation.
+4. **Apply migration 0017:** use only the guarded Preview migration workflow after explicit approval. Capture the run URL and confirm its post-migration ledger output.
+5. **Deploy Preview Worker:** deploy only the reviewed development commit to the Preview Worker, after confirming the workflow cannot target Production. Do not invoke the Production-only workflow.
+6. **Read-only Admin verification:** sign in with an account authorized for `media.view`; verify scan status can be read and unsupported methods are rejected.
+7. **Synthetic scan acceptance:** start a scan and process image/raw pages independently. Reload the Admin page and confirm the same scan resumes. Verify no Cloudinary delete endpoint is called and no business record is modified.
+8. **Reconciliation acceptance:** verify known image and raw D1 records against the completed snapshot. Include a record with an unknown resource type and confirm the comparison is withheld rather than reporting a false zero.
+9. **Failure acceptance:** verify Cloudinary errors, stale scans, page caps, local-row caps and remote-snapshot caps produce explicit incomplete/withheld states.
+10. **Evidence and rollback:** save workflow URLs, migration ledger output and sanitized test results. If acceptance fails, stop the scan and revert the Preview Worker to the previously accepted development version; do not drop migration tables or alter Production as an ad hoc rollback.
+
+### Release gates
+
+- [ ] Explicit user approval for Preview migration and deployment.
+- [ ] Preview identity and migration ledger independently confirmed immediately before migration.
+- [ ] CI green for the exact commit to be deployed.
+- [ ] Cloudinary Admin API secrets already configured in Preview; do not paste secrets into chat or workflow logs.
+- [ ] Migration 0017 recorded in Preview D1.
+- [ ] Preview Worker deployment points to the reviewed commit.
+- [ ] Browser acceptance evidence recorded.
+- [ ] Production and `main` remain unchanged.
+
+This is a source-level review and release plan only. No Preview migration, deployment, live Cloudinary request, or browser test was performed.
