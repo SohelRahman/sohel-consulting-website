@@ -147,7 +147,7 @@ async function findCloudinaryReferences(env, publicId, excludeCourseId = "") {
   const needle=publicId;
   const queries=[
     ["Published/legacy website content","SELECT content_key AS label FROM site_content WHERE published=1 AND instr(content_value,?)>0 LIMIT 10",[needle]],
-    ["CMS draft or published content","SELECT page_key||' / '||language||' / '||content_key AS label FROM cms_content WHERE is_deleted=0 AND (instr(draft_value,?)>0 OR instr(COALESCE(published_value,''),?)>0) LIMIT 10",[needle,needle]],
+    ["CMS draft or published content","SELECT page_key||' / '||language||' / '||content_key AS label FROM cms_content WHERE (instr(draft_value,?)>0 OR instr(COALESCE(published_value,''),?)>0) LIMIT 10",[needle,needle]],
     ["CMS content version history","SELECT page_key||' / '||language||' / '||content_key||' (version '||id||')' AS label FROM cms_static_content_versions WHERE instr(value,?)>0 LIMIT 10",[needle]],
     ["Custom page draft or published sections","SELECT slug AS label FROM pages WHERE instr(draft_json,?)>0 OR instr(COALESCE(published_json,''),?)>0 LIMIT 10",[needle,needle]],
     ["Homepage style drafts or published styles","SELECT element_key AS label FROM page_styles WHERE instr(draft_json,?)>0 OR instr(COALESCE(published_json,''),?)>0 LIMIT 10",[needle,needle]],
