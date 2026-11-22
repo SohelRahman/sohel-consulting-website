@@ -425,7 +425,7 @@ Media and syllabus deletion now insert the pending journal row, then repeat the 
 The development branch adds a read-only Admin endpoint, `GET /api/admin/media/audit`, and a report panel in the Media Library.
 
 - Requires an authenticated session and the `media.view` permission; Admin users retain access through their full permission set.
-- Rate-limited to 20 requests per hour. Media results use bounded pagination (1–50 rows per page; page numbers 1–200).
+- Rate-limited to 20 requests per hour. Media results use bounded pagination (1–10 rows per page; page numbers 1–200).
 - Each returned registered Media Library asset is checked against the database reference sources used by deletion protection. Records with references are labelled `reference_found`; records with no discovered references are labelled `potential_orphan_candidate`.
 - Includes attached course syllabus URLs (up to 100 records) and counts of pending, failed and completed deletion-journal rows.
 - Cloudinary remote existence is explicitly unknown. The report does not call Cloudinary's Admin API, delete assets, or mutate D1.
