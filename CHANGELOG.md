@@ -171,3 +171,13 @@
 - Reconfirmed the successful read-only Preview D1 migration audit (GitHub Actions run `45024256326`): Preview database identity matched the expected ID and migration `0013_quotation_response_tokens.sql` was the only pending migration.
 - Re-inspected all three Admin diagnostic workflows and found an incorrectly escaped token whitespace-normalization regex in each. The intended JavaScript expression is `replace(/\\s+/g, "")`; the current workflows use `replace(/\\\\s+/g, "")`. They remain unmodified pending authorization.
 - Admin diagnostic workflow execution remains pending. No migration was applied; no Preview deployment, Production change, `main` change or PR merge was performed.
+
+
+## 2026-11-22 — Preview Admin diagnostic workflow corrections
+
+- Corrected the Cloudflare API token whitespace-normalization regex in all three Preview Admin diagnostic workflows to use JavaScript `/\\s+/g`.
+- Updated only `current-focus-development`; no changes were made to `main`.
+- Re-fetched all three workflow files after the commits and verified that the malformed regex no longer appears.
+- Re-inspected the Preview migration workflow: it is manually dispatched, guarded to `current-focus-development`, checks the expected Preview D1 ID and excludes the known Production D1 ID, lists migrations before and after applying, and targets only the `PREVIEW_DB` binding.
+- The workflow was not dispatched in this session because the available GitHub connection does not expose a workflow-dispatch action. Migration 0013 remains pending until the guarded workflow is manually started and its successful run is verified.
+- No Production migration, deployment, `main` change or PR merge was performed.
