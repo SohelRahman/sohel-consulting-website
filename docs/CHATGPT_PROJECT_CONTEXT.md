@@ -108,3 +108,15 @@ This update is documentation-only. It does not reconcile branches, change applic
 - The Preview migration workflow was re-inspected: manual dispatch only, development-branch guard, exact Preview D1 ID validation, explicit Production D1 ID exclusion, and `PREVIEW_DB`-only migration application.
 - The connected GitHub tools do not expose workflow dispatch, so migration 0013 has not been applied. It remains pending based on the latest successful read-only Preview audit.
 - No Production operation, `main` change, branch reconciliation or PR merge was performed.
+
+
+## 2026-11-22 — Latest Preview Admin status (authoritative checkpoint)
+
+- The guarded Preview D1 migration workflow completed successfully on `current-focus-development` (run #8); its visible verification output reported `No migrations to apply!`. The screenshots did not show the complete migration ledger, so do not infer a particular filename as independently verified from this output alone.
+- All three corrected, read-only Preview Admin diagnostic workflows completed successfully.
+- Preview D1 identity: `consulting-preview-db`, ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+- Read-only checks found `admin_users`, `audit_logs`, and `rate_limits`; Admin account count was 1. PRAGMA inspection succeeded for all three tables. The SQL diagnostics reported no database changes and zero rows written.
+- User-reported browser result: Preview Admin login works, the full dashboard opens with all menu items visible, and Website Content works perfectly.
+- The user requested that further functional testing be deferred and documentation updated. Pause testing until the user asks to resume.
+- Remaining unverified areas include Courses, quotations, registrations, roles/permissions and live session revocation, payment/email integrations, end-to-end bilingual/public rendering, formal OWASP ASVS Level 2 verification, and production release readiness.
+- Do not call the whole project complete. Production and `main` remain untouched; no Production deployment, merge or rebase was performed.
