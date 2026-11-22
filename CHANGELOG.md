@@ -1,3 +1,6 @@
+## 2026-11-22 — Admin API mutation security audit
+- Audited all declared API mutation handlers for same-origin enforcement and added RBAC source-contract regression checks for mutation coverage and Admin API permission boundaries.
+
 ## 2026-11-22 — Administrator password hashing upgrade
 - Added a shared password-hashing helper using PBKDF2-HMAC-SHA-256 with a 600,000-iteration current work factor and a fresh 16-byte random salt for each hash.
 - Retained verification support for existing 100,000-iteration hashes. After successful login, legacy hashes are upgraded using a conditional database update so a concurrent password change is not overwritten.
