@@ -1,0 +1,76 @@
+name: Deploy Cloudflare Preview Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-preview-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    # Hard guard: this workflow must only run from the development branch.
+    if: github.ref == 'refs/heads/current-focus-development'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out development branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify Preview deployment credentials are available
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_WORKERS_API_TOKEN GitHub Actions secret}"
+          : "${CLOUDFLARE_ACCOUNT_ID:?Missing CLOUDFLARE_ACCOUNT_ID GitHub Actions secret}"
+          echo "Required deployment credentials are present; values are not displayed."
+
+      - name: Verify isolated Preview Worker and D1 configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const config = readFileSync("wrangler.preview.toml", "utf8");
+          const name = config.match(/^name\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          const databaseName = config.match(/^database_name\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          const databaseId = config.match(/^database_id\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          const environment = config.match(/^ENVIRONMENT\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          const productionId = "3a4f765a-46c2-4040-9753-36e9483893a4";
+          const expectedPreviewId = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
+          if (name !== "current-focus-development") throw new Error("Unexpected Worker name; refusing deployment.");
+          if (databaseName !== "consulting-preview-db" || databaseId !== expectedPreviewId || databaseId === productionId) {
+            throw new Error("Preview D1 target mismatch; refusing deployment.");
+          }
+          if (environment !== "preview") throw new Error("Preview environment marker is missing; refusing deployment.");
+          if (!/^main\s*=\s*"src\/worker\.js"\s*$/m.test(config)) throw new Error("Unexpected Worker entry point.");
+          console.log("Verified Preview Worker name, Preview D1 ID, environment marker, and entry point.");
+          NODE
+
+      - name: Run source validation
+        run: |
+          set -euo pipefail
+          node --input-type=module --check < src/worker.js
+          node --check assets/site.js
+          node scripts/validate-site.mjs
+          node scripts/test-rbac-contract.mjs
+          node scripts/test-password-hash.mjs
+          node scripts/test-course-pricing.mjs
+          node scripts/test-registration-workflow.mjs
+          node scripts/test-quotation-response.mjs
+
+      - name: Deploy Preview Worker and static assets only
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.160.1 deploy --config wrangler.preview.toml
