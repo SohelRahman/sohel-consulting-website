@@ -429,7 +429,7 @@ The development branch adds a read-only Admin endpoint, `GET /api/admin/media/au
 - Each returned registered Media Library asset is checked against the database reference sources used by deletion protection. Records with references are labelled `reference_found`; records with no discovered references are labelled `potential_orphan_candidate`.
 - Includes attached course syllabus URLs (up to 100 records) and counts of pending, failed and completed deletion-journal rows.
 - Cloudinary remote existence is explicitly unknown. The report does not call Cloudinary's Admin API, delete assets, or mutate D1.
-- Reference results are samples capped by the existing per-source query limits. A potential orphan is not proof that an asset is unused; hard-coded source references, external uses, unregistered uploads and other copies are outside the report.
+- Reference results are samples capped by the existing per-source query limits; the displayed match count is a sample count, not a guaranteed total. The endpoint reads the complete syllabus count but returns at most 100 syllabus rows. A potential orphan is not proof that an asset is unused; hard-coded source references, external uses, unregistered uploads and other copies are outside the report.
 
 ### Preview acceptance required
 
@@ -440,6 +440,6 @@ The development branch adds a read-only Admin endpoint, `GET /api/admin/media/au
 - [ ] Verify references in supported database sources classify an asset as `reference_found`.
 - [ ] Verify an unreferenced registered asset is labelled only as a potential orphan candidate.
 - [ ] Verify course syllabus rows and deletion-journal counts are accurate.
-- [ ] Confirm the report performs no D1 writes and makes no Cloudinary deletion or remote-existence claim.
+- [ ] Confirm the report makes no writes to asset, content, course or deletion-journal records and makes no Cloudinary deletion or remote-existence claim. The existing rate limiter updates its separate rate_limits table.
 
 Source-contract checks do not establish live Preview behavior. No Preview migration or deployment is authorized by this implementation.
