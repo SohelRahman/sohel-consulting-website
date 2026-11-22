@@ -478,3 +478,46 @@ No Production deployment, Production migration, `main` change, branch reconcilia
 - Verify the deployed Preview Worker commit and finish browser acceptance.
 
 Migration 0013 remains pending. No Production or `main` operation has been performed.
+
+
+---
+
+## 2026-11-22 — Preview Admin operational checkpoint and deferred testing
+
+**Current status:** Preview Admin login, dashboard access and Website Content are user-reported working. Further functional testing is paused at the user's request; documentation has been updated to preserve the current evidence and outstanding checklist.
+
+### Preview D1 diagnostics
+- Guarded migration workflow run #8 completed successfully on `current-focus-development`. The visible verification step reported `No migrations to apply!`. The provided screenshots did not include the full post-application migration ledger; do not claim an individual migration filename is ledger-verified solely from this evidence.
+- All three corrected read-only Admin diagnostic workflows completed successfully.
+- Preview database: `consulting-preview-db`; ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+- Confirmed tables: `admin_users`, `audit_logs`, `rate_limits`.
+- Admin account count: 1.
+- PRAGMA inspection succeeded. Observed columns:
+  - `rate_limits`: `rate_key`, `window_started_at`, `request_count`, `expires_at`.
+  - `admin_users`: `id`, `email`, `full_name`, `role`, `password_hash`, `permissions_json`, `is_active`, `session_version`, `created_at`, `updated_at`, `last_login_at`.
+  - `audit_logs`: `id`, `admin_email`, `action`, `entity_type`, `entity_id`, `details`, `created_at`.
+- Diagnostic SQL was read-only: no database changes and zero rows written. Preview identity guards passed; Production was excluded.
+
+### Browser acceptance reported by the user
+- Preview Admin page opened.
+- Admin login succeeded.
+- Dashboard opened fully and all menu items were visible.
+- Website Content worked perfectly.
+
+These browser results are user-reported. They are not a complete acceptance test of every Admin module.
+
+### Deferred functional testing checklist
+Resume only when the user asks to test:
+1. Courses: create/edit, discount handling, syllabus file/link upload and removal.
+2. Quotations: create/update, accept/decline, expiry, revocation, replay and audit behavior.
+3. Registrations and inquiry workflows.
+4. User roles/permissions and live session revocation.
+5. Payment and email integrations, if/when configured.
+6. Public site rendering, bilingual content and CMS publication/history behavior.
+7. Security review and documented OWASP ASVS Level 2 verification.
+
+### Operating instructions
+- Do not continue asking the user to test modules now; the user explicitly wants testing later.
+- Keep documentation current when material work occurs.
+- Do not claim all development or release readiness is complete.
+- Keep `main`, Production resources and PR/branch history untouched unless the user separately authorizes a specific operation.
