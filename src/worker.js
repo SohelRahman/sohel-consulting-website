@@ -62,7 +62,7 @@ function requiredPermission(path, method) {
   if(path==="/api/admin/pages" || path.startsWith("/api/admin/pages/"))return method==="GET"?"pages.view":"pages.manage";
   if(path==="/api/admin/media")return method==="GET"?"media.view":"media.manage";
   if(path==="/api/admin/media/audit")return method==="GET"?"media.view":null;
-  if(path==="/api/admin/media/inventory")return method==="GET"?"media.view":null;
+  if(path==="/api/admin/media/inventory")return method==="GET"?"media.view":"media.view";
   if(path.startsWith("/api/admin/media/"))return "media.manage";
   if(path==="/api/admin/analytics")return "analytics.view";
   if(path==="/api/admin/chat/conversations")return "chat.view";
@@ -555,50 +555,86 @@ async function handleApi(request, env) {
         return json({error:"Asset audit could not complete. Check that migrations 0006, 0014 and 0016 are applied and retry."},503);
       }
     }
-    if (path === "/api/admin/media/inventory" && method === "GET") {
-      if (!(await rateLimit(env,request,"media-remote-inventory",10,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
+    if (path === "/api/admin/media/inventory" && (method === "GET" || method === "POST")) {
+      if (!(await rateLimit(env,request,"media-remote-inventory",60,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
-      const resourceType=url.searchParams.get("resource_type")||"image";
-      const nextCursor=url.searchParams.get("next_cursor")||"";
-      if (!["image","raw"].includes(resourceType) || nextCursor.length>2048 || /[\\u0000-\\u001f\\u007f]/.test(nextCursor)) return json({error:"Use resource_type=image or raw and a valid cursor returned by Cloudinary."},400);
-      try {
-        const remoteUrl=new URL("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/resources/"+resourceType+"/upload");
-        remoteUrl.searchParams.set("prefix","sohel-consulting/");
-        remoteUrl.searchParams.set("max_results","100");
-        if(nextCursor)remoteUrl.searchParams.set("next_cursor",nextCursor);
-        const credentials=btoa(env.CLOUDINARY_API_KEY+":"+env.CLOUDINARY_API_SECRET);
-        const response=await fetch(remoteUrl.toString(),{headers:{authorization:"Basic "+credentials,accept:"application/json"}});
-        const payload=await response.json().catch(()=>null);
-        if(!response.ok || !Array.isArray(payload?.resources)) return json({error:payload?.error?.message||"Cloudinary inventory request failed."},502);
-        const resources=payload.resources.filter(item=>typeof item?.public_id==="string" && item.public_id.startsWith("sohel-consulting/"));
-        const publicIds=resources.map(item=>item.public_id);
-        const placeholders=publicIds.map(()=>"?").join(",");
-        let mediaRows=[],uploadRows=[];
-        if(publicIds.length){
-          const mediaResult=await env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id IN ("+placeholders+")").bind(...publicIds).all();
-          const uploadResult=await env.DB.prepare("SELECT public_id,purpose,status,last_error FROM cloudinary_upload_operations WHERE public_id IN ("+placeholders+")").bind(...publicIds).all();
-          mediaRows=mediaResult.results||[];uploadRows=uploadResult.results||[];
+      const scanId=url.searchParams.get("scan_id")||"";
+      if (method === "POST") {
+        if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+        const body=await request.json().catch(()=>null);
+        if(body?.action==="start"){
+          const now=Date.now();
+          await env.DB.prepare("UPDATE cloudinary_inventory_scans SET status='stale',last_error='Scan expired after 24 hours of inactivity.',updated_at=CURRENT_TIMESTAMP WHERE status='running' AND updated_at < datetime('now','-24 hours')").run();
+          const active=await env.DB.prepare("SELECT id FROM cloudinary_inventory_scans WHERE status='running' ORDER BY created_at DESC LIMIT 1").first();
+          if(active)return json({error:"A scan is already running.",scan_id:active.id},409);
+          const newId=id();
+          await env.DB.prepare("INSERT INTO cloudinary_inventory_scans (id,status,created_at,updated_at) VALUES (?,'running',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").bind(newId).run();
+          return json({scan_id:newId,status:"running"});
         }
-        const mediaById=new Map(mediaRows.map(item=>[item.public_id,item]));
-        const uploadById=new Map(uploadRows.map(item=>[item.public_id,item]));
-        const syllabusById=new Map();
-        const {results:syllabi=[]}=await env.DB.prepare("SELECT id,title_en,syllabus_file_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' ORDER BY id LIMIT 500").all();
-        for(const course of syllabi){
-          const syllabusId=cloudinaryPublicIdFromUrl(course.syllabus_file_url,env.CLOUDINARY_CLOUD_NAME);
-          if(syllabusId && publicIds.includes(syllabusId)){
-            if(!syllabusById.has(syllabusId))syllabusById.set(syllabusId,[]);
-            syllabusById.get(syllabusId).push({course_id:course.id,title:course.title_en});
+        if(body?.action==="step" && typeof body.scan_id==="string" && ["image","raw"].includes(body.resource_type)){
+          const target=body.resource_type, idValue=body.scan_id;
+          const scan=await env.DB.prepare("SELECT * FROM cloudinary_inventory_scans WHERE id=?").bind(idValue).first();
+          if(!scan)return json({error:"Inventory scan not found."},404);
+          if(scan.status!=="running")return json({error:"This scan is not running.",scan},409);
+          const completeColumn=target+"_complete",cursorColumn=target+"_cursor",leaseColumn=target+"_lease_until",pagesColumn=target+"_pages";
+          const lease=await env.DB.prepare("UPDATE cloudinary_inventory_scans SET "+leaseColumn+"=datetime('now','+3 minutes'),updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='running' AND ("+completeColumn+"=0) AND ("+leaseColumn+" IS NULL OR "+leaseColumn+"<CURRENT_TIMESTAMP)").bind(idValue).run();
+          if(!lease.meta?.changes)return json({error:"This resource type is already being processed or is complete. Refresh the scan status before continuing."},409);
+          try {
+            const current=await env.DB.prepare("SELECT "+cursorColumn+" AS cursor,"+pagesColumn+" AS pages FROM cloudinary_inventory_scans WHERE id=?").bind(idValue).first();
+            if(Number(current?.pages||0)>=500)throw new Error("The 500-page safety cap was reached; this scan cannot be certified complete.");
+            const remoteUrl=new URL("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/resources/"+target+"/upload");
+            remoteUrl.searchParams.set("prefix","sohel-consulting/");
+            remoteUrl.searchParams.set("max_results","100");
+            if(current?.cursor)remoteUrl.searchParams.set("next_cursor",current.cursor);
+            const credentials=btoa(env.CLOUDINARY_API_KEY+":"+env.CLOUDINARY_API_SECRET);
+            const response=await fetch(remoteUrl.toString(),{headers:{authorization:"Basic "+credentials,accept:"application/json"}});
+            const payload=await response.json().catch(()=>null);
+            if(!response.ok||!Array.isArray(payload?.resources))throw new Error(payload?.error?.message||"Cloudinary inventory request failed.");
+            const assets=payload.resources.filter(item=>typeof item?.public_id==="string"&&item.public_id.startsWith("sohel-consulting/"));
+            const statements=assets.map(asset=>env.DB.prepare("INSERT INTO cloudinary_inventory_assets (scan_id,resource_type,public_id,secure_url,bytes,format) VALUES (?,?,?,?,?,?) ON CONFLICT(scan_id,resource_type,public_id) DO UPDATE SET secure_url=excluded.secure_url,bytes=excluded.bytes,format=excluded.format")
+              .bind(idValue,target,asset.public_id,asset.secure_url||null,Number(asset.bytes||0),asset.format||null));
+            if(statements.length)await env.DB.batch(statements);
+            const next=payload.next_cursor||null, isComplete=!next;
+            await env.DB.prepare("UPDATE cloudinary_inventory_scans SET "+cursorColumn+"=?,"+completeColumn+"=?,"+pagesColumn+"="+pagesColumn+"+1,"+leaseColumn+"=NULL,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+              .bind(next,isComplete?1:0,idValue).run();
+            const after=await env.DB.prepare("SELECT image_complete,raw_complete FROM cloudinary_inventory_scans WHERE id=?").bind(idValue).first();
+            if(after.image_complete&&after.raw_complete)await env.DB.prepare("UPDATE cloudinary_inventory_scans SET status='complete',completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='running'").bind(idValue).run();
+            return json({scan_id:idValue,resource_type:target,received:assets.length,page_complete:isComplete,scan_complete:Boolean(after.image_complete&&after.raw_complete),next_cursor_available:Boolean(next)});
+          } catch(error) {
+            await env.DB.prepare("UPDATE cloudinary_inventory_scans SET status='failed',last_error=?, "+leaseColumn+"=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(clean(error?.message||"Inventory page failed.",500),idValue).run();
+            return json({error:"Inventory scan failed and has been marked failed. Start a new scan after resolving the cause.",detail:clean(error?.message||"",300)},502);
           }
         }
-        const items=resources.map(asset=>{
-          const media=mediaById.get(asset.public_id),upload=uploadById.get(asset.public_id),syllabusCourses=syllabusById.get(asset.public_id)||[];
-          const registered=Boolean(media),journaled=Boolean(upload),attached=syllabusCourses.length>0;
-          return {public_id:asset.public_id,resource_type:asset.resource_type||resourceType,format:asset.format||null,bytes:Number(asset.bytes||0),secure_url:asset.secure_url||null,classification:registered?"registered_media_asset":attached?"attached_syllabus_asset":journaled?"upload_journal_only":"unregistered_remote_candidate",media_record:registered,upload_operation:upload?{purpose:upload.purpose,status:upload.status,last_error:upload.last_error}:null,syllabus_courses:syllabusCourses};
-        });
-        return json({generated_at:new Date().toISOString(),scope:"One Cloudinary resource-type page under the sohel-consulting/ public-ID prefix.",resource_type:resourceType,items,next_cursor:payload.next_cursor||null,page_complete:!payload.next_cursor,scan_complete:false,remote_total:payload.total_count??null,warning:"This is a paginated page, not a complete inventory. An unregistered remote candidate may still be referenced outside the database. Missing-remote assets cannot be concluded from this page.",database_syllabus_scan_limit:500});
-      } catch {
-        return json({error:"Remote inventory comparison could not complete. Check Cloudinary Admin API access and required D1 migrations."},503);
+        return json({error:"Use action=start or action=step with a valid scan ID and resource type."},400);
       }
+      if(scanId){
+        const scan=await env.DB.prepare("SELECT * FROM cloudinary_inventory_scans WHERE id=?").bind(scanId).first();
+        if(!scan)return json({error:"Inventory scan not found."},404);
+        let missing={items:[],counts:{image:0,raw:0},truncated:false,scope:""};
+        if(scan.status==="complete"){
+          const [media,uploads,syllabi]=await Promise.all([
+            env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id LIKE 'sohel-consulting/%' LIMIT 10001").all(),
+            env.DB.prepare("SELECT public_id,secure_url FROM cloudinary_upload_operations WHERE status<>'deleted' AND public_id LIKE 'sohel-consulting/%' LIMIT 10001").all(),
+            env.DB.prepare("SELECT syllabus_file_url AS secure_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' LIMIT 10001").all()
+          ]);
+          const local=new Map();
+          for(const row of [...(media.results||[]),...(uploads.results||[])])if(row.public_id)local.set(row.public_id,{public_id:row.public_id,secure_url:row.secure_url||null});
+          for(const row of syllabi.results||[]){const publicId=cloudinaryPublicIdFromUrl(row.secure_url,env.CLOUDINARY_CLOUD_NAME);if(publicId)local.set(publicId,{public_id:publicId,secure_url:row.secure_url});}
+          const overLimit=[media.results,uploads.results,syllabi.results].some(rows=>(rows||[]).length>=10001);
+          if(!overLimit){
+            for(const item of local.values()){
+              const resourceType=item.secure_url?.includes("/raw/upload/")?"raw":"image";
+              const exists=await env.DB.prepare("SELECT 1 AS found FROM cloudinary_inventory_assets WHERE scan_id=? AND resource_type=? AND public_id=? LIMIT 1").bind(scanId,resourceType,item.public_id).first();
+              if(!exists){missing.counts[resourceType]++;if(missing.items.length<500)missing.items.push({public_id:item.public_id,resource_type:resourceType});}
+            }
+            missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
+            missing.scope="D1 media, upload-journal and course-syllabus records with a recognized sohel-consulting/ public ID; resource type inferred from stored Cloudinary URL.";
+          }else{missing.truncated=true;missing.scope="Local record cap exceeded; missing-remote comparison withheld.";}
+        }
+        return json({scan,missing,scope:"Cloudinary image and raw uploads under sohel-consulting/ only.",remote_assets:scan.status==="complete"?await env.DB.prepare("SELECT resource_type,COUNT(*) AS total FROM cloudinary_inventory_assets WHERE scan_id=? GROUP BY resource_type").bind(scanId).all().then(x=>x.results||[]):null});
+      }
+      const latest=await env.DB.prepare("SELECT id,status,image_complete,raw_complete,image_pages,raw_pages,last_error,created_at,updated_at,completed_at FROM cloudinary_inventory_scans ORDER BY created_at DESC LIMIT 1").first();
+      return json({latest:latest||null});
     }
     if (path === "/api/admin/media/delete" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
