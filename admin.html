@@ -167,16 +167,11 @@ $('#media-upload-form').addEventListener('submit',async e=>{
  if(!file){message.textContent='Choose an image first.';return;}
  if(file.size>3*1024*1024){message.textContent='Image must be 3 MB or smaller.';return;}
  const allowed=['image/jpeg','image/png','image/webp','image/gif'];if(!allowed.includes(file.type)){message.textContent='Use JPG, PNG, WebP or GIF images.';return;}
- button.disabled=true;message.textContent='Preparing secure upload…';
+ button.disabled=true;message.textContent='Validating and uploading securely…';
  try{
-  const sr=await fetch('/api/admin/media/signature',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin'});
-  const signed=await sr.json().catch(()=>({}));if(!sr.ok)throw new Error(signed.error||'Could not authorize upload.');
-  const data=new FormData();data.append('file',file);data.append('api_key',signed.apiKey);data.append('timestamp',String(signed.timestamp));data.append('signature',signed.signature);data.append('folder',signed.folder);data.append('allowed_formats',signed.allowedFormats);
-  message.textContent='Uploading to Cloudinary…';
-  const upload=await fetch('https://api.cloudinary.com/v1_1/'+encodeURIComponent(signed.cloudName)+'/image/upload',{method:'POST',body:data});
-  const asset=await upload.json().catch(()=>({}));if(!upload.ok||!asset.public_id)throw new Error(asset.error?.message||'Cloudinary upload failed.');
-  const save=await fetch('/api/admin/media',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({public_id:asset.public_id,secure_url:asset.secure_url,bytes:asset.bytes,format:asset.format,width:asset.width,height:asset.height})});
-  const saved=await save.json().catch(()=>({}));if(!save.ok)throw new Error(saved.error||'Image uploaded, but library registration failed. Keep this image URL: '+asset.secure_url);
+  const data=new FormData();data.append('file',file);
+  const upload=await fetch('/api/admin/media/upload',{method:'POST',credentials:'same-origin',body:data});
+  const asset=await upload.json().catch(()=>({}));if(!upload.ok||!asset.public_id)throw new Error(asset.error||'Image upload failed.');
   message.textContent='Image uploaded successfully.';form.reset();await loadMedia(true);
  }catch(err){message.textContent=err.message;}finally{button.disabled=false;}
 });
@@ -187,15 +182,11 @@ $('#course-syllabus-upload').addEventListener('click',async()=>{
  if(!isPdf&&!isImage){message.textContent='Use a PDF, JPG, PNG or WebP file.';return;}
  if(isPdf&&file.size>10*1024*1024){message.textContent='PDF files must be 10 MB or smaller.';return;}
  if(isImage&&file.size>3*1024*1024){message.textContent='Image files must be 3 MB or smaller.';return;}
- button.disabled=true;message.textContent='Preparing secure Cloudinary upload…';
+ button.disabled=true;message.textContent='Validating and uploading syllabus securely…';
  try{
-  const resourceType='image';
-  const sr=await fetch('/api/admin/media/signature',{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify({purpose:'syllabus',fileType:isPdf?'pdf':'image'})});
-  const signed=await sr.json().catch(()=>({}));if(!sr.ok)throw new Error(signed.error||'Could not authorize syllabus upload.');
-  const data=new FormData();data.append('file',file);data.append('api_key',signed.apiKey);data.append('timestamp',String(signed.timestamp));data.append('signature',signed.signature);data.append('folder',signed.folder);data.append('allowed_formats',signed.allowedFormats);
-  message.textContent='Uploading syllabus to Cloudinary…';
-  const upload=await fetch('https://api.cloudinary.com/v1_1/'+encodeURIComponent(signed.cloudName)+'/'+signed.resourceType+'/upload',{method:'POST',body:data});
-  const asset=await upload.json().catch(()=>({}));if(!upload.ok||!asset.secure_url||asset.resource_type!==resourceType)throw new Error(asset.error?.message||'Cloudinary syllabus upload failed.');
+  const data=new FormData();data.append('file',file);data.append('purpose','syllabus');
+  const upload=await fetch('/api/admin/media/upload',{method:'POST',credentials:'same-origin',body:data});
+  const asset=await upload.json().catch(()=>({}));if(!upload.ok||!asset.secure_url||asset.resource_type!=='image')throw new Error(asset.error||'Syllabus upload failed.');
   form.elements.syllabusFileUrl.value=asset.secure_url;
   setCourseSyllabusDisplay(asset.secure_url);
   $('#course-syllabus-remove').classList.toggle('hidden',!editingCourseId);
