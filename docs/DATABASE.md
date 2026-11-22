@@ -16,11 +16,11 @@ The development branch contains migration files 0001–0017. File presence is no
 | 0010 | `0010_course_discounts_syllabus.sql` |
 | 0011 | `0011_course_syllabus_file_url.sql` |
 | 0012 | `0012_bilingual_static_cms.sql` |
+| 0013 | `0013_quotation_response_tokens.sql` |
 | 0014 | `0014_cloudinary_delete_operations.sql` |
 | 0015 | `0015_cloudinary_reference_locks.sql` |
 | 0016 | `0016_cloudinary_upload_operations.sql` |
 | 0017 | `0017_cloudinary_inventory_snapshots.sql` |
-| 0013 | `0013_quotation_response_tokens.sql` |
 
 ## Evidence qualification
 
