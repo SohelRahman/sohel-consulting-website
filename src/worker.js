@@ -612,7 +612,7 @@ async function handleApi(request, env) {
       if(scanId){
         const scan=await env.DB.prepare("SELECT * FROM cloudinary_inventory_scans WHERE id=?").bind(scanId).first();
         if(!scan)return json({error:"Inventory scan not found."},404);
-        let missing={items:[],counts:{image:0,raw:0},truncated:false,scope:""};
+        let missing={available:false,items:[],counts:{image:0,raw:0},truncated:false,scope:""};
         if(scan.status==="complete"){
           const [media,uploads,syllabi]=await Promise.all([
             env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id LIKE 'sohel-consulting/%' LIMIT 10001").all(),
@@ -641,9 +641,9 @@ async function handleApi(request, env) {
                 const resourceType=item.resource_type;
                 if(!remoteSet.has(resourceType+":"+item.public_id)){missing.counts[resourceType]++;if(missing.items.length<500)missing.items.push({public_id:item.public_id,resource_type:resourceType});}
               }
+              missing.available=true;
               missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
             }
-            missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
             missing.scope="D1 media, upload-journal and course-syllabus records with a recognized sohel-consulting/ public ID; resource type inferred from stored Cloudinary URL.";
           }else{missing.truncated=true;missing.scope="Local record cap exceeded; missing-remote comparison withheld.";}
         }
