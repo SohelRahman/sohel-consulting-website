@@ -199,13 +199,15 @@ function renderMediaInventoryStatus(data){
  message.textContent='Scan '+(mediaInventoryScanId||'')+' · '+status+' · image pages: '+(scan.image_pages??'—')+' · raw pages: '+(scan.raw_pages??'—')+'.';
  $('#media-inventory-image').disabled=status!=='running'||Boolean(scan.image_complete);
  $('#media-inventory-raw').disabled=status!=='running'||Boolean(scan.raw_complete);
- if(data.missing){
+ if(data.missing && status==="complete" && data.missing.available){
   const summary=document.createElement('p');summary.className='admin-message';
-  summary.textContent='D1 records not found in the completed remote snapshot: image '+data.missing.counts.image+', raw '+data.missing.counts.raw+'. '+(data.missing.truncated?'The displayed list is capped or the comparison was withheld.':'');
+  summary.textContent='D1 records not found in the completed remote snapshot: image '+data.missing.counts.image+', raw '+data.missing.counts.raw+'. '+(data.missing.truncated?'The displayed list is capped.':'');
   const list=document.createElement('ul');
   (data.missing.items||[]).forEach(item=>{const li=document.createElement('li');li.textContent=item.resource_type+' · '+item.public_id;list.append(li);});
   const scope=document.createElement('p');scope.className='admin-message';scope.textContent=data.missing.scope||'';
   results.replaceChildren(summary,list,scope);
+ }else if(data.missing && status==="complete"){
+  results.textContent="Scan finished, but the missing-remote comparison was withheld by a safety cap. "+(data.missing.scope||"");
  }else if(data.remote_assets){
   const counts=(data.remote_assets||[]).map(x=>x.resource_type+': '+x.total).join(' · ')||'No remote assets recorded';
   results.textContent='Remote snapshot totals: '+counts+'. Missing-remote comparison is available only when scan status is complete.';
