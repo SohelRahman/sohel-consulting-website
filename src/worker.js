@@ -560,7 +560,7 @@ async function handleApi(request, env) {
       if (!(await rateLimit(env,request,"media-remote-inventory",60,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
       const scanId=url.searchParams.get("scan_id")||"";
-      if (method === "POST") {
+      if (method !== "GET") {
         const body=await request.json().catch(()=>null);
         if(body?.action==="start"){
           await env.DB.prepare("UPDATE cloudinary_inventory_scans SET status='stale',last_error='Scan expired after 24 hours of inactivity.',updated_at=CURRENT_TIMESTAMP WHERE status='running' AND updated_at < datetime('now','-24 hours')").run();
