@@ -1,3 +1,7 @@
+## 2026-11-22
+- Fixed the Preview D1 migration workflow parser to read Wrangler's `[[previews.d1_databases]]` array-of-table declaration and fail closed when the Preview database ID cannot be parsed.
+- Verified the parser against the current `wrangler.toml`; it resolves the configured Preview D1 ID and rejects the Production ID. No database migration was executed.
+
 
 
 ## 2026-11-18 — Stage 9A.8 disposable D1 test progress
