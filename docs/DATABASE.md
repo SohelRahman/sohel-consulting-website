@@ -91,3 +91,22 @@ The token normalization expression was corrected in all three Preview Admin diag
 Each now uses `replace(/\\s+/g, "")`, which removes whitespace as intended. All three files were fetched again after their commits and checked for the corrected expression and absence of the malformed expression.
 
 The migration workflow was re-inspected before any application attempt. It has a manual `workflow_dispatch` trigger, a development-branch guard, an exact Preview D1 ID check, an explicit Production D1 ID exclusion, and pre-/post-application migration listings. Its apply command targets only `PREVIEW_DB`. The workflow was not dispatched in this session because the connected GitHub interface does not provide a workflow-dispatch operation. Therefore migration 0013 remains pending; the previous read-only audit remains the latest verified ledger evidence.
+
+
+## 2026-11-22 — Preview D1 migration and Admin schema diagnostics
+
+**Environment:** Preview D1, `consulting-preview-db`, ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+
+- The guarded migration workflow completed successfully on `current-focus-development` (run #8). The visible verification output stated `No migrations to apply!`, indicating no migrations remained pending at that check.
+- The screenshots provided did not expose the complete post-application migration ledger. Do not claim a specific migration filename as independently ledger-verified from that output alone.
+- The corrected read-only Admin diagnostics successfully queried the Preview database.
+- `sqlite_master` returned all three required tables: `admin_users`, `audit_logs`, and `rate_limits`.
+- `SELECT COUNT(*) AS admin_user_count FROM admin_users` returned `1`.
+- `PRAGMA table_info` succeeded for all three tables. The observed columns were:
+  - `rate_limits`: `rate_key`, `window_started_at`, `request_count`, `expires_at`.
+  - `admin_users`: `id`, `email`, `full_name`, `role`, `password_hash`, `permissions_json`, `is_active`, `session_version`, `created_at`, `updated_at`, `last_login_at`.
+  - `audit_logs`: `id`, `admin_email`, `action`, `entity_type`, `entity_id`, `details`, `created_at`.
+- The read-only diagnostic commands reported `changed_db: false` and `rows_written: 0`.
+- Preview identity verification passed and the workflow explicitly excluded the known Production D1 ID.
+
+These results establish that the inspected tables and columns exist in Preview. They do not establish that every application query or workflow is correct. Further functional testing has been deferred at the user's request.
