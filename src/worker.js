@@ -558,9 +558,9 @@ async function handleApi(request, env) {
     if (path === "/api/admin/media/inventory" && (method === "GET" || method === "POST")) {
       if(method==="POST"&&!sameOrigin(request))return json({error:"Invalid request origin."},403);
       if (!(await rateLimit(env,request,"media-remote-inventory",60,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
-      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
       const scanId=url.searchParams.get("scan_id")||"";
       if (method !== "GET") {
+        if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
         const body=await request.json().catch(()=>null);
         if(body?.action==="start"){
           await env.DB.prepare("UPDATE cloudinary_inventory_scans SET status='stale',last_error='Scan expired after 24 hours of inactivity.',updated_at=CURRENT_TIMESTAMP WHERE status='running' AND updated_at < datetime('now','-24 hours')").run();
@@ -620,12 +620,12 @@ async function handleApi(request, env) {
           const local=new Map();
           for(const row of [...(media.results||[]),...(uploads.results||[])]){
             const resourceType=row.secure_url?.includes("/raw/upload/")?"raw":row.secure_url?.includes("/image/upload/")?"image":null;
-            if(row.public_id&&resourceType)local.set(row.public_id,{public_id:row.public_id,secure_url:row.secure_url,resource_type:resourceType});
+            if(row.public_id&&resourceType)local.set(resourceType+":"+row.public_id,{public_id:row.public_id,secure_url:row.secure_url,resource_type:resourceType});
           }
           for(const row of syllabi.results||[]){
             const publicId=cloudinaryPublicIdFromUrl(row.secure_url,env.CLOUDINARY_CLOUD_NAME);
             const resourceType=row.secure_url?.includes("/raw/upload/")?"raw":row.secure_url?.includes("/image/upload/")?"image":null;
-            if(publicId&&resourceType)local.set(publicId,{public_id:publicId,secure_url:row.secure_url,resource_type:resourceType});
+            if(publicId&&resourceType)local.set(resourceType+":"+publicId,{public_id:publicId,secure_url:row.secure_url,resource_type:resourceType});
           }
           const overLimit=[media.results,uploads.results,syllabi.results].some(rows=>(rows||[]).length>=10001);
           if(!overLimit){
