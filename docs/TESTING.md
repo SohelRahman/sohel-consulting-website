@@ -470,3 +470,26 @@ Migration `0016_cloudinary_upload_operations.sql` adds a durable upload journal.
 - [ ] Confirm the report remains read-only and no upload lifecycle row triggers automatic Cloudinary deletion.
 
 These are source-level changes. Preview migration, deployment and runtime tests remain pending. Production remains untouched.
+
+
+## Cloudinary remote inventory comparison — 2026-11-22
+
+The development branch adds a read-only Admin endpoint, `GET /api/admin/media/inventory`, and image/raw inventory controls in the Media Library.
+
+- Requires an authenticated session and `media.view`; rate-limited to 10 requests per hour.
+- Uses the Cloudinary Admin API with the existing Worker-held Cloudinary cloud name, API key and API secret. Credentials are sent as HTTP Basic authentication and are never returned to the browser.
+- Queries one resource type per request (`image` or `raw`), filters public IDs by the `sohel-consulting/` prefix, requests at most 100 assets and returns Cloudinary's cursor for the next page.
+- Compares each returned page with `media_assets`, `cloudinary_upload_operations` and up to 500 course syllabus records.
+- Labels matches as registered media, attached syllabus, upload-journal-only or unregistered remote candidate. Candidate is not proof of an orphan.
+- The response explicitly sets `scan_complete:false`. A page with no next cursor means only that the selected resource-type page sequence ended; the combined image/raw inventory is not certified complete.
+- This first version cannot reliably identify D1 records missing remotely because it does not persist a complete remote inventory snapshot. It also cannot find external/hard-coded references or assets outside the selected public-ID prefix.
+- No Cloudinary assets or D1 business records are changed. The existing rate limiter writes only to its rate_limits table.
+
+### Preview acceptance required
+
+- [ ] Confirm Cloudinary Admin API credentials exist as Worker secrets in Preview; do not paste credentials into chat or browser code.
+- [ ] Verify image and raw pagination, including cursor continuation and empty results.
+- [ ] Verify media, syllabus and upload-journal classifications against known test assets.
+- [ ] Verify the endpoint rejects invalid resource types/cursors and users without `media.view`.
+- [ ] Confirm no asset deletion or D1 business-record mutation occurs.
+- [ ] Confirm the report does not claim a complete combined inventory or infer missing remote assets.
