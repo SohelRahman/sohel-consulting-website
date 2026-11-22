@@ -1,0 +1,111 @@
+name: Audit Cloudflare Preview D1 migrations (read-only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-preview-d1-migration-audit
+  cancel-in-progress: false
+
+jobs:
+  audit-preview:
+    # This audit is restricted to the development branch.
+    if: github.ref == 'refs/heads/current-focus-development'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out development branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify Cloudflare API token validity
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\s+/g, "");
+          if (!token) throw new Error("CLOUDFLARE_API_TOKEN is not configured.");
+          const response = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const payload = await response.json().catch(() => ({}));
+          const status = payload?.result?.status || "unknown";
+          console.log(`Cloudflare token verification: HTTP ${response.status}; status=${status}; success=${payload?.success === true}`);
+          if (!response.ok || payload?.success !== true || status !== "active") {
+            throw new Error("Cloudflare did not confirm an active API token. No database inspection was attempted.");
+          }
+          NODE
+
+      - name: Resolve and verify the dedicated Preview D1 database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from "node:fs";
+          const config = readFileSync("wrangler.toml", "utf8");
+          const previewSection = config.match(/\[\[previews\.d1_databases\]\]([\s\S]*?)(?=\n\[|$)/)?.[1] || "";
+          const previewId = previewSection.match(/^\s*database_id\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          if (!previewId) {
+            throw new Error("Could not parse database_id from [[previews.d1_databases]]; refusing to inspect any database.");
+          }
+
+          const expectedPreviewId = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
+          const productionId = "3a4f765a-46c2-4040-9753-36e9483893a4";
+          if (previewId !== expectedPreviewId || previewId === productionId) {
+            throw new Error("Preview D1 target verification failed; refusing to inspect any database.");
+          }
+
+          const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\s+/g, "");
+          if (!accountId || !token) throw new Error("Cloudflare API credentials are not configured.");
+          const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${expectedPreviewId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload.success !== true) {
+            const apiErrors = (payload.errors || []).map(error => error.message).filter(Boolean).join("; ");
+            throw new Error(`Cloudflare D1 lookup failed (HTTP ${response.status})${apiErrors ? ": " + apiErrors : ". Check D1 Read permission."}`);
+          }
+          const database = payload.result;
+          if (!database?.name || (database.uuid !== expectedPreviewId && database.id !== expectedPreviewId)) {
+            throw new Error("Cloudflare returned a database record that did not match the expected Preview D1 ID.");
+          }
+          writeFileSync("wrangler.preview-migrations.jsonc", JSON.stringify({
+            name: "consulting-preview-migrations-audit",
+            d1_databases: [{
+              binding: "PREVIEW_DB",
+              database_name: database.name,
+              database_id: expectedPreviewId,
+              migrations_dir: "migrations"
+            }]
+          }, null, 2) + String.fromCharCode(10));
+          console.log("Verified dedicated Preview D1 database:", expectedPreviewId);
+          console.log("Database name:", database.name);
+          NODE
+
+      - name: List remote Preview migration history (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.160.1 d1 migrations list PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc
+
+      - name: Confirm audit did not invoke a migration apply command
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -Eq 'd1 migrations apply|migrations apply' .github/workflows/audit-preview-d1-migrations.yml; then
+            echo "Unexpected migration apply command found in audit workflow."
+            exit 1
+          fi
+          echo "Read-only workflow guard passed: no migration apply command is present."
