@@ -88,3 +88,14 @@ This update is documentation-only. It does not reconcile branches, change applic
 - Added RBAC contract assertions. CI and Preview live-session tests are pending. No schema change or Production operation was performed.
 
 - Stage 18 RBAC automated CI passed in run `44638857897` for test commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`. Preview live-session revocation testing remains pending.
+
+
+## 2026-11-22 — Current Preview environment audit checkpoint
+
+- The read-only Preview D1 audit completed successfully in GitHub Actions run `45024256326` for commit `b74761d0abaa740c51bd072f0918b795872e513d`.
+- Cloudflare token validation succeeded. The workflow verified the dedicated Preview database `consulting-preview-db`, ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+- Remote migration listing reported `0013_quotation_response_tokens.sql` as the only pending migration. It was not applied.
+- Static review of the three Admin diagnostic workflows found an incorrectly escaped token whitespace-normalization regex in each. The intended expression is `/\\s+/g`; no diagnostic workflow has been edited or executed as part of this checkpoint.
+- Static review of Admin table usage found no mismatch against the committed migrations, but live Preview schema diagnostics and login acceptance remain pending.
+- Documentation was updated in commits `ef02151d898c6f2ebae76e770daa80d67258d76e`, `92f0692442169f71bb8badb96dca4948a31e4096` and `eaf8cf67f7a1c92ed3206ed86da23f0e909e0c3b` (database, changelog and master history).
+- No migration, deployment, Production operation, `main` change, branch reconciliation or PR merge was performed. Preview deployment version remains unverified.
