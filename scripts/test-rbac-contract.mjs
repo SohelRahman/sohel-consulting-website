@@ -35,7 +35,11 @@ check("Media deletion removes the D1 record only after Cloudinary confirms delet
 check("Media Library Delete button calls the deletion endpoint", /fetch\('\/api\/admin\/media\/delete'/.test(adminHtml));
 check("User-management endpoints are Admin-only", /if\(!isAdmin\)return json\(\{error:"Only administrators can manage dashboard accounts\."\},403\)/.test(worker));
 check("Self-service password changes require a 12-character minimum", /next\.length<12/.test(worker));
-check("Password storage uses Cloudflare Workers-compatible PBKDF2 with 100,000 iterations", /iterations:100000,hash:"SHA-256"/.test(worker));
+check("Worker imports the shared versioned PBKDF2 password helper", /from "\.\/password-hash\.js"/.test(worker));
+check("Successful login upgrades legacy password hashes without overwriting concurrent password changes", /needsPasswordRehash\(user\.password_hash\)/.test(worker) && /WHERE id=\? AND password_hash=\?/.test(worker));
+check("Password helper uses PBKDF2-HMAC-SHA-256 with the 600,000-iteration current work factor", /CURRENT_ITERATIONS = 600000/.test(fs.readFileSync("src/password-hash.js", "utf8")));
+check("Password helper retains legacy 100,000-iteration verification for gradual migration", /LEGACY_ITERATIONS = 100000/.test(fs.readFileSync("src/password-hash.js", "utf8")));
+check("Password hashing has dedicated compatibility and malformed-hash tests", fs.existsSync("scripts/test-password-hash.mjs"));
 check("Sessions are bound to account session_version", /sessionVersion/.test(worker) && /session_version/.test(worker));
 check("Session version is incremented after password change", /nextVersion=Number\(user\.session_version\)\+1/.test(worker));
 check("Admin account edits always increment session_version to invalidate existing sessions", /session_version=session_version\+1,updated_at=CURRENT_TIMESTAMP WHERE id=\?/.test(worker));
