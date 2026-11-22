@@ -261,8 +261,22 @@ Static RBAC contract assertions were added for session-version increments on Adm
 
 ## Administrator password hashing upgrade
 
-- New password hashes use PBKDF2-HMAC-SHA-256 with 600,000 iterations and a unique 16-byte random salt, following the current OWASP Password Storage Cheat Sheet recommendation for PBKDF2-HMAC-SHA-256.
+- New password hashes use PBKDF2-HMAC-SHA-256 with 600,000 iterations and a unique 16-byte random salt. This meets the PBKDF2 iteration threshold specified by OWASP ASVS 5.0.0; OWASP's Password Storage Cheat Sheet generally prefers Argon2id and gives the 600,000-iteration PBKDF2 threshold for FIPS-140 use cases.
 - Existing `pbkdf2$100000$...` hashes remain verifiable. On successful login, the Worker creates a current-strength hash and updates the row only when the stored hash still matches the value that was verified. This avoids overwriting a concurrent password change.
 - New bootstrap, account creation, administrator password reset and self-service password change operations use the current-strength helper.
 - Automated source/unit checks: `node scripts/test-password-hash.mjs` and `node scripts/test-rbac-contract.mjs`.
 - These checks are included in development CI. They do not establish Preview deployment status, login latency, or end-to-end session behavior. Run those checks in Preview during the later user-approved functional QA phase.
+
+
+## Authentication and session source review — 2026-11-22
+
+Static review of `src/worker.js` and `wrangler.toml` on `current-focus-development` confirmed:
+
+- Admin login refuses to issue a session when `SESSION_SECRET` is missing.
+- The session cookie is `HttpOnly`, `Secure`, `SameSite=Strict`, path-scoped to `/`, and has an eight-hour maximum age.
+- Each Admin API request verifies the signed session and checks the current database account, active state, email and `session_version`.
+- Password changes and Admin account edits/disable operations increment `session_version`, invalidating previously issued sessions.
+- Bootstrap credentials are considered only when no database user exists for the submitted email. Existing accounts, including disabled accounts, follow the database-account verification path.
+- User-role API authorization rejects routes without a mapped permission; Admin-only account-management routes have a separate role check.
+
+This was a source review, not a penetration test or live Preview validation. Cookie/session expiry, CSRF rejection, role boundaries and revocation after reactivation remain Preview acceptance checks. The Preview Worker has not been redeployed for the password-hashing change, and functional testing remains deferred until explicitly requested.
