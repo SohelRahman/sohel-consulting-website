@@ -522,11 +522,12 @@ async function handleApi(request, env) {
           const references=await findCloudinaryReferences(env,asset.public_id);
           audited.push({...asset,reference_count_sample:references.length,references,classification:references.length?"reference_found":"potential_orphan_candidate",remote_existence:"unknown"});
         }
+        const syllabusCount=await env.DB.prepare("SELECT COUNT(*) AS total FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>''").first();
         const {results:syllabi=[]}=await env.DB.prepare("SELECT id AS course_id,title_en,syllabus_file_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' ORDER BY title_en LIMIT 100").all();
         const {results:journal=[]}=await env.DB.prepare("SELECT status,COUNT(*) AS total FROM cloudinary_delete_operations GROUP BY status").all();
         const journalCounts={pending:0,failed:0,completed:0};
         for (const row of journal) if (Object.hasOwn(journalCounts,row.status)) journalCounts[row.status]=Number(row.total||0);
-        return json({generated_at:new Date().toISOString(),scope:"Database-registered Media Library assets plus attached course syllabus URLs. Cloudinary remote existence is not checked.",media:{items:audited,total,page:requestedPage,page_size:requestedLimit,total_pages:Math.ceil(total/requestedLimit)},syllabi:{items:syllabi,total:syllabi.length,limit:100,truncated:syllabi.length===100},deletion_journal:journalCounts,summary:{registered_media_assets:total,potential_orphan_candidates:audited.filter(x=>x.classification==="potential_orphan_candidate").length,media_assets_with_references:audited.filter(x=>x.classification==="reference_found").length,syllabus_records_returned:syllabi.length}});
+        return json({generated_at:new Date().toISOString(),scope:"Database-registered Media Library assets plus attached course syllabus URLs. Cloudinary remote existence is not checked.",media:{items:audited,total,page:requestedPage,page_size:requestedLimit,total_pages:Math.ceil(total/requestedLimit)},syllabi:{items:syllabi,total:Number(syllabusCount?.total||0),limit:100,truncated:Number(syllabusCount?.total||0)>100},deletion_journal:journalCounts,summary:{registered_media_assets:total,potential_orphan_candidates:audited.filter(x=>x.classification==="potential_orphan_candidate").length,media_assets_with_references:audited.filter(x=>x.classification==="reference_found").length,syllabus_records_returned:syllabi.length}});
       } catch {
         return json({error:"Asset audit could not complete. Check that migrations 0006 and 0014 are applied and retry."},503);
       }
