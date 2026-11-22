@@ -356,3 +356,35 @@ Migration `0014_cloudinary_delete_operations.sql` adds a durable journal for Med
 - [ ] Verify recovery processes no more than 20 rows per request and rate limits repeated attempts.
 
 These changes are source-level implementation only. Runtime recovery behavior is not yet verified. Do not deploy until migration 0014 is applied to Preview.
+
+
+## Cloudinary asset ownership and reference protection — 2026-11-22
+
+The Worker now checks database-managed website content before deleting a Media Library asset or course syllabus file.
+
+Reference lookup checks:
+- Legacy published `site_content`.
+- CMS draft and published values, including archived records whose published value may still be served.
+- CMS content version history, because an older version may be restored.
+- Custom page draft and published JSON.
+- Homepage style draft and published JSON.
+- Other courses' syllabus file URLs (excluding the current course when removing its own syllabus).
+
+Media deletion returns HTTP 409 and lists the matching source/record labels when references exist. Course syllabus deletion follows the same protection but excludes its own course field. The recovery endpoint repeats the reference check before retrying a pending or failed deletion. The Admin recovery summary now distinguishes completed, failed and reference-blocked operations.
+
+### Scope and limitations
+
+- The check searches database-managed content for the Cloudinary public ID. It does not yet prove absence of references in arbitrary hard-coded HTML/CSS/JavaScript, third-party embeds, external systems, browser caches or copies of the URL outside this application.
+- A concurrent content publication could race with the final reference check and Cloudinary deletion. A fully race-free guarantee would require pending-deletion checks in every content-writing path or a centralized asset-reference registry.
+- These are source-level controls. Preview migration, deployment and runtime tests remain pending. Do not delete assets in Production based solely on these checks.
+
+### Preview acceptance
+
+- [ ] Confirm an image referenced by published CMS content is blocked from deletion.
+- [ ] Confirm an image referenced only by a CMS draft is blocked.
+- [ ] Confirm a historical CMS version containing the image blocks deletion.
+- [ ] Confirm custom page draft/published JSON and homepage style references block deletion.
+- [ ] Confirm another course's syllabus reference blocks deletion.
+- [ ] Confirm the current course's own syllabus field does not block its syllabus removal.
+- [ ] Confirm the Admin recovery action reports blocked items separately from failed and completed items.
+- [ ] Review repository static files and external embeds for references not represented in D1.
