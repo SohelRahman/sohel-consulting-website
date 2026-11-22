@@ -44,20 +44,17 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
           const config = readFileSync("wrangler.preview.toml", "utf8");
-          const name = config.match(/^name\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
-          const databaseName = config.match(/^database_name\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
-          const databaseId = config.match(/^database_id\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
-          const environment = config.match(/^ENVIRONMENT\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
+          const lines = config.split("\n").map(line => line.trim());
           const productionId = "3a4f765a-46c2-4040-9753-36e9483893a4";
           const expectedPreviewId = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
-          if (name !== "current-focus-development") throw new Error("Unexpected Worker name; refusing deployment.");
-          if (databaseName !== "consulting-preview-db" || databaseId !== expectedPreviewId || databaseId === productionId) {
-            throw new Error("Preview D1 target mismatch; refusing deployment.");
-          }
-          if (environment !== "preview") throw new Error("Preview environment marker is missing; refusing deployment.");
-          if (!/^main\\s*=\\s*"src\\/worker\\.js"\\s*$/m.test(config)) throw new Error("Unexpected Worker entry point.");
+          if (!lines.includes('name = "current-focus-development"')) throw new Error("Unexpected Worker name; refusing deployment.");
+          if (!lines.includes('database_name = "consulting-preview-db"') ||
+              !lines.includes(`database_id = "${expectedPreviewId}"`) ||
+              expectedPreviewId === productionId) throw new Error("Preview D1 target mismatch; refusing deployment.");
+          if (!lines.includes('ENVIRONMENT = "preview"')) throw new Error("Preview environment marker is missing; refusing deployment.");
+          if (!lines.includes('main = "src/worker.js"')) throw new Error("Unexpected Worker entry point.");
 
-          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\\s+/g, "");
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replaceAll(" ", "").replaceAll("\n", "").replaceAll("\r", "").replaceAll("\t", "");
           const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
           const verify = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
             headers: { Authorization: `Bearer ${token}` }
