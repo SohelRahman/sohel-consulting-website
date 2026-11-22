@@ -458,3 +458,23 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 6. Update this handover and changelog with run IDs, commit SHAs and environment-specific evidence.
 
 No Production deployment, Production migration, `main` change, branch reconciliation or PR merge is authorized by this checkpoint.
+
+
+### Stage 19 follow-up — Admin diagnostic workflow correction (2026-11-22)
+
+**Completed on `current-focus-development`:**
+- Fixed token whitespace normalization in:
+  - `.github/workflows/diagnose-preview-admin-login.yml`
+  - `.github/workflows/diagnose-preview-admin-login-schema.yml`
+  - `.github/workflows/diagnose-preview-admin-schema.yml`
+- Each file was fetched again after its update; the intended regex `/\\s+/g` is present and the malformed regex is absent.
+- Re-inspected `.github/workflows/migrate-preview-d1.yml`: manual dispatch, development-branch guard, exact Preview D1 ID check, Production D1 ID exclusion, and apply/list operations scoped to `PREVIEW_DB`.
+
+**Still pending:**
+- Dispatch the guarded migration workflow manually from GitHub Actions on branch `current-focus-development`. The connected GitHub tool interface has no workflow-dispatch operation, so this action could not be initiated from this session.
+- After the workflow completes, inspect its run and post-apply migration listing. Do not claim migration 0013 is applied until that evidence exists.
+- Run the corrected Admin diagnostic workflows and inspect their read-only output.
+- Confirm the automatic development CI runs triggered by the documentation/workflow commits.
+- Verify the deployed Preview Worker commit and finish browser acceptance.
+
+Migration 0013 remains pending. No Production or `main` operation has been performed.
