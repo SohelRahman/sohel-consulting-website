@@ -123,6 +123,39 @@ async function cloudinarySignature(params, secret) {
   return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+async function destroyCloudinaryAsset(env, publicId) {
+  const timestamp=Math.floor(Date.now()/1000);
+  const params={invalidate:"true",public_id:publicId,timestamp};
+  const signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET);
+  const form=new FormData();
+  form.set("api_key",env.CLOUDINARY_API_KEY);
+  form.set("timestamp",String(timestamp));
+  form.set("public_id",publicId);
+  form.set("invalidate","true");
+  form.set("signature",signature);
+  try {
+    const response=await fetch("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/image/destroy",{method:"POST",body:form});
+    const result=await response.json().catch(()=>null);
+    if (!response.ok || !["ok","not found"].includes(result?.result)) return {ok:false,error:result?.error?.message||"Cloudinary could not confirm deletion.",result:result?.result||"unknown"};
+    return {ok:true,result:result.result};
+  } catch {
+    return {ok:false,error:"Could not reach Cloudinary. The deletion operation is queued for retry.",result:"network_error"};
+  }
+}
+
+async function finalizeCloudinaryDeletion(env, operation) {
+  if (operation.target_type==="media") {
+    await env.DB.prepare("DELETE FROM media_assets WHERE public_id=?").bind(operation.public_id).run();
+  } else if (operation.target_type==="course_syllabus") {
+    await env.DB.prepare("UPDATE courses SET syllabus_file_url=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=? AND syllabus_file_url=?")
+      .bind(operation.target_id,operation.previous_url).run();
+  } else {
+    throw new Error("Unsupported Cloudinary deletion target.");
+  }
+  await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='completed',attempts=attempts+1,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+    .bind(operation.id).run();
+}
+
 async function analyticsVisitorHash(visitorId) {
   const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(visitorId));
   return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
