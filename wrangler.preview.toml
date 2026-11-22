@@ -1,0 +1,20 @@
+name = "current-focus-development"
+main = "src/worker.js"
+compatibility_date = "2026-11-12"
+workers_dev = true
+
+[assets]
+directory = "."
+binding = "ASSETS"
+not_found_handling = "404-page"
+html_handling = "none"
+run_worker_first = ["/", "/api/*", "/admin", "/src/*", "/migrations/*"]
+
+[vars]
+ENVIRONMENT = "preview"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "consulting-preview-db"
+database_id = "e0317397-77cb-4f36-9d19-2594ff75b0c2"
+migrations_dir = "migrations"
