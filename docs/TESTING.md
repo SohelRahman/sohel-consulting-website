@@ -8,7 +8,7 @@ Current CI workflow: `.github/workflows/validate-development.yml`.
 | --- | --- | --- |
 | Worker syntax | `node --input-type=module --check < src/worker.js` | Worker JavaScript parses |
 | Shared JS syntax | `node --check assets/site.js` | Browser JavaScript parses |
-| Site validation | `node scripts/validate-site.mjs` | HTML, local links and inline scripts per validator |\n| RBAC contract | `node scripts/test-rbac-contract.mjs` | Permission catalogue, fail-closed route guard, role boundaries, password/session controls and migration structure |
+| Site validation | `node scripts/validate-site.mjs` | HTML, local links and inline scripts per validator |\n| RBAC contract | `node scripts/test-rbac-contract.mjs` | Permission catalogue, fail-closed route guard, role boundaries, password/session controls and migration structure |\n| Password hashing | `node scripts/test-password-hash.mjs` | Legacy/current hash verification, wrong-password rejection, unique salts and malformed-hash rejection |
 
 These checks do not execute the application in a real browser.
 
@@ -256,3 +256,12 @@ The fragment prevents the browser from including the bearer token in the initial
 Static RBAC contract assertions were added for session-version increments on Admin account PATCH and disable operations. These are source checks only; the live Preview tests above remain pending.
 
 - [x] Development CI run `44638857897` passed all checks for the Admin session-revocation contract commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`. Live Preview session invalidation tests remain unchecked.
+
+
+## Administrator password hashing upgrade
+
+- New password hashes use PBKDF2-HMAC-SHA-256 with 600,000 iterations and a unique 16-byte random salt, following the current OWASP Password Storage Cheat Sheet recommendation for PBKDF2-HMAC-SHA-256.
+- Existing `pbkdf2$100000$...` hashes remain verifiable. On successful login, the Worker creates a current-strength hash and updates the row only when the stored hash still matches the value that was verified. This avoids overwriting a concurrent password change.
+- New bootstrap, account creation, administrator password reset and self-service password change operations use the current-strength helper.
+- Automated source/unit checks: `node scripts/test-password-hash.mjs` and `node scripts/test-rbac-contract.mjs`.
+- These checks are included in development CI. They do not establish Preview deployment status, login latency, or end-to-end session behavior. Run those checks in Preview during the later user-approved functional QA phase.
