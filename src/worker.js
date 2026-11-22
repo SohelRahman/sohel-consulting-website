@@ -658,6 +658,10 @@ async function handleApi(request, env) {
       const resourceType="image", folder="sohel-consulting", timestamp=Math.floor(Date.now()/1000);
       const extension=isPdf?"pdf":({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]);
       const publicId=folder+"/"+crypto.randomUUID();
+      const uploadOperationId=id();
+      try {
+        await env.DB.prepare("INSERT INTO cloudinary_upload_operations (id,public_id,purpose,status) VALUES (?,?,?,'pending')").bind(uploadOperationId,publicId,purpose).run();
+      } catch { return json({error:"Could not create the upload tracking record. No Cloudinary upload was attempted."},503); }
       const params={allowed_formats:extension,folder,public_id:publicId,timestamp};
       const signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET);
       const cloudForm=new FormData();
@@ -673,14 +677,24 @@ async function handleApi(request, env) {
         const response=await fetch("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/"+resourceType+"/upload",{method:"POST",body:cloudForm});
         asset=await response.json().catch(()=>null);
         if (!response.ok || !asset?.secure_url || asset.public_id!==publicId || asset.resource_type!==resourceType || asset.bytes!==file.size || asset.bytes>maxBytes || asset.format!==extension) {
-          return json({error:asset?.error?.message||"Cloudinary returned unexpected upload metadata."},502);
+          const status=response.ok?"needs_review":"failed";
+          await env.DB.prepare("UPDATE cloudinary_upload_operations SET status=?,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(status,asset?.error?.message||"Cloudinary upload response did not match expected metadata.",uploadOperationId).run();
+          return json({error:asset?.error?.message||"Cloudinary returned unexpected upload metadata.",upload_operation_id:uploadOperationId},502);
         }
-      } catch { return json({error:"Could not reach Cloudinary. No media record was created."},502); }
+      } catch {
+        await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='needs_review',last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind("Cloudinary response was unavailable; remote upload outcome is uncertain.",uploadOperationId).run();
+        return json({error:"Could not confirm the Cloudinary upload outcome. The upload is flagged for review.",upload_operation_id:uploadOperationId},502);
+      }
+      await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='uploaded',secure_url=?,bytes=?,format=?,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(asset.secure_url,asset.bytes,asset.format,uploadOperationId).run();
       if (purpose==="media") {
         try {
           await env.DB.prepare("INSERT INTO media_assets (public_id,secure_url,bytes,format,width,height) VALUES (?,?,?,?,?,?)")
             .bind(asset.public_id,asset.secure_url,asset.bytes,asset.format,asset.width,asset.height).run();
-        } catch { return json({error:"The image uploaded, but its media-library record could not be saved. Contact an administrator before retrying."},503); }
+        } catch {
+          await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='needs_review',last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind("Cloudinary upload succeeded but media_assets registration failed.",uploadOperationId).run();
+          return json({error:"The image uploaded, but its media-library record could not be saved. It is flagged for review.",upload_operation_id:uploadOperationId},503);
+        }
+        await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='registered',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(uploadOperationId).run();
         await audit(env,session.email,"media_uploaded","media_asset",asset.public_id,asset.format+" "+asset.bytes+" bytes");
       } else {
         await audit(env,session.email,"course_syllabus_uploaded","course_syllabus",asset.public_id,asset.format+" "+asset.bytes+" bytes");
