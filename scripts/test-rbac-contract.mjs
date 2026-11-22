@@ -60,7 +60,7 @@ check("Admin recovery endpoint retries pending and failed Cloudinary deletions",
 check("Course syllabus deletion is journaled with its prior URL for safe conditional finalization", worker.includes("target_type,target_id,previous_url,status") && worker.includes('target_type:"course_syllabus"') && worker.includes("WHERE id=? AND syllabus_file_url=?"));
 check("Admin Media Library exposes the retry action", adminHtml.includes("media-reconcile") && adminHtml.includes("/api/admin/media/reconcile"));
 check("Read-only Cloudinary audit endpoint is mapped to media.view and rate-limited", worker.includes('path==="/api/admin/media/audit"') && worker.includes('rateLimit(env,request,"media-audit",20,60*60*1000)'));
-check("Cloudinary audit uses bounded pagination and labels unreferenced assets as candidates", worker.includes("requestedLimit>50") && worker.includes("requestedPage>200") && worker.includes('"potential_orphan_candidate"'));
+check("Cloudinary audit uses bounded pagination and labels unreferenced assets as candidates", worker.includes("requestedLimit>10") && worker.includes("requestedPage>200") && worker.includes('"potential_orphan_candidate"'));
 check("Cloudinary audit reports syllabus URLs and deletion-journal states without remote-existence claims", worker.includes("FROM courses WHERE syllabus_file_url IS NOT NULL") && worker.includes("GROUP BY status") && worker.includes('remote_existence:"unknown"'));
 check("Admin Media Library exposes the read-only audit and its limitations", adminHtml.includes("media-audit") && adminHtml.includes("Run read-only asset audit") && adminHtml.includes("Cloudinary remote existence is not checked"));
 
