@@ -493,3 +493,30 @@ The development branch adds a read-only Admin endpoint, `GET /api/admin/media/in
 - [ ] Verify the endpoint rejects invalid resource types/cursors and users without `media.view`.
 - [ ] Confirm no asset deletion or D1 business-record mutation occurs.
 - [ ] Confirm the report does not claim a complete combined inventory or infer missing remote assets.
+
+
+## Persistent Cloudinary inventory snapshots — 2026-11-22
+
+Migration `0017_cloudinary_inventory_snapshots.sql` adds durable scan metadata and remote asset snapshots.
+
+- Admin starts a scan and advances one bounded Cloudinary page per request. Image and raw resources have independent cursors, page counters, completion flags and short-lived processing leases.
+- Scan state survives browser reloads. A scan left running for more than 24 hours is marked stale when a new scan is started. Failed page retrieval marks the scan failed; start a new scan after correcting the cause.
+- Each resource type is capped at 500 pages (up to 50,000 remote records). A scan is marked complete only after both image and raw page sequences return no next cursor.
+- After completion, D1 media records, non-deleted upload journal records and course syllabus URLs are compared against the persisted snapshot. The local comparison is withheld if a local source exceeds 10,000 rows or the remote snapshot exceeds 50,000 rows.
+- Missing-remote counts are limited to records under the `sohel-consulting/` prefix. Resource type is inferred from the stored Cloudinary URL. The displayed list is capped at 500 records; counts remain available when the list is truncated.
+- This is not proof that every business reference is captured: hard-coded source references, external copies, assets outside the prefix, malformed/non-Cloudinary URLs and unsupported Cloudinary resource types remain outside scope.
+- The scan is read-only with respect to Cloudinary and D1 business records. Rate-limit counters and scan/snapshot tables are updated. No remote asset is deleted.
+
+### Preview acceptance required
+
+- [ ] Apply migration 0017 to Preview only after reviewing the target identity and migration ledger.
+- [ ] Confirm the Admin API requires an authenticated `media.view` user and rejects cross-origin scan-start/step requests.
+- [ ] Start a scan, process image and raw pages, reload Admin, and resume the same scan.
+- [ ] Verify cursors advance independently and a resource type is not marked complete while a next cursor exists.
+- [ ] Verify a scan becomes complete only after both image and raw sequences finish.
+- [ ] Verify Cloudinary errors mark the scan failed and a 24-hour-old running scan becomes stale when a new scan is started.
+- [ ] Verify 500-page, 10,000-local-row and 50,000-snapshot safety caps prevent a false complete/missing-remote conclusion.
+- [ ] Verify missing-remote counts against known synthetic records with image and raw URLs.
+- [ ] Confirm no Cloudinary deletion or D1 business-record mutation occurs.
+
+Automated source-contract checks are not runtime acceptance. Preview migration, deployment and browser testing remain pending. Production and `main` remain untouched.
