@@ -564,3 +564,15 @@ This is a source-level review and release plan only. No Preview migration, deplo
 - Migration 0017 now installs a partial unique index allowing at most one row with `status='running'`. The Worker handles a concurrent start collision by returning the active scan ID.
 - Cloudinary pagination is not a transactional point-in-time snapshot. Assets can be added, removed or changed while image/raw pages are being collected. Treat missing-remote rows as reconciliation leads, not proof of deletion; rerun the scan before taking corrective action.
 - The 500-page limit applies separately to image and raw resources. The comparison query has a combined 50,000-row cap; a larger combined snapshot is retained but its missing-remote comparison is withheld.
+
+
+### Repository workflow boundary review
+
+The current development branch contains these relevant workflows:
+
+- `.github/workflows/audit-preview-d1-migrations.yml` — manually dispatched, read-only Preview migration listing. It verifies the configured Preview D1 ID against the expected Preview ID and excludes the known Production ID.
+- `.github/workflows/migrate-preview-d1.yml` — manually dispatched Preview migration workflow. It has a development-branch guard, verifies the exact Preview D1 ID, lists migrations before and after applying, and targets only the `PREVIEW_DB` binding.
+- `.github/workflows/deploy-cloudflare.yml` — Production deployment workflow, guarded to `main` and the `production` environment. It must not be used for this Preview rollout.
+- No dedicated Preview Worker deployment workflow is present in the repository tree at this review. The Preview Worker deployment method and its exact target must therefore be verified separately before deployment; do not substitute the Production workflow or guess a Wrangler command.
+
+The correct first operational step, after explicit approval, is to run the read-only Preview migration audit and inspect its full output. Only then may the separate migration workflow be considered. Migration approval does not imply deployment approval.
