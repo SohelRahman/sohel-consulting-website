@@ -221,3 +221,9 @@
 - Blocked deletion of assets referenced by database-managed site content, CMS drafts/publications/history, custom pages, page styles or other course syllabus records.
 - Added reference rechecks during deletion recovery and clearer Admin status reporting.
 - Hard-coded source references, external copies and concurrency races remain outside the current guarantee; Preview acceptance remains pending.
+
+
+## 2026-11-22 — Cloudinary deletion reservations
+- Added migration 0015 with 11 D1 triggers protecting legacy content, CMS values and history, custom pages, homepage styles and course syllabus fields from referencing assets with pending/failed deletion operations.
+- Media and syllabus deletion repeat reference scans after reserving the asset and before contacting Cloudinary.
+- Migration 0015 must be applied to Preview before deploying the Worker changes. Runtime and concurrency acceptance remain pending.
