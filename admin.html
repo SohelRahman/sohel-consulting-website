@@ -168,9 +168,9 @@ $('#media-reconcile').addEventListener('click',async()=>{
  button.disabled=true;message.textContent='Checking pending deletion operations…';
  try{
   const result=await api('/api/admin/media/reconcile',{method:'POST',body:'{}'});
-  const failed=(result.outcomes||[]).filter(x=>x.status==='failed').length;
-  message.textContent='Processed '+result.processed+' operation(s). Completed: '+(result.processed-failed)+'. Still pending: '+failed+'.';
-  if(failed)message.textContent+=' Review the returned error details with an administrator.';
+  const failed=(result.outcomes||[]).filter(x=>x.status==='failed').length,blocked=(result.outcomes||[]).filter(x=>x.status==='blocked').length,completed=(result.outcomes||[]).filter(x=>x.status==='completed').length;
+  message.textContent='Processed '+result.processed+' operation(s). Completed: '+completed+'. Failed: '+failed+'. Blocked by active references: '+blocked+'.';
+  if(blocked)message.textContent+=' Remove or replace the listed content references before retrying.';
   await loadMedia(true);
  }catch(error){message.textContent=error.message;}finally{button.disabled=false;}
 });
