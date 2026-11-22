@@ -144,6 +144,23 @@ async function destroyCloudinaryAsset(env, publicId) {
   }
 }
 
+function cloudinaryPublicIdFromUrl(value, cloudName) {
+  try {
+    const assetUrl=new URL(value);
+    if(assetUrl.hostname!=="res.cloudinary.com")return "";
+    const parts=assetUrl.pathname.split("/").filter(Boolean);
+    if(parts[0]!==cloudName)return "";
+    const uploadIndex=parts.indexOf("upload");
+    if(uploadIndex<0)return "";
+    let assetParts=parts.slice(uploadIndex+1);
+    while(assetParts[0] && /^(v[0-9]+|[a-z]_[^/]+)$/.test(assetParts[0]))assetParts=assetParts.slice(1);
+    if(!assetParts.length)return "";
+    const last=assetParts.length-1,extensionIndex=assetParts[last].lastIndexOf(".");
+    if(extensionIndex>0 && /^[a-zA-Z0-9]+$/.test(assetParts[last].slice(extensionIndex+1)))assetParts[last]=assetParts[last].slice(0,extensionIndex);
+    const publicId=assetParts.join("/");
+    return publicId.startsWith("sohel-consulting/") && /^[a-zA-Z0-9_./-]+$/.test(publicId) && !publicId.split("/").some(part=>!part||part==="."||part==="..") ? publicId : "";
+  } catch { return ""; }
+}
 async function findCloudinaryReferences(env, publicId, excludeCourseId = "") {
   const needle=publicId;
   const queries=[
@@ -170,6 +187,7 @@ async function finalizeCloudinaryDeletion(env, operation) {
   } else {
     throw new Error("Unsupported Cloudinary deletion target.");
   }
+  await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='deleted',last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE public_id=?").bind(operation.public_id).run();
   await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='completed',attempts=attempts+1,last_error=NULL,updated_at=CURRENT_TIMESTAMP WHERE id=?")
     .bind(operation.id).run();
 }
