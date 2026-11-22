@@ -546,23 +546,64 @@ async function handleApi(request, env) {
       await audit(env,session.email,"media_deleted","media_asset",publicId,"Cloudinary result: "+cloudinaryResult.result);
       return json({ok:true,public_id:publicId,cloudinary_result:cloudinaryResult.result});
     }
-    if (path === "/api/admin/media/signature" && method === "POST") {
+    if (path === "/api/admin/media/upload" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured. Add the three Cloudinary secrets to the Preview Worker."},503);
-      const data=await request.json().catch(()=>({}));
-      const purpose=data?.purpose==="syllabus"?"syllabus":"media";
-      const fileType=data?.fileType==="pdf"?"pdf":data?.fileType==="image"?"image":"";
-      if (purpose==="syllabus" && !fileType) return json({error:"Syllabus uploads must be PDF or image files."},400);
-      // Cloudinary supports ordinary PDFs as image assets; raw is reserved for files such as password-protected PDFs.
-      const resourceType="image";
-      const allowedFormats=purpose==="syllabus"?(fileType==="pdf"?"pdf":"jpg,png,webp"):"jpg,jpeg,png,webp,gif";
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured for uploads."},503);
+      const declaredLength=Number(request.headers.get("content-length")||0);
+      if (declaredLength>11*1024*1024) return json({error:"Upload request is too large."},413);
+      let form;
+      try { form=await request.formData(); } catch { return json({error:"Invalid multipart upload."},400); }
+      const file=form.get("file"), purpose=form.get("purpose")==="syllabus"?"syllabus":"media";
+      if (!file || typeof file.arrayBuffer!=="function" || typeof file.size!=="number") return json({error:"Choose a file to upload."},400);
+      const isPdf=file.type==="application/pdf";
+      const allowedMime=purpose==="syllabus" ? (isPdf?["application/pdf"]:["image/jpeg","image/png","image/webp"]) : ["image/jpeg","image/png","image/webp","image/gif"];
+      if (!allowedMime.includes(file.type)) return json({error:purpose==="syllabus"?"Use a PDF, JPG, PNG or WebP file.":"Use JPG, PNG, WebP or GIF images."},400);
+      const maxBytes=isPdf?10*1024*1024:3*1024*1024;
+      if (file.size<1 || file.size>maxBytes) return json({error:isPdf?"PDF files must be 10 MB or smaller.":"Image files must be 3 MB or smaller."},413);
+      const bytes=new Uint8Array(await file.arrayBuffer());
+      const starts=(...values)=>values.every((value,index)=>bytes[index]===value);
+      const ascii=(offset,length)=>String.fromCharCode(...bytes.slice(offset,offset+length));
+      const validContent=isPdf ? ascii(0,5)==="%PDF-"
+        : file.type==="image/jpeg" ? starts(0xff,0xd8,0xff)
+        : file.type==="image/png" ? starts(0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a)
+        : file.type==="image/gif" ? ["GIF87a","GIF89a"].includes(ascii(0,6))
+        : file.type==="image/webp" ? ascii(0,4)==="RIFF" && ascii(8,4)==="WEBP"
+        : false;
+      if (!validContent) return json({error:"The file content does not match its declared file type."},400);
       const bucket=purpose==="syllabus"?"syllabus-upload":"media-upload";
       if (!(await rateLimit(env,request,bucket+"-hour",10,60*60*1000))) return json({error:"Upload limit reached. Please try again later."},429);
       if (!(await rateLimit(env,request,bucket+"-day",40,24*60*60*1000))) return json({error:"Daily upload limit reached. Please try again tomorrow."},429);
-      const timestamp=Math.floor(Date.now()/1000), folder="sohel-consulting";
-      const params={allowed_formats:allowedFormats,folder,timestamp};
+      const resourceType="image", folder="sohel-consulting", timestamp=Math.floor(Date.now()/1000);
+      const extension=isPdf?"pdf":({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[file.type]);
+      const publicId=folder+"/"+crypto.randomUUID();
+      const params={allowed_formats:extension,folder,public_id:publicId,timestamp};
       const signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET);
-      return json({cloudName:env.CLOUDINARY_CLOUD_NAME,apiKey:env.CLOUDINARY_API_KEY,timestamp,folder,signature,resourceType,allowedFormats});
+      const cloudForm=new FormData();
+      cloudForm.set("file",file,file.name||("upload."+extension));
+      cloudForm.set("api_key",env.CLOUDINARY_API_KEY);
+      cloudForm.set("timestamp",String(timestamp));
+      cloudForm.set("folder",folder);
+      cloudForm.set("public_id",publicId);
+      cloudForm.set("allowed_formats",extension);
+      cloudForm.set("signature",signature);
+      let asset;
+      try {
+        const response=await fetch("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/"+resourceType+"/upload",{method:"POST",body:cloudForm});
+        asset=await response.json().catch(()=>null);
+        if (!response.ok || !asset?.secure_url || asset.public_id!==publicId || asset.resource_type!==resourceType || asset.bytes!==file.size || asset.bytes>maxBytes || asset.format!==extension) {
+          return json({error:asset?.error?.message||"Cloudinary returned unexpected upload metadata."},502);
+        }
+      } catch { return json({error:"Could not reach Cloudinary. No media record was created."},502); }
+      if (purpose==="media") {
+        try {
+          await env.DB.prepare("INSERT INTO media_assets (public_id,secure_url,bytes,format,width,height) VALUES (?,?,?,?,?,?)")
+            .bind(asset.public_id,asset.secure_url,asset.bytes,asset.format,asset.width,asset.height).run();
+        } catch { return json({error:"The image uploaded, but its media-library record could not be saved. Contact an administrator before retrying."},503); }
+        await audit(env,session.email,"media_uploaded","media_asset",asset.public_id,asset.format+" "+asset.bytes+" bytes");
+      } else {
+        await audit(env,session.email,"course_syllabus_uploaded","course_syllabus",asset.public_id,asset.format+" "+asset.bytes+" bytes");
+      }
+      return json({ok:true,public_id:asset.public_id,secure_url:asset.secure_url,bytes:asset.bytes,format:asset.format,width:asset.width,height:asset.height,resource_type:asset.resource_type},201);
     }
     if (path === "/api/admin/courses" && method === "GET") {
       const {results=[]}=await env.DB.prepare("SELECT * FROM courses ORDER BY title_en").all();
