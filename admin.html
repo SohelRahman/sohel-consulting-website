@@ -207,7 +207,7 @@ function renderMediaInventoryStatus(data){
   const scope=document.createElement('p');scope.className='admin-message';scope.textContent=data.missing.scope||'';
   results.replaceChildren(summary,list,scope);
  }else if(data.missing && status==="complete"){
-  results.textContent="Scan finished, but the missing-remote comparison was withheld by a safety cap. "+(data.missing.scope||"");
+  results.textContent="Scan finished, but the missing-remote comparison is unavailable. "+(data.missing.scope||"");
  }else if(data.remote_assets){
   const counts=(data.remote_assets||[]).map(x=>x.resource_type+': '+x.total).join(' · ')||'No remote assets recorded';
   results.textContent='Remote snapshot totals: '+counts+'. Missing-remote comparison is available only when scan status is complete.';
