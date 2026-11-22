@@ -143,6 +143,23 @@ async function destroyCloudinaryAsset(env, publicId) {
   }
 }
 
+async function findCloudinaryReferences(env, publicId, secureUrl, excludeCourseId = "") {
+  const needle=publicId;
+  const queries=[
+    ["Published/legacy website content","SELECT content_key AS label FROM site_content WHERE published=1 AND instr(content_value,?)>0 LIMIT 10",[needle]],
+    ["CMS draft or published content","SELECT page_key||' / '||language||' / '||content_key AS label FROM cms_content WHERE is_deleted=0 AND (instr(draft_value,?)>0 OR instr(COALESCE(published_value,''),?)>0) LIMIT 10",[needle,needle]],
+    ["CMS content version history","SELECT page_key||' / '||language||' / '||content_key||' (version '||id||')' AS label FROM cms_static_content_versions WHERE instr(value,?)>0 LIMIT 10",[needle]],
+    ["Custom page draft or published sections","SELECT slug AS label FROM pages WHERE instr(draft_json,?)>0 OR instr(COALESCE(published_json,''),?)>0 LIMIT 10",[needle,needle]],
+    ["Homepage style drafts or published styles","SELECT element_key AS label FROM page_styles WHERE instr(draft_json,?)>0 OR instr(COALESCE(published_json,''),?)>0 LIMIT 10",[needle,needle]],
+    ["Course syllabus files","SELECT id AS label FROM courses WHERE instr(COALESCE(syllabus_file_url,''),?)>0 AND id<>? LIMIT 10",[needle,excludeCourseId]]
+  ];
+  const matches=await Promise.all(queries.map(async ([source,sql,values])=>{
+    const result=await env.DB.prepare(sql).bind(...values).all();
+    return (result.results||[]).map(row=>({source,label:row.label}));
+  }));
+  return matches.flat();
+}
+
 async function finalizeCloudinaryDeletion(env, operation) {
   if (operation.target_type==="media") {
     await env.DB.prepare("DELETE FROM media_assets WHERE public_id=?").bind(operation.public_id).run();
@@ -497,8 +514,12 @@ async function handleApi(request, env) {
       if (!(await rateLimit(env,request,"media-delete",10,60*60*1000))) return json({error:"Delete limit reached. Please try again later."},429);
       const data=await request.json().catch(()=>null), publicId=clean(data?.public_id,255);
       if (!publicId || !/^[a-zA-Z0-9_./-]+$/.test(publicId) || !publicId.startsWith("sohel-consulting/") || publicId.split("/").some(part=>!part||part==="."||part==="..")) return json({error:"Invalid image identifier."},400);
-      const existing=await env.DB.prepare("SELECT public_id FROM media_assets WHERE public_id=?").bind(publicId).first();
+      const existing=await env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id=?").bind(publicId).first();
       if (!existing) return json({error:"Image not found in the media library."},404);
+      let references;
+      try { references=await findCloudinaryReferences(env,publicId,existing.secure_url); }
+      catch { return json({error:"Could not verify whether this image is still used. Deletion was cancelled."},503); }
+      if (references.length) return json({error:"This image is still referenced by website content. Remove or replace those references before deleting it.",references},409);
       const operationId=id();
       try {
         await env.DB.prepare("INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,status) VALUES (?,?, 'media',?,'pending')")
@@ -526,6 +547,18 @@ async function handleApi(request, env) {
       const {results=[]}=await env.DB.prepare("SELECT id,public_id,target_type,target_id,previous_url FROM cloudinary_delete_operations WHERE status IN ('pending','failed') ORDER BY created_at LIMIT 20").all();
       const outcomes=[];
       for (const operation of results) {
+        let references;
+        try { references=await findCloudinaryReferences(env,operation.public_id,"",operation.target_type==="course_syllabus"?operation.target_id:""); }
+        catch {
+          await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind("Could not verify asset references; deletion cancelled.",operation.id).run();
+          outcomes.push({operation_id:operation.id,status:"failed",error:"Could not verify asset references; deletion was cancelled."});
+          continue;
+        }
+        if (references.length) {
+          await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind("Asset is referenced by website content; deletion cancelled.",operation.id).run();
+          outcomes.push({operation_id:operation.id,status:"blocked",error:"Asset is still referenced by website content.",references});
+          continue;
+        }
         const result=await destroyCloudinaryAsset(env,operation.public_id);
         if (!result.ok) {
           await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.error,operation.id).run();
