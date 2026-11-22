@@ -426,3 +426,35 @@ Implemented on `current-focus-development`; not yet deployed or verified against
 - GitHub Actions run `44638857897` completed successfully for RBAC test commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`.
 - All workflow checks passed, including Worker syntax, site validation, RBAC contract, course pricing, registration workflow and quotation response tests.
 - This confirms automated source-contract and syntax checks only. Live Preview account disable/re-enable and session invalidation tests remain pending.
+
+
+---
+
+## Stage 19 — Preview migration and Admin diagnostics checkpoint (2026-11-22)
+
+**Status: Read-only Preview migration audit passed; migration 0013 pending; Admin diagnostic workflow correction and live execution pending.**
+
+### Verified Preview D1 state
+- GitHub Actions audit run: `45024256326`.
+- Branch/commit: `current-focus-development` / `b74761d0abaa740c51bd072f0918b795872e513d`.
+- Preview database: `consulting-preview-db`.
+- Preview database ID: `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+- Cloudflare API token validation and Preview identity check passed.
+- Wrangler remote migration listing reported only `0013_quotation_response_tokens.sql` as pending.
+- No migration was applied. The separate Production database was excluded by the audit workflow's identity checks.
+
+### Admin diagnostics
+- Inspected `.github/workflows/diagnose-preview-admin-login.yml`, `diagnose-preview-admin-login-schema.yml` and `diagnose-preview-admin-schema.yml`.
+- All three use an incorrectly escaped JavaScript regex for removing whitespace from the Cloudflare API token. Correct form: `replace(/\\s+/g, "")`.
+- The workflow files remain unchanged. Their live runs have not been verified.
+- Static schema comparison found Worker references compatible with committed migrations 0001, 0002 and 0009. This is not proof that the Preview database has the expected live schema or that Admin login works.
+
+### Next actions and safety boundary
+1. Obtain explicit approval before correcting the three Admin diagnostic workflows.
+2. Obtain explicit approval before applying migration 0013 to the verified Preview D1 database.
+3. After an authorized migration, rerun the read-only migration audit and confirm no pending migrations.
+4. Run read-only Admin schema diagnostics after fixing and validating their token parsing.
+5. Verify the deployed Preview Worker version and complete browser-based functional acceptance.
+6. Update this handover and changelog with run IDs, commit SHAs and environment-specific evidence.
+
+No Production deployment, Production migration, `main` change, branch reconciliation or PR merge is authorized by this checkpoint.
