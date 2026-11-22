@@ -12,7 +12,6 @@ concurrency:
 
 jobs:
   deploy-preview:
-    # Hard guard: this workflow must only run from the development branch.
     if: github.ref == 'refs/heads/current-focus-development'
     runs-on: ubuntu-latest
     steps:
@@ -36,16 +35,19 @@ jobs:
           echo "Required deployment credentials are present; values are not displayed."
 
       - name: Verify isolated Preview Worker and D1 configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         shell: bash
         run: |
           set -euo pipefail
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
           const config = readFileSync("wrangler.preview.toml", "utf8");
-          const name = config.match(/^name\s*=\s*"([^"]+)"\s*$/m)?.[1];
-          const databaseName = config.match(/^database_name\s*=\s*"([^"]+)"\s*$/m)?.[1];
-          const databaseId = config.match(/^database_id\s*=\s*"([^"]+)"\s*$/m)?.[1];
-          const environment = config.match(/^ENVIRONMENT\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          const name = config.match(/^name\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
+          const databaseName = config.match(/^database_name\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
+          const databaseId = config.match(/^database_id\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
+          const environment = config.match(/^ENVIRONMENT\\s*=\\s*"([^"]+)"\\s*$/m)?.[1];
           const productionId = "3a4f765a-46c2-4040-9753-36e9483893a4";
           const expectedPreviewId = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
           if (name !== "current-focus-development") throw new Error("Unexpected Worker name; refusing deployment.");
@@ -53,8 +55,27 @@ jobs:
             throw new Error("Preview D1 target mismatch; refusing deployment.");
           }
           if (environment !== "preview") throw new Error("Preview environment marker is missing; refusing deployment.");
-          if (!/^main\s*=\s*"src\/worker\.js"\s*$/m.test(config)) throw new Error("Unexpected Worker entry point.");
-          console.log("Verified Preview Worker name, Preview D1 ID, environment marker, and entry point.");
+          if (!/^main\\s*=\\s*"src\\/worker\\.js"\\s*$/m.test(config)) throw new Error("Unexpected Worker entry point.");
+
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\\s+/g, "");
+          const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const verify = await fetch("https://api.cloudflare.com/client/v4/user/tokens/verify", {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const verification = await verify.json().catch(() => ({}));
+          if (!verify.ok || verification.success !== true || verification.result?.status !== "active") {
+            throw new Error("Cloudflare API token is not confirmed active; refusing deployment.");
+          }
+          const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${expectedPreviewId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload.success !== true ||
+              payload.result?.name !== "consulting-preview-db" ||
+              (payload.result?.uuid !== expectedPreviewId && payload.result?.id !== expectedPreviewId)) {
+            throw new Error("Cloudflare API did not confirm the exact Preview D1 database; refusing deployment.");
+          }
+          console.log("Verified active Cloudflare token and exact Preview D1 database. No secrets were printed.");
           NODE
 
       - name: Run source validation
