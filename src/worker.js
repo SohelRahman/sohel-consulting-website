@@ -525,6 +525,16 @@ async function handleApi(request, env) {
         await env.DB.prepare("INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,status) VALUES (?,?, 'media',?,'pending')")
           .bind(operationId,publicId,publicId).run();
       } catch { return json({error:"Could not record the deletion request. The Cloudinary asset was not changed."},503); }
+      try {
+        references=await findCloudinaryReferences(env,publicId);
+        if (references.length) {
+          await env.DB.prepare("DELETE FROM cloudinary_delete_operations WHERE id=? AND status='pending'").bind(operationId).run();
+          return json({error:"The image became referenced while deletion was being prepared. Deletion was cancelled.",references},409);
+        }
+      } catch {
+        await env.DB.prepare("DELETE FROM cloudinary_delete_operations WHERE id=? AND status='pending'").bind(operationId).run();
+        return json({error:"Could not recheck asset references after reserving it. Deletion was cancelled."},503);
+      }
       const result=await destroyCloudinaryAsset(env,publicId);
       if (!result.ok) {
         await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.error,operationId).run();
@@ -691,6 +701,16 @@ async function handleApi(request, env) {
         await env.DB.prepare("INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,previous_url,status) VALUES (?,?, 'course_syllabus',?,?,'pending')")
           .bind(operationId,publicId,course.id,course.syllabus_file_url).run();
       } catch { return json({error:"Could not record the syllabus deletion request. The Cloudinary file was not changed."},503); }
+      try {
+        references=await findCloudinaryReferences(env,publicId,course.id);
+        if (references.length) {
+          await env.DB.prepare("DELETE FROM cloudinary_delete_operations WHERE id=? AND status='pending'").bind(operationId).run();
+          return json({error:"The syllabus asset became referenced while deletion was being prepared. Deletion was cancelled.",references},409);
+        }
+      } catch {
+        await env.DB.prepare("DELETE FROM cloudinary_delete_operations WHERE id=? AND status='pending'").bind(operationId).run();
+        return json({error:"Could not recheck syllabus references after reserving it. Deletion was cancelled."},503);
+      }
       const result=await destroyCloudinaryAsset(env,publicId);
       if (!result.ok) {
         await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.error,operationId).run();
