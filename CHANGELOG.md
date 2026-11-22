@@ -181,3 +181,12 @@
 - Re-inspected the Preview migration workflow: it is manually dispatched, guarded to `current-focus-development`, checks the expected Preview D1 ID and excludes the known Production D1 ID, lists migrations before and after applying, and targets only the `PREVIEW_DB` binding.
 - The workflow was not dispatched in this session because the available GitHub connection does not expose a workflow-dispatch action. Migration 0013 remains pending until the guarded workflow is manually started and its successful run is verified.
 - No Production migration, deployment, `main` change or PR merge was performed.
+
+
+## 2026-11-22 — Preview Admin diagnostics and user-reported acceptance
+
+- Successfully ran the guarded Preview D1 migration workflow on `current-focus-development` (run #8). Its migration check reported `No migrations to apply!`. The available screenshot evidence did not expose the full post-apply migration ledger, so the exact applied migration record is not independently transcribed here.
+- Successfully ran all three corrected, read-only Preview Admin diagnostic workflows. The required tables `admin_users`, `audit_logs` and `rate_limits` were found in Preview D1 `e0317397-77cb-4f36-9d19-2594ff75b0c2`; the Admin account count was 1.
+- Preview schema inspection returned the expected columns for `rate_limits`, `admin_users` and `audit_logs`. Diagnostic SQL reported zero database changes and zero rows written.
+- User-reported browser acceptance: Preview Admin login succeeded, the dashboard opened with all menu items visible, and Website Content worked correctly.
+- Further functional testing is intentionally deferred at the user's request. Course, quotation, registration, permissions/session, payment, email and full security acceptance remain untested or not fully evidenced. No Production deployment or `main` change was performed.
