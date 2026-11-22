@@ -209,3 +209,9 @@
 - Routed Admin media and syllabus uploads through the Worker.
 - Added server-side file-size and file-signature validation, server-held Cloudinary signing, UUID public IDs, Cloudinary response checks, and upload-request quotas.
 - Removed browser-facing upload signatures and client-supplied media metadata registration. Preview runtime verification remains pending.
+
+
+## 2026-11-22 — Cloudinary deletion recovery
+- Added D1 deletion journal and retry endpoint for Media Library and course syllabus assets.
+- Added Admin recovery action, idempotent handling of Cloudinary `not found`, and conditional course syllabus finalization.
+- Preview migration and runtime acceptance checks remain pending.
