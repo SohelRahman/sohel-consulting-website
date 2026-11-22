@@ -622,10 +622,17 @@ async function handleApi(request, env) {
           for(const row of syllabi.results||[]){const publicId=cloudinaryPublicIdFromUrl(row.secure_url,env.CLOUDINARY_CLOUD_NAME);if(publicId)local.set(publicId,{public_id:publicId,secure_url:row.secure_url});}
           const overLimit=[media.results,uploads.results,syllabi.results].some(rows=>(rows||[]).length>=10001);
           if(!overLimit){
-            for(const item of local.values()){
-              const resourceType=item.secure_url?.includes("/raw/upload/")?"raw":"image";
-              const exists=await env.DB.prepare("SELECT 1 AS found FROM cloudinary_inventory_assets WHERE scan_id=? AND resource_type=? AND public_id=? LIMIT 1").bind(scanId,resourceType,item.public_id).first();
-              if(!exists){missing.counts[resourceType]++;if(missing.items.length<500)missing.items.push({public_id:item.public_id,resource_type:resourceType});}
+            const remoteRows=await env.DB.prepare("SELECT public_id,resource_type FROM cloudinary_inventory_assets WHERE scan_id=? LIMIT 50001").bind(scanId).all();
+            if((remoteRows.results||[]).length>=50001){
+              missing.truncated=true;
+              missing.scope="Remote snapshot exceeded the 50,000-record comparison cap; missing-remote comparison withheld.";
+            }else{
+              const remoteSet=new Set((remoteRows.results||[]).map(row=>row.resource_type+":"+row.public_id));
+              for(const item of local.values()){
+                const resourceType=item.secure_url?.includes("/raw/upload/")?"raw":"image";
+                if(!remoteSet.has(resourceType+":"+item.public_id)){missing.counts[resourceType]++;if(missing.items.length<500)missing.items.push({public_id:item.public_id,resource_type:resourceType});}
+              }
+              missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
             }
             missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
             missing.scope="D1 media, upload-journal and course-syllabus records with a recognized sohel-consulting/ public ID; resource type inferred from stored Cloudinary URL.";
