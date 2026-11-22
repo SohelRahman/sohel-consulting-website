@@ -493,57 +493,55 @@ async function handleApi(request, env) {
 
     if (path === "/api/admin/media/delete" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
-        return json({error:"Cloudinary is not configured for image deletion."},503);
-      }
-      if (!(await rateLimit(env,request,"media-delete",10,60*60*1000))) {
-        return json({error:"Delete limit reached. Please try again later."},429);
-      }
-      const data=await request.json().catch(()=>null);
-      const publicId=clean(data?.public_id,255);
-      if (!publicId || !/^[a-zA-Z0-9_./-]+$/.test(publicId) ||
-          !publicId.startsWith("sohel-consulting/") ||
-          publicId.split("/").some(part=>!part || part==="." || part==="..")) {
-        return json({error:"Invalid image identifier."},400);
-      }
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured for image deletion."},503);
+      if (!(await rateLimit(env,request,"media-delete",10,60*60*1000))) return json({error:"Delete limit reached. Please try again later."},429);
+      const data=await request.json().catch(()=>null), publicId=clean(data?.public_id,255);
+      if (!publicId || !/^[a-zA-Z0-9_./-]+$/.test(publicId) || !publicId.startsWith("sohel-consulting/") || publicId.split("/").some(part=>!part||part==="."||part==="..")) return json({error:"Invalid image identifier."},400);
       const existing=await env.DB.prepare("SELECT public_id FROM media_assets WHERE public_id=?").bind(publicId).first();
       if (!existing) return json({error:"Image not found in the media library."},404);
-
-      const timestamp=Math.floor(Date.now()/1000);
-      const params={invalidate:"true",public_id:publicId,timestamp};
-      const signature=await cloudinarySignature(params,env.CLOUDINARY_API_SECRET);
-      const form=new FormData();
-      form.set("api_key",env.CLOUDINARY_API_KEY);
-      form.set("timestamp",String(timestamp));
-      form.set("public_id",publicId);
-      form.set("invalidate","true");
-      form.set("signature",signature);
-
-      let cloudinaryResult;
+      const operationId=id();
       try {
-        const response=await fetch(
-          "https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/image/destroy",
-          {method:"POST",body:form}
-        );
-        cloudinaryResult=await response.json().catch(()=>null);
-        if (!response.ok || !["ok","not found"].includes(cloudinaryResult?.result)) {
-          return json({
-            error:cloudinaryResult?.error?.message || "Cloudinary could not delete this image.",
-            cloudinaryResult:cloudinaryResult?.result || "unknown"
-          },502);
+        await env.DB.prepare("INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,status) VALUES (?,?, 'media',?,'pending')")
+          .bind(operationId,publicId,publicId).run();
+      } catch { return json({error:"Could not record the deletion request. The Cloudinary asset was not changed."},503); }
+      const result=await destroyCloudinaryAsset(env,publicId);
+      if (!result.ok) {
+        await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.error,operationId).run();
+        return json({error:result.error,operation_id:operationId,recovery:"The deletion is recorded and can be retried from the Admin media recovery action."},502);
+      }
+      try {
+        await finalizeCloudinaryDeletion(env,{id:operationId,public_id:publicId,target_type:"media",target_id:publicId});
+      } catch {
+        await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?")
+          .bind("Cloudinary deletion succeeded; database finalization needs retry.",operationId).run();
+        return json({error:"Cloudinary deleted the image, but the database update is pending recovery.",operation_id:operationId},503);
+      }
+      await audit(env,session.email,"media_deleted","media_asset",publicId,"Cloudinary result: "+result.result);
+      return json({ok:true,public_id:publicId,cloudinary_result:result.result});
+    }
+    if (path === "/api/admin/media/reconcile" && method === "POST") {
+      if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary is not configured for deletion recovery."},503);
+      if (!(await rateLimit(env,request,"media-reconcile",5,60*60*1000))) return json({error:"Recovery limit reached. Please try again later."},429);
+      const {results=[]}=await env.DB.prepare("SELECT id,public_id,target_type,target_id,previous_url FROM cloudinary_delete_operations WHERE status IN ('pending','failed') ORDER BY created_at LIMIT 20").all();
+      const outcomes=[];
+      for (const operation of results) {
+        const result=await destroyCloudinaryAsset(env,operation.public_id);
+        if (!result.ok) {
+          await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.error,operation.id).run();
+          outcomes.push({operation_id:operation.id,status:"failed",error:result.error});
+          continue;
         }
-      } catch {
-        return json({error:"Could not reach Cloudinary. The media library record was not changed."},502);
+        try {
+          await finalizeCloudinaryDeletion(env,operation);
+          outcomes.push({operation_id:operation.id,status:"completed",cloudinary_result:result.result});
+        } catch {
+          await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind("Cloudinary deletion confirmed; database finalization needs retry.",operation.id).run();
+          outcomes.push({operation_id:operation.id,status:"failed",error:"Database finalization failed."});
+        }
       }
-
-      try {
-        const removed=await env.DB.prepare("DELETE FROM media_assets WHERE public_id=?").bind(publicId).run();
-        if (!removed.meta.changes) return json({error:"Cloudinary image was deleted, but its media library record could not be confirmed."},503);
-      } catch {
-        return json({error:"Cloudinary image was deleted, but the media library record could not be removed. Retry this deletion to synchronize the library."},503);
-      }
-      await audit(env,session.email,"media_deleted","media_asset",publicId,"Cloudinary result: "+cloudinaryResult.result);
-      return json({ok:true,public_id:publicId,cloudinary_result:cloudinaryResult.result});
+      await audit(env,session.email,"cloudinary_deletion_reconciled","media_asset",String(results.length),"Processed "+outcomes.filter(x=>x.status==="completed").length+" deletion operations");
+      return json({ok:true,processed:outcomes.length,outcomes});
     }
     if (path === "/api/admin/media/upload" && method === "POST") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
