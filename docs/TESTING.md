@@ -8,7 +8,8 @@ Current CI workflow: `.github/workflows/validate-development.yml`.
 | --- | --- | --- |
 | Worker syntax | `node --input-type=module --check < src/worker.js` | Worker JavaScript parses |
 | Shared JS syntax | `node --check assets/site.js` | Browser JavaScript parses |
-| Site validation | `node scripts/validate-site.mjs` | HTML, local links and inline scripts per validator |\n| RBAC contract | `node scripts/test-rbac-contract.mjs` | Permission catalogue, fail-closed route guard, role boundaries, password/session controls and migration structure |\n| Password hashing | `node scripts/test-password-hash.mjs` | Legacy/current hash verification, wrong-password rejection, unique salts and malformed-hash rejection |
+| Site validation | `node scripts/validate-site.mjs` | HTML, local links and inline scripts per validator |
+| RBAC contract | `node scripts/test-rbac-contract.mjs` | Permission catalogue, fail-closed route guard, role boundaries, password/session controls and migration structure |\n| Password hashing | `node scripts/test-password-hash.mjs` | Legacy/current hash verification, wrong-password rejection, unique salts and malformed-hash rejection |
 
 These checks do not execute the application in a real browser.
 
