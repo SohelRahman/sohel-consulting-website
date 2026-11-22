@@ -239,3 +239,12 @@
 - Added migration 0015 with 11 D1 triggers protecting legacy content, CMS values and history, custom pages, homepage styles and course syllabus fields from referencing assets with pending/failed deletion operations.
 - Media and syllabus deletion repeat reference scans after reserving the asset and before contacting Cloudinary.
 - Migration 0015 must be applied to Preview before deploying the Worker changes. Runtime and concurrency acceptance remain pending.
+
+
+## 2026-11-22 — Read-only Cloudinary remote inventory comparison
+
+- Added a permission-gated, rate-limited Admin endpoint that lists Cloudinary image/raw assets under the `sohel-consulting/` public-ID prefix using bounded cursor pagination and server-held Basic Auth credentials.
+- Compares each returned page with Media Library records, upload lifecycle rows and up to 500 syllabus references; unmatched remote assets are explicitly candidates, not confirmed orphans.
+- Added Admin controls for image/raw page scans and cursor continuation.
+- The endpoint does not delete Cloudinary assets or mutate D1 business records. Full-inventory completion and missing-remote detection are not claimed because this first version does not persist a complete cross-page inventory snapshot.
+- Source-contract checks and Preview acceptance are pending; no Preview migration/deployment, Production change, `main` change or PR merge was performed.
