@@ -511,8 +511,8 @@ async function handleApi(request, env) {
 
     if (path === "/api/admin/media/audit" && method === "GET") {
       if (!(await rateLimit(env,request,"media-audit",20,60*60*1000))) return json({error:"Asset audit limit reached. Please try again later."},429);
-      const requestedLimit=Number(url.searchParams.get("limit")||25), requestedPage=Number(url.searchParams.get("page")||1);
-      if (!Number.isInteger(requestedLimit)||requestedLimit<1||requestedLimit>50||!Number.isInteger(requestedPage)||requestedPage<1||requestedPage>200) return json({error:"Use a page from 1 to 200 and a page size from 1 to 50."},400);
+      const requestedLimit=Number(url.searchParams.get("limit")||10), requestedPage=Number(url.searchParams.get("page")||1);
+      if (!Number.isInteger(requestedLimit)||requestedLimit<1||requestedLimit>10||!Number.isInteger(requestedPage)||requestedPage<1||requestedPage>200) return json({error:"Use a page from 1 to 200 and a page size from 1 to 10."},400);
       try {
         const totalRow=await env.DB.prepare("SELECT COUNT(*) AS total FROM media_assets").first();
         const total=Number(totalRow?.total||0),offset=(requestedPage-1)*requestedLimit;
