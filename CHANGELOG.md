@@ -1,3 +1,9 @@
+## 2026-11-22 — Cloudinary upload lifecycle journal
+- Added migration 0016 to track pending, uploaded, registered, attached, failed, needs-review and deleted asset lifecycle states.
+- The Worker records an upload before contacting Cloudinary, flags uncertain outcomes and Media Library registration failures, and marks syllabus uploads attached when their URL is saved to a course.
+- The read-only Admin audit now reports upload lifecycle counts and up to 100 unresolved/reviewable upload records. No automatic asset deletion was added.
+- Preview migration 0016, Worker deployment and runtime acceptance tests remain pending. Production resources and data were not changed.
+
 ## 2026-11-22 — Read-only Cloudinary asset audit
 - Added a permission-protected, rate-limited Admin report for registered Media Library assets, database reference findings, attached course syllabus URLs and deletion-journal status counts.
 - Added bounded pagination and labels unreferenced registered assets as potential orphan candidates only; the report does not delete assets or claim Cloudinary remote existence.
