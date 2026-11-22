@@ -203,3 +203,9 @@
 - Preview schema inspection returned the expected columns for `rate_limits`, `admin_users` and `audit_logs`. Diagnostic SQL reported zero database changes and zero rows written.
 - User-reported browser acceptance: Preview Admin login succeeded, the dashboard opened with all menu items visible, and Website Content worked correctly.
 - Further functional testing is intentionally deferred at the user's request. Course, quotation, registration, permissions/session, payment, email and full security acceptance remain untested or not fully evidenced. No Production deployment or `main` change was performed.
+
+
+## 2026-11-22 — Cloudinary upload remediation
+- Routed Admin media and syllabus uploads through the Worker.
+- Added server-side file-size and file-signature validation, server-held Cloudinary signing, UUID public IDs, Cloudinary response checks, and upload-request quotas.
+- Removed browser-facing upload signatures and client-supplied media metadata registration. Preview runtime verification remains pending.
