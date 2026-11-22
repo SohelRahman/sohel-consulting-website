@@ -66,7 +66,7 @@ check("Course syllabus deletion checks for references outside its own course", w
 check("Deletion recovery rechecks asset references and reports blocked operations", worker.includes("findCloudinaryReferences(env,operation.public_id") && worker.includes('status:"blocked"') && adminHtml.includes("Blocked by active references"));
 
 check("Cloudinary reference-lock migration installs write guards for every database-managed content store", ["site_content","cms_content","cms_static_content_versions","pages","page_styles","courses"].every(table=>referenceLockMigration.includes("ON "+table)) && (referenceLockMigration.match(/CREATE TRIGGER IF NOT EXISTS/g)||[]).length===11);
-check("Reference-lock triggers reject writes that introduce assets with pending or failed deletion operations", (referenceLockMigration.match(/status IN \\(\'pending\',\'failed\'\\)/g)||[]).length>=11 && referenceLockMigration.includes("RAISE(ABORT,'Cloudinary asset is pending deletion')"));
+check("Reference-lock triggers reject writes that introduce assets with pending or failed deletion operations", (referenceLockMigration.split("status IN ('pending','failed')").length-1)>=11 && referenceLockMigration.includes("RAISE(ABORT,'Cloudinary asset is pending deletion')"));
 check("Media and syllabus deletion reserve the asset then recheck references before calling Cloudinary", worker.includes("DELETE FROM cloudinary_delete_operations WHERE id=? AND status='pending'") && worker.indexOf("references=await findCloudinaryReferences(env,publicId)")<worker.indexOf("const result=await destroyCloudinaryAsset(env,publicId)"));
 
 
