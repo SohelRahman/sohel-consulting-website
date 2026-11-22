@@ -267,3 +267,7 @@
 - Withholds missing-remote comparison when in-scope local assets cannot be classified as image or raw.
 - Preserves specific comparison-withheld reasons in API output and Admin UI.
 - Added regression contract checks and documented the Preview-only rollout sequence and release gates. No migration, deployment, live Cloudinary scan or Production change was performed.
+
+
+- Added a partial unique D1 index to prevent concurrent scan starts from creating multiple active scans; concurrent starts return the already active scan ID.
+- Documented that paginated Cloudinary inventory is not an atomic point-in-time snapshot and missing-remote rows are reconciliation leads, not proof of deletion.
