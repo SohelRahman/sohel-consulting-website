@@ -1,5 +1,7 @@
 # Master Development Handover Prompt
 
+> **Audit baseline — 2026-11-22:** Start with [Master Project History](MASTER_PROJECT_HISTORY.md) for the consolidated Website 1–4 requirements, decisions, current repository evidence, known gaps and prioritized work. The development branch is reported as diverged from `main` (558 ahead, 12 behind); do not merge, rebase, force-push or reconcile branches without a separately reviewed plan and explicit approval. Preview deployment and full browser acceptance are not independently confirmed by the audit. No Production changes are authorized by this handover update.
+
 > **Current CMS status — 2026-11-19**
 >
 > The bilingual static-page CMS is implemented on `current-focus-development`. Preview D1 migration 0012 was applied manually by the user and the user-reported verification showed four imported English homepage records, four published history rows, all six legacy CMS tables preserved, and migration ledger entries 0001–0012. These are user-supplied D1 Console results, not a direct database inspection by the repository maintainer.
