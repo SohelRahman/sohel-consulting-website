@@ -9,7 +9,8 @@ Current CI workflow: `.github/workflows/validate-development.yml`.
 | Worker syntax | `node --input-type=module --check < src/worker.js` | Worker JavaScript parses |
 | Shared JS syntax | `node --check assets/site.js` | Browser JavaScript parses |
 | Site validation | `node scripts/validate-site.mjs` | HTML, local links and inline scripts per validator |
-| RBAC contract | `node scripts/test-rbac-contract.mjs` | Permission catalogue, fail-closed route guard, role boundaries, password/session controls and migration structure |\n| Password hashing | `node scripts/test-password-hash.mjs` | Legacy/current hash verification, wrong-password rejection, unique salts and malformed-hash rejection |
+| RBAC contract | `node scripts/test-rbac-contract.mjs` | Permission catalogue, fail-closed route guard, role boundaries, password/session controls and migration structure |
+| Password hashing | `node scripts/test-password-hash.mjs` | Legacy/current hash verification, wrong-password rejection, unique salts and malformed-hash rejection |
 
 These checks do not execute the application in a real browser.
 
@@ -312,3 +313,20 @@ Reviewed the Admin upload form and Worker handlers for media and course syllabus
 ### Status
 
 These are source-review findings, not observed exploitation or live upload tests. Do not treat the browser's file-size checks or signature-request quotas as server-enforced upload limits. Remediation and live Preview verification are pending. Production resources and data were not changed.
+
+
+## Cloudinary upload remediation — 2026-11-22
+
+The development branch now routes Media Library and course syllabus uploads through `POST /api/admin/media/upload`.
+
+- The Worker requires an authenticated Admin API session and same-origin request; the existing `media.manage` / `courses.manage` permission mapping applies.
+- The Worker parses multipart form data and enforces a 3 MiB image limit and 10 MiB PDF limit independently of browser checks.
+- The Worker checks declared MIME type against file-signature bytes for JPEG, PNG, WebP, GIF and PDF.
+- Cloudinary upload parameters and signature are generated and used inside the Worker. The browser no longer receives an upload signature or Cloudinary API key.
+- The Worker assigns a UUID-based public ID in the approved folder and checks Cloudinary's returned public ID, resource type, format and byte count before returning an asset URL or creating a Media Library record.
+- Hourly and daily upload-signature request quotas were replaced by hourly and daily upload-request quotas applied to the proxied upload itself.
+- The former browser-facing signature endpoint and client-supplied Media Library metadata registration endpoint were removed.
+
+### Verification status
+
+These are implementation and source-contract changes only. CI must pass, then the Preview Worker must be deployed and the Admin upload workflows manually tested. Verify boundary sizes, MIME/content mismatches, upload errors, Media Library registration, syllabus save/edit/delete, and quota behavior. Do not treat source checks as proof of Cloudinary account behavior or live upload success. Production remains unchanged.
