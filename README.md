@@ -2,6 +2,8 @@
 
 Bilingual English/Bangla website with consulting pages, course registration, inquiry intake and a protected administrator dashboard.
 
+> **Project history and current audit baseline:** [Master Project History](docs/MASTER_PROJECT_HISTORY.md). This is the consolidated reference for decisions, historical requirements, repository evidence, known gaps and release priorities.
+
 ## Current architecture
 
 - Static website assets served by Cloudflare Workers.
@@ -136,9 +138,9 @@ No payment gateway is connected. Registration records use a `not_configured` pay
 
 Never publish unconfirmed client names, project outcomes, prices or credentials.
 
-
 ## Developer documentation
 
+- [Master project history and audit baseline](docs/MASTER_PROJECT_HISTORY.md) — consolidated Website 1–4 requirements, decisions, repository findings, risks and prioritized work.
 - [Stage 9A CMS schema review](docs/CMS_SCHEMA_REVIEW_STAGE_9A.md) — review findings and required schema revisions.
 - [Stage 9A.4 final CMS schema review](docs/CMS_FINAL_SCHEMA_REVIEW_STAGE_9A4.md) — conditional design acceptance, unresolved Preview evidence and migration approval gates.
 - [CMS Admin UI and workflow specification](docs/CMS_ADMIN_UI_WORKFLOW.md) — original Stage 8 requirements, implementation mapping, and acceptance tests.
@@ -159,13 +161,3 @@ The maintained technical documentation is in [`docs/`](docs/):
 - [Changelog](CHANGELOG.md) — significant development and maintenance history.
 
 **Maintenance requirement:** Update the relevant documentation and changelog in the same development change whenever code, APIs, database schema, configuration, security behavior, testing or deployment procedures change. Documentation must describe verified implementation; unresolved details must be marked as pending verification.
-
-> **Current CMS status — 2026-11-19**
->
-> The bilingual static-page CMS is implemented on `current-focus-development`. Preview D1 migration 0012 was applied manually by the user and the user-reported verification showed four imported English homepage records, four published history rows, all six legacy CMS tables preserved, and migration ledger entries 0001–0012. These are user-supplied D1 Console results, not a direct database inspection by the repository maintainer.
->
-> The CMS supports 12 English and 12 Bangla static pages plus a separate Global context. The Admin Dashboard supports page/language selection, draft save, page/language publish, authenticated draft preview, key inspection, soft archive/restore, version history and restore-to-draft. The public binding layer targets eligible static text nodes, image sources, links and SEO metadata; it deliberately excludes forms, dynamically generated course data, chat and other interactive controls.
->
-> **Two editing paths:** (1) Dashboard editing by selecting or entering a content key; (2) on-page editing from the `?cmsKeys=1` inspector by clicking a highlighted element and using the inline editor panel. Both save drafts through the same authenticated `POST /api/admin/cms/save` endpoint. Inline editing was committed in `assets/cms.js` at commit `754507b0a28290cc972929f61bef891fbe9b880c`; it still requires a fresh Preview deployment and live browser acceptance testing. A successful CI run for the final follow-up commit and live inline-editor behavior have not yet been confirmed.
->
-> Do not treat the earlier Cloudflare “Ready” screenshot as deployment evidence for commit `754507b`; it showed an earlier commit. No Production deployment, migration, merge to `main`, or Production data change is authorized.
