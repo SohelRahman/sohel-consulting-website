@@ -78,3 +78,16 @@ All three normalize `CLOUDFLARE_API_TOKEN` with the JavaScript regex literal `/\
 Their database inspection steps use table metadata, read-only SELECTs and SQL `EXPLAIN` statements. The workflows are guarded to `current-focus-development` and construct a dedicated Preview D1 binding. Their execution has not been confirmed in this follow-up.
 
 The Preview migration audit remains the authoritative live ledger evidence: run `45024256326` verified Preview D1 identity and reported only `0013_quotation_response_tokens.sql` as pending. Migration 0013 has not been applied. Production and `main` remain untouched.
+
+
+## 2026-11-22 — Preview Admin diagnostic workflow corrections
+
+The token normalization expression was corrected in all three Preview Admin diagnostic workflows on `current-focus-development`:
+
+- `.github/workflows/diagnose-preview-admin-login.yml`
+- `.github/workflows/diagnose-preview-admin-login-schema.yml`
+- `.github/workflows/diagnose-preview-admin-schema.yml`
+
+Each now uses `replace(/\\s+/g, "")`, which removes whitespace as intended. All three files were fetched again after their commits and checked for the corrected expression and absence of the malformed expression.
+
+The migration workflow was re-inspected before any application attempt. It has a manual `workflow_dispatch` trigger, a development-branch guard, an exact Preview D1 ID check, an explicit Production D1 ID exclusion, and pre-/post-application migration listings. Its apply command targets only `PREVIEW_DB`. The workflow was not dispatched in this session because the connected GitHub interface does not provide a workflow-dispatch operation. Therefore migration 0013 remains pending; the previous read-only audit remains the latest verified ledger evidence.
