@@ -1,6 +1,6 @@
 # Database migration inventory and verification status — 2026-11-22
 
-The development branch contains migration files 0001–0013. File presence is not proof that a migration has been applied to a remote database.
+The development branch contains migration files 0001–0017. File presence is not proof that a migration has been applied to a remote database.
 
 | Migration | File |
 |---|---|
@@ -16,6 +16,10 @@ The development branch contains migration files 0001–0013. File presence is no
 | 0010 | `0010_course_discounts_syllabus.sql` |
 | 0011 | `0011_course_syllabus_file_url.sql` |
 | 0012 | `0012_bilingual_static_cms.sql` |
+| 0014 | `0014_cloudinary_delete_operations.sql` |
+| 0015 | `0015_cloudinary_reference_locks.sql` |
+| 0016 | `0016_cloudinary_upload_operations.sql` |
+| 0017 | `0017_cloudinary_inventory_snapshots.sql` |
 | 0013 | `0013_quotation_response_tokens.sql` |
 
 ## Evidence qualification
@@ -110,3 +114,10 @@ The migration workflow was re-inspected before any application attempt. It has a
 - Preview identity verification passed and the workflow explicitly excluded the known Production D1 ID.
 
 These results establish that the inspected tables and columns exist in Preview. They do not establish that every application query or workflow is correct. Further functional testing has been deferred at the user's request.
+
+
+## Cloudinary inventory snapshot migration 0017
+
+Migration 0017 creates `cloudinary_inventory_scans` and `cloudinary_inventory_assets`. It stores independent image/raw cursors, completion states, page counters, processing leases and remote asset metadata. It does not alter existing business records or Cloudinary assets.
+
+The migration file's presence on `current-focus-development` does not prove it has been applied to Preview. Preview migration and Worker deployment are not authorized by the source implementation and must be handled as a separately approved operation. Production and `main` remain untouched.
