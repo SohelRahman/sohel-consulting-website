@@ -99,3 +99,12 @@ This update is documentation-only. It does not reconcile branches, change applic
 - Static review of Admin table usage found no mismatch against the committed migrations, but live Preview schema diagnostics and login acceptance remain pending.
 - Documentation was updated in commits `ef02151d898c6f2ebae76e770daa80d67258d76e`, `92f0692442169f71bb8badb96dca4948a31e4096` and `eaf8cf67f7a1c92ed3206ed86da23f0e909e0c3b` (database, changelog and master history).
 - No migration, deployment, Production operation, `main` change, branch reconciliation or PR merge was performed. Preview deployment version remains unverified.
+
+
+## 2026-11-22 — Admin diagnostic workflow corrections
+
+- Corrected the malformed Cloudflare API token whitespace regex in all three Preview Admin diagnostic workflows on `current-focus-development`.
+- Post-commit fetch verification confirmed each file now uses `/\\s+/g` and no longer contains the malformed regex.
+- The Preview migration workflow was re-inspected: manual dispatch only, development-branch guard, exact Preview D1 ID validation, explicit Production D1 ID exclusion, and `PREVIEW_DB`-only migration application.
+- The connected GitHub tools do not expose workflow dispatch, so migration 0013 has not been applied. It remains pending based on the latest successful read-only Preview audit.
+- No Production operation, `main` change, branch reconciliation or PR merge was performed.
