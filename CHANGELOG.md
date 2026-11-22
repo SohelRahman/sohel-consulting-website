@@ -1,3 +1,8 @@
+## 2026-11-22 — Preview migration 0013 review
+- Reviewed migration 0013 SQL, the Worker token issuance/response logic, the learner response page, and the existing quotation-response contract test.
+- No blocking SQL/application incompatibility was identified by static review. The migration is additive and stores only SHA-256 token hashes; the Worker uses one-time, expiring, revocable bearer tokens with same-origin and rate-limit checks.
+- Runtime integration, concurrent-request, and full learner-journey tests against Preview remain outstanding. Migration 0013 is still pending and was not applied. Production remains untouched.
+
 ## 2026-11-22
 - Fixed the Preview D1 migration workflow parser to read Wrangler's `[[previews.d1_databases]]` array-of-table declaration and fail closed when the Preview database ID cannot be parsed.
 - Verified the parser against the current `wrangler.toml`; it resolves the configured Preview D1 ID and rejects the Production ID. No database migration was executed.
