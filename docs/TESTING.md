@@ -443,3 +443,30 @@ The development branch adds a read-only Admin endpoint, `GET /api/admin/media/au
 - [ ] Confirm the report makes no writes to asset, content, course or deletion-journal records and makes no Cloudinary deletion or remote-existence claim. The existing rate limiter updates its separate rate_limits table.
 
 Source-contract checks do not establish live Preview behavior. No Preview migration or deployment is authorized by this implementation.
+
+
+## Cloudinary upload lifecycle journal — 2026-11-22
+
+Migration `0016_cloudinary_upload_operations.sql` adds a durable upload journal.
+
+- The Worker creates a `pending` row before making the Cloudinary upload request.
+- Successful Cloudinary responses are recorded as `uploaded`.
+- Media Library uploads advance to `registered` after the `media_assets` row is saved.
+- Syllabus uploads remain `uploaded` until a course create/update stores the corresponding Cloudinary URL; then they advance to `attached`.
+- A remote response with unexpected metadata, an uncertain network outcome, or a successful remote upload whose Media Library registration fails is marked `needs_review`.
+- Confirmed Cloudinary deletion marks matching upload journal rows `deleted`.
+- The read-only Admin asset audit now includes counts and up to 100 recent pending, uploaded, failed or needs-review operations. This helps identify unregistered media uploads and uploaded-but-not-attached syllabus files without deleting them.
+- The audit is not a complete Cloudinary inventory. Older uploads made before migration 0016 are not represented, and upload rows marked `uploaded` may be legitimate files awaiting course save.
+
+### Preview acceptance required
+
+- [ ] Apply migration 0016 after migrations 0014 and 0015 and before deploying the updated Worker.
+- [ ] Verify an image upload creates a pending row, then a registered row and a Media Library record.
+- [ ] Verify a syllabus upload remains uploaded until a course is created or updated with its URL, then becomes attached.
+- [ ] Verify a failed or uncertain Cloudinary response remains visible as failed or needs-review.
+- [ ] Verify a Media Library D1 registration failure leaves a needs-review row.
+- [ ] Verify confirmed media and syllabus deletion marks matching upload rows deleted.
+- [ ] Verify audit upload counts and the 100-row recent-operations limit.
+- [ ] Confirm the report remains read-only and no upload lifecycle row triggers automatic Cloudinary deletion.
+
+These are source-level changes. Preview migration, deployment and runtime tests remain pending. Production remains untouched.
