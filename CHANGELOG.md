@@ -248,3 +248,13 @@
 - Added Admin controls for image/raw page scans and cursor continuation.
 - The endpoint does not delete Cloudinary assets or mutate D1 business records. Full-inventory completion and missing-remote detection are not claimed because this first version does not persist a complete cross-page inventory snapshot.
 - Source-contract checks and Preview acceptance are pending; no Preview migration/deployment, Production change, `main` change or PR merge was performed.
+
+
+## 2026-11-22 — Persistent Cloudinary inventory snapshots
+
+- Added migration 0017 for durable Cloudinary inventory scan metadata and per-resource remote asset snapshots.
+- Replaced browser-only cursor pagination with resumable image/raw scans, per-resource leases, stale-scan handling and bounded page limits.
+- A scan is complete only after both Cloudinary resource types finish. Missing-remote comparison is withheld when local or snapshot safety caps are exceeded.
+- Compares supported D1 media, upload-journal and syllabus records against the completed snapshot. Results are limited to the `sohel-consulting/` prefix and are not proof of complete external-reference coverage.
+- Added Admin controls to start, resume, refresh and advance persistent scans.
+- Added contract checks and Preview acceptance documentation. CI and Preview migration/deployment/runtime acceptance remain pending. No Production or `main` change was made.
