@@ -569,7 +569,13 @@ async function handleApi(request, env) {
           if(active)return json({error:"A scan is already running.",scan_id:active.id},409);
           await env.DB.prepare("DELETE FROM cloudinary_inventory_scans WHERE id NOT IN (SELECT id FROM cloudinary_inventory_scans ORDER BY created_at DESC LIMIT 5)").run();
           const newId=id();
-          await env.DB.prepare("INSERT INTO cloudinary_inventory_scans (id,status,created_at,updated_at) VALUES (?,'running',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").bind(newId).run();
+          try {
+            await env.DB.prepare("INSERT INTO cloudinary_inventory_scans (id,status,created_at,updated_at) VALUES (?,'running',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").bind(newId).run();
+          } catch(error) {
+            const concurrent=await env.DB.prepare("SELECT id FROM cloudinary_inventory_scans WHERE status='running' ORDER BY created_at DESC LIMIT 1").first();
+            if(concurrent)return json({error:"A scan was started concurrently.",scan_id:concurrent.id},409);
+            throw error;
+          }
           return json({scan_id:newId,status:"running"});
         }
         if(body?.action==="step" && typeof body.scan_id==="string" && ["image","raw"].includes(body.resource_type)){
