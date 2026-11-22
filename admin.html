@@ -166,7 +166,7 @@ $('#media-audit').addEventListener('click',async()=>{
  const button=$('#media-audit'),panel=$('#media-audit-report'),summary=$('#media-audit-summary'),journal=$('#media-audit-journal'),results=$('#media-audit-results');
  button.disabled=true;panel.classList.remove('hidden');summary.textContent='Scanning registered assets and database references…';journal.textContent='';results.textContent='';
  try{
-  const data=await api('/api/admin/media/audit?limit=25&page=1');
+  const data=await api('/api/admin/media/audit?limit=10&page=1');
   summary.textContent='Registered Media Library assets: '+data.summary.registered_media_assets+'. Potential orphan candidates on this page: '+data.summary.potential_orphan_candidates+'. Assets with database references on this page: '+data.summary.media_assets_with_references+'. Course syllabus records returned: '+data.summary.syllabus_records_returned+'.';
   journal.textContent='Deletion journal — pending: '+data.deletion_journal.pending+', failed: '+data.deletion_journal.failed+', completed: '+data.deletion_journal.completed+'.';
   const table=document.createElement('table');table.className='admin-table';const head=document.createElement('thead');head.innerHTML='<tr><th>Public ID</th><th>Classification</th><th>Reference matches (sample)</th><th>Remote status</th></tr>';table.append(head);
@@ -174,7 +174,7 @@ $('#media-audit').addEventListener('click',async()=>{
   (data.media.items||[]).forEach(item=>{const tr=document.createElement('tr');[item.public_id,item.classification==='potential_orphan_candidate'?'Potential orphan candidate':'Reference found',String(item.reference_count_sample)+' (sample)','Unknown — not checked'].forEach(value=>{const td=document.createElement('td');td.textContent=value;tr.append(td);});body.append(tr);});
   if(!(data.media.items||[]).length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=4;td.textContent='No registered Media Library assets on this page.';tr.append(td);body.append(tr);}
   table.append(body);results.append(table);
-  if(data.media.total_pages>1){const note=document.createElement('p');note.className='admin-message';note.textContent='Showing page 1 of '+data.media.total_pages+'. API supports pages up to 200 and page sizes up to 50.';results.append(note);}
+  if(data.media.total_pages>1){const note=document.createElement('p');note.className='admin-message';note.textContent='Showing page 1 of '+data.media.total_pages+'. API supports pages up to 200 and page sizes up to 10.';results.append(note);}
   if(data.syllabi.items?.length){const h=document.createElement('h4');h.textContent='Attached course syllabus files (up to 100)';results.append(h);const list=document.createElement('ul');data.syllabi.items.forEach(item=>{const li=document.createElement('li');li.textContent=item.title_en+' — '+item.course_id+' — '+item.syllabus_file_url;list.append(li);});results.append(list);}
   if(data.syllabi.truncated){const note=document.createElement('p');note.className='admin-message';note.textContent='Syllabus list reached its 100-record limit and may be incomplete.';results.append(note);}
  }catch(error){summary.textContent='Audit failed: '+error.message;}
