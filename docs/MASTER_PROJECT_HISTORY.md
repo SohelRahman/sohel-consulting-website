@@ -304,3 +304,11 @@ Update this document when a material requirement, decision, architecture change,
 - Migration 0013 remains pending on Preview and requires explicit approval before application.
 - Admin diagnostic workflow corrections require explicit authorization.
 - No Preview deployment, Production operation, `main` modification, branch reconciliation or PR merge was performed.
+
+
+## 2026-11-22 — Admin diagnostic regex corrections
+
+- Corrected the token whitespace-normalization regex in all three Preview Admin diagnostic workflows on `current-focus-development`.
+- Each modified workflow was fetched after its commit and verified to contain the intended `/\\s+/g` expression and not the malformed expression.
+- Re-inspected the Preview migration workflow and confirmed its manual dispatch trigger, development-branch guard, exact Preview database ID guard, Production database exclusion, and Preview-only binding for the apply command.
+- The connected GitHub tools do not expose a workflow-dispatch operation. The migration workflow has therefore not been started, and migration 0013 remains pending. No migration or Production operation is claimed.
