@@ -280,3 +280,10 @@ Static review of `src/worker.js` and `wrangler.toml` on `current-focus-developme
 - User-role API authorization rejects routes without a mapped permission; Admin-only account-management routes have a separate role check.
 
 This was a source review, not a penetration test or live Preview validation. Cookie/session expiry, CSRF rejection, role boundaries and revocation after reactivation remain Preview acceptance checks. The Preview Worker has not been redeployed for the password-hashing change, and functional testing remains deferred until explicitly requested.
+
+
+## Admin API mutation and authorization source audit — 2026-11-22
+
+A static review of `src/worker.js` enumerated the declared POST, PUT, PATCH and DELETE handlers. Every enumerated handler contains a same-origin request check. Admin API authentication is applied before route dispatch; User-role requests require a mapped permission, while unknown/unmapped Admin API routes fail closed for User accounts. Account-management endpoints retain a separate Admin-only role check.
+
+Added RBAC source-contract assertions to guard these properties against regression. These assertions inspect source structure; they do not replace live cross-origin, role-boundary or CSRF testing. Functional Preview testing remains deferred until explicitly requested.
