@@ -215,3 +215,9 @@
 - Added D1 deletion journal and retry endpoint for Media Library and course syllabus assets.
 - Added Admin recovery action, idempotent handling of Cloudinary `not found`, and conditional course syllabus finalization.
 - Preview migration and runtime acceptance checks remain pending.
+
+
+## 2026-11-22 — Cloudinary asset reference protection
+- Blocked deletion of assets referenced by database-managed site content, CMS drafts/publications/history, custom pages, page styles or other course syllabus records.
+- Added reference rechecks during deletion recovery and clearer Admin status reporting.
+- Hard-coded source references, external copies and concurrency races remain outside the current guarantee; Preview acceptance remains pending.
