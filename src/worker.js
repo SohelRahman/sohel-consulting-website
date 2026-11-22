@@ -559,8 +559,8 @@ async function handleApi(request, env) {
       if (!(await rateLimit(env,request,"media-remote-inventory",10,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
       if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
       const resourceType=url.searchParams.get("resource_type")||"image";
-      const nextCursor=clean(url.searchParams.get("next_cursor"),2048);
-      if (!["image","raw"].includes(resourceType) || (url.searchParams.has("next_cursor") && (!nextCursor || !/^[A-Za-z0-9._-]+$/.test(nextCursor)))) return json({error:"Use resource_type=image or raw and a valid cursor returned by Cloudinary."},400);
+      const nextCursor=url.searchParams.get("next_cursor")||"";
+      if (!["image","raw"].includes(resourceType) || nextCursor.length>2048 || /[\\u0000-\\u001f\\u007f]/.test(nextCursor)) return json({error:"Use resource_type=image or raw and a valid cursor returned by Cloudinary."},400);
       try {
         const remoteUrl=new URL("https://api.cloudinary.com/v1_1/"+encodeURIComponent(env.CLOUDINARY_CLOUD_NAME)+"/resources/"+resourceType+"/upload");
         remoteUrl.searchParams.set("prefix","sohel-consulting/");
