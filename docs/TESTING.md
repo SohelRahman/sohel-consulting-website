@@ -388,3 +388,33 @@ Media deletion returns HTTP 409 and lists the matching source/record labels when
 - [ ] Confirm the current course's own syllabus field does not block its syllabus removal.
 - [ ] Confirm the Admin recovery action reports blocked items separately from failed and completed items.
 - [ ] Review repository static files and external embeds for references not represented in D1.
+
+
+## Cloudinary deletion reservations and database write guards — 2026-11-22
+
+Migration `0015_cloudinary_reference_locks.sql` adds database triggers across all database-managed content stores:
+- `site_content`
+- `cms_content`
+- `cms_static_content_versions`
+- `pages`
+- `page_styles`
+- `courses`
+
+While a Cloudinary deletion journal row is `pending` or `failed`, these triggers reject inserts/updates that would introduce the reserved public ID into the corresponding content fields. This prevents content from newly referencing an asset while deletion recovery is outstanding. The reservation is released when the journal row is marked `completed` or safely removed before Cloudinary deletion begins.
+
+Media and syllabus deletion now insert the pending journal row, then repeat the full reference scan before contacting Cloudinary. If the second scan finds a reference or cannot complete, the pending journal row is removed and the remote deletion is cancelled. This closes the prior check-then-delete window for application-managed writes once migration 0015 is applied.
+
+### Limitations and operational dependency
+
+- Apply migration 0015 to Preview before deploying the Worker code that relies on its database triggers.
+- Existing references are still discovered by the Worker scan; the triggers prevent new references during a pending/failed deletion. This is a database write-guard, not a fully normalized asset-reference registry.
+- Direct external database writes that bypass D1 triggers are not covered. Hard-coded source references and third-party systems remain outside the D1 content model.
+- Preview acceptance and concurrency tests remain pending. Production remains untouched.
+
+### Additional Preview acceptance
+- [ ] Apply migration 0015 and confirm all 11 Cloudinary lock triggers exist.
+- [ ] Create a pending deletion journal row in a disposable Preview test case, then verify inserts/updates containing its public ID are rejected in each protected table.
+- [ ] Verify ordinary content saves without a reserved public ID still succeed.
+- [ ] Verify a completed deletion journal row no longer blocks content writes.
+- [ ] Verify a failed deletion journal row continues to block new references until recovery completes or the row is safely cleared.
+- [ ] Exercise concurrent content save and deletion requests; confirm the database trigger prevents a new reference from being committed after the reservation is established.
