@@ -288,3 +288,19 @@ This audit did not:
 - Claim a fresh browser acceptance test.
 
 Update this document when a material requirement, decision, architecture change, migration, release or verified acceptance result occurs. Add the date, commit/run reference and environment, and clearly state whether evidence is user-reported, repository-derived or independently verified.
+
+
+## 2026-11-22 — Preview audit and Admin diagnostic follow-up
+
+### Independently verified
+
+- Read-only Preview D1 audit workflow run `45024256326` completed successfully on `current-focus-development`.
+- Cloudflare token validation succeeded and Preview D1 identity matched `consulting-preview-db`, ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+- Remote migration listing reported only `0013_quotation_response_tokens.sql` as pending. No migration was applied.
+- The three Admin diagnostic workflows were inspected. Each has an incorrectly escaped JavaScript regex for token whitespace normalization; the intended expression is `/\\s+/g`. These workflow files have not been changed and their live diagnostic runs remain unverified.
+
+### Current boundary
+
+- Migration 0013 remains pending on Preview and requires explicit approval before application.
+- Admin diagnostic workflow corrections require explicit authorization.
+- No Preview deployment, Production operation, `main` modification, branch reconciliation or PR merge was performed.
