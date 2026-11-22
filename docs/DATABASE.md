@@ -51,3 +51,15 @@ A dedicated GitHub Actions workflow is available at
 
 The read-only Preview audit completed successfully on 2026-11-22 (GitHub Actions run 3, commit `b74761d0abaa740c51bd072f0918b795872e513d`). It verified the Cloudflare API token and the dedicated Preview database `consulting-preview-db` (ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`), then ran Wrangler 4.160.1 `d1 migrations list --remote`. Wrangler reported only `0013_quotation_response_tokens.sql` under “Migrations to be applied”; migrations 0001–0012 were not listed as pending. The workflow's read-only safety guard also passed. Earlier runs failed because the original guard matched its own literal search text; the guard was corrected on both `current-focus-development` and `main`. No migration was applied. Production remains out of scope.
 
+## Migration 0013 SQL and application compatibility review
+
+Reviewed `migrations/0013_quotation_response_tokens.sql`, the quotation response handlers in `src/worker.js`, `quote-response.html`, and the existing `scripts/test-quotation-response.mjs` contract test.
+
+- The migration is additive: it creates `quotation_response_tokens` and two lookup/expiry indexes; it does not alter or backfill existing quotation or registration rows.
+- `quote_id` is required and references `quotations(id)` with `ON DELETE CASCADE`; `token_hash` is required and unique. The expiry, used, revoked, and created timestamps support the lifecycle used by the Worker.
+- The Worker creates a 32-byte cryptographically random bearer token, stores only its SHA-256 hash, and sends the raw token in the URL fragment. The response page removes the fragment from browser history before making same-origin POST requests.
+- The endpoint checks same-origin requests, rate-limits attempts, checks token expiry/revocation/use and quotation status, and batches token consumption with quotation/registration state changes. Acceptance sets registration approval and payment pending; it does not confirm enrollment or payment.
+- Re-issuing a response link revokes prior unused tokens before inserting the new token in a D1 batch.
+- The existing contract test checks these code-level invariants, including token handling, origin checks, rate limiting, response-page behavior, and migration structure.
+
+**Review outcome:** no blocking SQL/application incompatibility was identified by static review. This is not a live integration test. It does not prove the migration has been applied, nor does it test real concurrent requests, token expiry at runtime, or the complete learner journey against Preview. Migration 0013 remains pending on Preview. Do not apply it until the separate migration-application approval is obtained. Production remains out of scope.
