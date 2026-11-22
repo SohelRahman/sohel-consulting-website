@@ -164,3 +164,10 @@
 - Updated the operational handover to point to the master history and preserve the release blockers.
 - Audit only: no branch reconciliation, merge, deployment, migration, secret access or Production change.
 - GitHub compare at audit time reported `current-focus-development` diverged from `main` (558 ahead, 12 behind). This requires a separate reviewed release plan.
+
+
+## 2026-11-22 — Preview D1 and Admin diagnostics follow-up
+
+- Reconfirmed the successful read-only Preview D1 migration audit (GitHub Actions run `45024256326`): Preview database identity matched the expected ID and migration `0013_quotation_response_tokens.sql` was the only pending migration.
+- Re-inspected all three Admin diagnostic workflows and found an incorrectly escaped token whitespace-normalization regex in each. The intended JavaScript expression is `replace(/\\s+/g, "")`; the current workflows use `replace(/\\\\s+/g, "")`. They remain unmodified pending authorization.
+- Admin diagnostic workflow execution remains pending. No migration was applied; no Preview deployment, Production change, `main` change or PR merge was performed.
