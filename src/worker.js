@@ -682,6 +682,10 @@ async function handleApi(request, env) {
         const last=assetParts.length-1,extensionIndex=assetParts[last].lastIndexOf(".");if(extensionIndex>0&&/^[a-zA-Z0-9]+$/.test(assetParts[last].slice(extensionIndex+1)))assetParts[last]=assetParts[last].slice(0,extensionIndex);publicId=assetParts.join("/");
         if(!publicId.startsWith("sohel-consulting/")||!/^[a-zA-Z0-9_./-]+$/.test(publicId)||publicId.split("/").some(part=>!part||part==="."||part===".."))throw new Error();
       } catch { return json({error:"The saved syllabus URL is not a valid Cloudinary asset in the approved folder. The course record was not changed."},400); }
+      let references;
+      try { references=await findCloudinaryReferences(env,publicId,course.syllabus_file_url,course.id); }
+      catch { return json({error:"Could not verify whether this syllabus asset is still used elsewhere. Deletion was cancelled."},503); }
+      if (references.length) return json({error:"This syllabus asset is also referenced by other website content. Remove or replace those references before deleting it.",references},409);
       const operationId=id();
       try {
         await env.DB.prepare("INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,previous_url,status) VALUES (?,?, 'course_syllabus',?,?,'pending')")
