@@ -1,3 +1,10 @@
+## 2026-11-22 — Administrator password hashing upgrade
+- Added a shared password-hashing helper using PBKDF2-HMAC-SHA-256 with a 600,000-iteration current work factor and a fresh 16-byte random salt for each hash.
+- Retained verification support for existing 100,000-iteration hashes. After successful login, legacy hashes are upgraded using a conditional database update so a concurrent password change is not overwritten.
+- New bootstrap, account-creation, password-reset and self-service password-change hashes use the current work factor.
+- Added password-hash compatibility tests and included them in the development CI workflow; updated the RBAC source-contract checks and testing documentation.
+- Source changes are limited to `current-focus-development`. No password values, stored hashes, Preview/Production data or secrets were accessed or changed. Functional and Preview runtime testing remain pending.
+
 ## 2026-11-22 — Branch divergence and Preview workflow review
 - Recompared `current-focus-development` with `main`: development is 575 commits ahead and 14 commits behind; the branches remain diverged at merge base `5260b56751f2e1d1a946d619b2d8f68dd633c2fd`.
 - Reviewed the 14-commit main-side difference. The changed-file comparison identifies six Preview/Cloudflare workflow files; five are byte-identical on both branches. The remaining file, `.github/workflows/migrate-preview-d1.yml`, differs: `main` retains the invalid single-bracket Preview D1 parser, while development contains the reviewed double-bracket parser fix.
