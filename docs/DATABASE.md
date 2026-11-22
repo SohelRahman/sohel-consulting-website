@@ -49,5 +49,5 @@ A dedicated GitHub Actions workflow is available at
 - It contains no migration apply command and does not alter the database.
 - Its successful completion and output are required before recording the live Preview migration ledger as verified.
 
-The workflow has been committed, but its first live run has not yet been performed. Therefore, no current Preview applied/pending migration counts are asserted here. Production remains out of scope.
+The first live read-only Preview audit ran on 2026-11-22 against the verified database `consulting-preview-db` (ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`). Wrangler 4.160.1 reported `0013_quotation_response_tokens.sql` under “Migrations to be applied.” This establishes migration 0013 as pending; by Wrangler's migration-list output, migrations 0001–0012 are not listed as pending. The remote list step succeeded. The overall workflow run initially failed only because the final safety-check grep matched its own literal search pattern (a false positive); that guard was corrected on both `current-focus-development` and `main`. A fresh run is required to obtain a fully green workflow after the guard correction. No migration was applied. Production remains out of scope.
 
