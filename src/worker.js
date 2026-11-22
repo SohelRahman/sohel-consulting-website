@@ -563,10 +563,10 @@ async function handleApi(request, env) {
         if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
         const body=await request.json().catch(()=>null);
         if(body?.action==="start"){
-          const now=Date.now();
           await env.DB.prepare("UPDATE cloudinary_inventory_scans SET status='stale',last_error='Scan expired after 24 hours of inactivity.',updated_at=CURRENT_TIMESTAMP WHERE status='running' AND updated_at < datetime('now','-24 hours')").run();
           const active=await env.DB.prepare("SELECT id FROM cloudinary_inventory_scans WHERE status='running' ORDER BY created_at DESC LIMIT 1").first();
           if(active)return json({error:"A scan is already running.",scan_id:active.id},409);
+          await env.DB.prepare("DELETE FROM cloudinary_inventory_scans WHERE id NOT IN (SELECT id FROM cloudinary_inventory_scans ORDER BY created_at DESC LIMIT 5)").run();
           const newId=id();
           await env.DB.prepare("INSERT INTO cloudinary_inventory_scans (id,status,created_at,updated_at) VALUES (?,'running',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)").bind(newId).run();
           return json({scan_id:newId,status:"running"});
@@ -618,8 +618,15 @@ async function handleApi(request, env) {
             env.DB.prepare("SELECT syllabus_file_url AS secure_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' LIMIT 10001").all()
           ]);
           const local=new Map();
-          for(const row of [...(media.results||[]),...(uploads.results||[])])if(row.public_id)local.set(row.public_id,{public_id:row.public_id,secure_url:row.secure_url||null});
-          for(const row of syllabi.results||[]){const publicId=cloudinaryPublicIdFromUrl(row.secure_url,env.CLOUDINARY_CLOUD_NAME);if(publicId)local.set(publicId,{public_id:publicId,secure_url:row.secure_url});}
+          for(const row of [...(media.results||[]),...(uploads.results||[])]){
+            const resourceType=row.secure_url?.includes("/raw/upload/")?"raw":row.secure_url?.includes("/image/upload/")?"image":null;
+            if(row.public_id&&resourceType)local.set(row.public_id,{public_id:row.public_id,secure_url:row.secure_url,resource_type:resourceType});
+          }
+          for(const row of syllabi.results||[]){
+            const publicId=cloudinaryPublicIdFromUrl(row.secure_url,env.CLOUDINARY_CLOUD_NAME);
+            const resourceType=row.secure_url?.includes("/raw/upload/")?"raw":row.secure_url?.includes("/image/upload/")?"image":null;
+            if(publicId&&resourceType)local.set(publicId,{public_id:publicId,secure_url:row.secure_url,resource_type:resourceType});
+          }
           const overLimit=[media.results,uploads.results,syllabi.results].some(rows=>(rows||[]).length>=10001);
           if(!overLimit){
             const remoteRows=await env.DB.prepare("SELECT public_id,resource_type FROM cloudinary_inventory_assets WHERE scan_id=? LIMIT 50001").bind(scanId).all();
@@ -629,7 +636,7 @@ async function handleApi(request, env) {
             }else{
               const remoteSet=new Set((remoteRows.results||[]).map(row=>row.resource_type+":"+row.public_id));
               for(const item of local.values()){
-                const resourceType=item.secure_url?.includes("/raw/upload/")?"raw":"image";
+                const resourceType=item.resource_type;
                 if(!remoteSet.has(resourceType+":"+item.public_id)){missing.counts[resourceType]++;if(missing.items.length<500)missing.items.push({public_id:item.public_id,resource_type:resourceType});}
               }
               missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
