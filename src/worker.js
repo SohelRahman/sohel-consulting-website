@@ -556,12 +556,13 @@ async function handleApi(request, env) {
       }
     }
     if (path === "/api/admin/media/inventory" && (method === "GET" || method === "POST")) {
+      if (!["GET","POST"].includes(method)) return json({error:"Method not allowed."},405);
       if (method === "POST") {
         if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
       }
       if (!(await rateLimit(env,request,"media-remote-inventory",60,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
       const scanId=url.searchParams.get("scan_id")||"";
-      if (method !== "GET") {
+      if (method === "POST") {
         if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
         const body=await request.json().catch(()=>null);
         if(body?.action==="start"){
@@ -615,22 +616,25 @@ async function handleApi(request, env) {
         let missing={available:false,items:[],counts:{image:0,raw:0},truncated:false,scope:""};
         if(scan.status==="complete"){
           const [media,uploads,syllabi]=await Promise.all([
-            env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id LIKE 'sohel-consulting/%' LIMIT 10001").all(),
+            env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE instr(public_id,'sohel-consulting/')=1 LIMIT 10001").all(),
             env.DB.prepare("SELECT public_id,secure_url FROM cloudinary_upload_operations WHERE status<>'deleted' AND public_id LIKE 'sohel-consulting/%' LIMIT 10001").all(),
             env.DB.prepare("SELECT syllabus_file_url AS secure_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' LIMIT 10001").all()
           ]);
           const local=new Map();
+          let unclassifiedLocalRecords=0;
           for(const row of [...(media.results||[]),...(uploads.results||[])]){
             const resourceType=row.secure_url?.includes("/raw/upload/")?"raw":row.secure_url?.includes("/image/upload/")?"image":null;
             if(row.public_id&&resourceType)local.set(resourceType+":"+row.public_id,{public_id:row.public_id,secure_url:row.secure_url,resource_type:resourceType});
+            else if(row.public_id?.startsWith("sohel-consulting/"))unclassifiedLocalRecords++;
           }
           for(const row of syllabi.results||[]){
             const publicId=cloudinaryPublicIdFromUrl(row.secure_url,env.CLOUDINARY_CLOUD_NAME);
             const resourceType=row.secure_url?.includes("/raw/upload/")?"raw":row.secure_url?.includes("/image/upload/")?"image":null;
             if(publicId&&resourceType)local.set(resourceType+":"+publicId,{public_id:publicId,secure_url:row.secure_url,resource_type:resourceType});
+            else if(publicId)unclassifiedLocalRecords++;
           }
           const overLimit=[media.results,uploads.results,syllabi.results].some(rows=>(rows||[]).length>=10001);
-          if(!overLimit){
+          if(!overLimit && unclassifiedLocalRecords===0){
             const remoteRows=await env.DB.prepare("SELECT public_id,resource_type FROM cloudinary_inventory_assets WHERE scan_id=? LIMIT 50001").bind(scanId).all();
             if((remoteRows.results||[]).length>=50001){
               missing.truncated=true;
@@ -643,9 +647,9 @@ async function handleApi(request, env) {
               }
               missing.available=true;
               missing.truncated=missing.counts.image+missing.counts.raw>missing.items.length;
+              missing.scope="D1 media, upload-journal and course-syllabus records with a recognized sohel-consulting/ public ID; resource type inferred from stored Cloudinary URL.";
             }
-            missing.scope="D1 media, upload-journal and course-syllabus records with a recognized sohel-consulting/ public ID; resource type inferred from stored Cloudinary URL.";
-          }else{missing.truncated=true;missing.scope="Local record cap exceeded; missing-remote comparison withheld.";}
+          }else if(overLimit){missing.truncated=true;missing.scope="Local record cap exceeded; missing-remote comparison withheld.";}else{missing.truncated=true;missing.scope="One or more local Cloudinary records have an unknown resource type; missing-remote comparison withheld ("+unclassifiedLocalRecords+" unclassified record(s)).";}
         }
         return json({scan,missing,scope:"Cloudinary image and raw uploads under sohel-consulting/ only.",remote_assets:scan.status==="complete"?await env.DB.prepare("SELECT resource_type,COUNT(*) AS total FROM cloudinary_inventory_assets WHERE scan_id=? GROUP BY resource_type").bind(scanId).all().then(x=>x.results||[]):null});
       }
