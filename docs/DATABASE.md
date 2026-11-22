@@ -37,3 +37,17 @@ Before applying any migration, identify the exact target by database name and ID
 See [CMS Disposable D1 Test Progress — Stage 9A.8](CMS_DISPOSABLE_D1_TEST_PROGRESS_STAGE_9A8.md).
 
 The disposable migration 0001 and 0002 baselines are verified from user-supplied D1 Console outputs. Migration 0003's four homepage hero seed keys, content types, published flags, and `site_content` table DDL match committed migration 0003. Migrations 0004 and 0005 are verified from user-supplied D1 Console outputs, including the `pages` table and `idx_pages_status_slug` index. Migration 0006 is verified from user-supplied D1 Console outputs, including the `media_assets` table and `idx_media_assets_created` index. Migration 0007's `chat_conversations` table DDL is verified from user-supplied D1 Console output. The `chat_messages` table DDL, including its `ON DELETE CASCADE` foreign key, is verified from user-supplied D1 Console output. Migration 0007 is fully verified from user-supplied D1 Console outputs: both chat tables, the `ON DELETE CASCADE` foreign key, and both indexes. Migration 0008's `analytics_events` table DDL and all three indexes (`idx_analytics_events_created`, `idx_analytics_events_page`, `idx_analytics_events_visitor`) are verified from user-supplied D1 Console outputs. Migration 0009's `admin_users` table DDL and `idx_admin_users_role_active` index are verified from user-supplied D1 Console outputs. Migrations 0001–0009 are now reconstructed and verified against committed SQL on the disposable target. This manual process did not update the D1 migration ledger. Migration 0010 clean-start compatibility test passed on the confirmed disposable target based on user-supplied output: all five expected columns and definitions are present, course count remained 3, `discount_type` is populated for all three rows, and `syllabus_url` is NULL for all three. Next, test migration 0011's column addition and Cloudinary PDF URL transfer with synthetic data. CMS schema tests remain outstanding. Do not use the general Wrangler migration workflow. Preview and Production remain out of scope.
+
+## Read-only Preview migration audit workflow
+
+A dedicated GitHub Actions workflow is available at
+`.github/workflows/audit-preview-d1-migrations.yml`.
+
+- It can be started manually from the `current-focus-development` branch in GitHub Actions.
+- It verifies the Cloudflare API token and checks the configured Preview D1 ID against the expected Preview ID.
+- It retrieves the remote migration list with `wrangler d1 migrations list --remote`.
+- It contains no migration apply command and does not alter the database.
+- Its successful completion and output are required before recording the live Preview migration ledger as verified.
+
+The workflow has been committed, but its first live run has not yet been performed. Therefore, no current Preview applied/pending migration counts are asserted here. Production remains out of scope.
+
