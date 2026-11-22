@@ -418,3 +418,28 @@ Media and syllabus deletion now insert the pending journal row, then repeat the 
 - [ ] Verify a completed deletion journal row no longer blocks content writes.
 - [ ] Verify a failed deletion journal row continues to block new references until recovery completes or the row is safely cleared.
 - [ ] Exercise concurrent content save and deletion requests; confirm the database trigger prevents a new reference from being committed after the reservation is established.
+
+
+## Cloudinary asset audit report — 2026-11-22
+
+The development branch adds a read-only Admin endpoint, `GET /api/admin/media/audit`, and a report panel in the Media Library.
+
+- Requires an authenticated session and the `media.view` permission; Admin users retain access through their full permission set.
+- Rate-limited to 20 requests per hour. Media results use bounded pagination (1–50 rows per page; page numbers 1–200).
+- Each returned registered Media Library asset is checked against the database reference sources used by deletion protection. Records with references are labelled `reference_found`; records with no discovered references are labelled `potential_orphan_candidate`.
+- Includes attached course syllabus URLs (up to 100 records) and counts of pending, failed and completed deletion-journal rows.
+- Cloudinary remote existence is explicitly unknown. The report does not call Cloudinary's Admin API, delete assets, or mutate D1.
+- Reference results are samples capped by the existing per-source query limits. A potential orphan is not proof that an asset is unused; hard-coded source references, external uses, unregistered uploads and other copies are outside the report.
+
+### Preview acceptance required
+
+- [ ] Apply migrations 0014 and 0015 to Preview before deploying the corresponding Worker.
+- [ ] Verify the endpoint is available to Admin and accounts with `media.view`, but unavailable to accounts without that permission.
+- [ ] Verify session enforcement and the 20-per-hour rate limit.
+- [ ] Verify page-size/page-number bounds, empty inventory and multiple-page inventory.
+- [ ] Verify references in supported database sources classify an asset as `reference_found`.
+- [ ] Verify an unreferenced registered asset is labelled only as a potential orphan candidate.
+- [ ] Verify course syllabus rows and deletion-journal counts are accurate.
+- [ ] Confirm the report performs no D1 writes and makes no Cloudinary deletion or remote-existence claim.
+
+Source-contract checks do not establish live Preview behavior. No Preview migration or deployment is authorized by this implementation.
