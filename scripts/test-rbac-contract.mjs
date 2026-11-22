@@ -6,6 +6,7 @@ const migration = fs.readFileSync("migrations/0009_admin_rbac.sql", "utf8");
 const adminHtml = fs.readFileSync("admin.html", "utf8");
 const deletionMigration = fs.readFileSync("migrations/0014_cloudinary_delete_operations.sql", "utf8");
 const referenceLockMigration = fs.readFileSync("migrations/0015_cloudinary_reference_locks.sql", "utf8");
+const uploadJournalMigration = fs.readFileSync("migrations/0016_cloudinary_upload_operations.sql", "utf8");
 
 const permissions = [
   "dashboard.view",
@@ -64,6 +65,12 @@ check("Cloudinary audit uses bounded pagination and labels unreferenced assets a
 check("Cloudinary audit reports syllabus URLs and deletion-journal states without remote-existence claims", worker.includes("FROM courses WHERE syllabus_file_url IS NOT NULL") && worker.includes("GROUP BY status") && worker.includes('remote_existence:"unknown"'));
 check("Admin Media Library exposes the read-only audit and its limitations", adminHtml.includes("media-audit") && adminHtml.includes("Run read-only asset audit") && adminHtml.includes("Cloudinary remote existence is not checked"));
 check("Admin asset audit provides previous/next pagination and displays capped-scan warnings", adminHtml.includes("media-audit-prev") && adminHtml.includes("media-audit-next") && adminHtml.includes("200-page API cap"));
+check("Cloudinary upload lifecycle migration records purpose, status and metadata", uploadJournalMigration.includes("public_id TEXT NOT NULL UNIQUE") && uploadJournalMigration.includes("purpose TEXT NOT NULL") && uploadJournalMigration.includes("needs_review") && uploadJournalMigration.includes("secure_url TEXT"));
+check("Cloudinary uploads are journaled before remote upload and uncertain outcomes are flagged", worker.includes("INSERT INTO cloudinary_upload_operations") && worker.indexOf("INSERT INTO cloudinary_upload_operations")<worker.indexOf("https://api.cloudinary.com/v1_1/") && worker.includes("status='needs_review'"));
+check("Media upload registration advances the lifecycle journal and failed registration remains reviewable", worker.includes("status='registered'") && worker.includes("media_assets registration failed"));
+check("Course syllabus upload lifecycle changes to attached after successful course create/update", worker.includes("status='attached'") && worker.includes("cloudinaryPublicIdFromUrl"));
+check("Cloudinary deletion finalization marks matching upload lifecycle records deleted", worker.includes("cloudinary_upload_operations SET status='deleted'"));
+check("Read-only audit reports upload lifecycle counts and unresolved upload records", worker.includes("upload_operations:{items:uploads,counts:uploadCounts") && adminHtml.includes("Uploads needing attention"));
 
 check("Cloudinary reference lookup scans legacy content, CMS drafts/publications/history, custom pages, styles and course syllabus URLs", ["site_content","cms_content","cms_static_content_versions","pages","page_styles","courses"].every(table=>worker.includes("FROM "+table)) && worker.includes("async function findCloudinaryReferences"));
 check("Media deletion refuses referenced assets before creating a deletion journal entry", worker.includes("findCloudinaryReferences(env,publicId)") && worker.includes("This image is still referenced by website content") && worker.indexOf("findCloudinaryReferences(env,publicId)")<worker.indexOf('INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,status) VALUES (?,?, \'media\''));
