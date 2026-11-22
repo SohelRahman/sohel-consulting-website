@@ -312,3 +312,26 @@ Update this document when a material requirement, decision, architecture change,
 - Each modified workflow was fetched after its commit and verified to contain the intended `/\\s+/g` expression and not the malformed expression.
 - Re-inspected the Preview migration workflow and confirmed its manual dispatch trigger, development-branch guard, exact Preview database ID guard, Production database exclusion, and Preview-only binding for the apply command.
 - The connected GitHub tools do not expose a workflow-dispatch operation. The migration workflow has therefore not been started, and migration 0013 remains pending. No migration or Production operation is claimed.
+
+
+## 2026-11-22 — Preview Admin operational checkpoint; remaining testing deferred
+
+### Preview database and diagnostics
+- The guarded Preview D1 migration workflow completed successfully (workflow run #8) on `current-focus-development`. The visible verification output stated `No migrations to apply!`. The supplied screenshots did not show the complete migration ledger, so retain this evidence qualification when referring to individual migration filenames.
+- All three corrected read-only Admin diagnostic workflows completed successfully.
+- Verified Preview D1 identity: `consulting-preview-db`, ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
+- Confirmed `admin_users`, `audit_logs` and `rate_limits` exist; the Admin account count was 1.
+- PRAGMA inspection returned the expected observed columns for all three tables. Diagnostic queries made no database changes and wrote zero rows.
+
+### Browser acceptance (user-reported)
+- User opened the Preview Admin page and reported that login worked.
+- User confirmed the Admin dashboard opened fully with all menu items visible.
+- User reported that Website Content worked perfectly.
+- These are user-reported browser checks, not independently captured browser automation results.
+
+### User's testing decision and next action
+- The user explicitly requested that further testing be done later and that documentation be updated now.
+- Pause additional functional testing. Do not keep asking the user to test Courses or other modules in this phase.
+- Preserve the remaining acceptance checklist for a later testing session: courses (discounts and syllabus), quotations and learner response security, registrations, roles/permissions and session revocation, payment/email integrations, bilingual/public rendering, and security verification including the stated OWASP ASVS Level 2 target.
+- Do not describe the entire project as complete. The Preview Admin login/dashboard and Website Content have been reported working; other modules and formal security/release checks remain unverified.
+- Production and `main` remain untouched. No Production deployment, merge, rebase or branch reconciliation was performed.
