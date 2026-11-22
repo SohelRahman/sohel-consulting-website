@@ -29,3 +29,8 @@ CREATE TABLE IF NOT EXISTS cloudinary_inventory_assets (
 );
 CREATE INDEX IF NOT EXISTS idx_cloudinary_inventory_assets_public_id
   ON cloudinary_inventory_assets(scan_id, public_id);
+
+-- Prevent concurrent start requests from creating multiple active scans.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cloudinary_inventory_one_running_scan
+  ON cloudinary_inventory_scans(status)
+  WHERE status = 'running';
