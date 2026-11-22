@@ -557,12 +557,10 @@ async function handleApi(request, env) {
     }
     if (path === "/api/admin/media/inventory") {
       if (!["GET","POST"].includes(method)) return json({error:"Method not allowed."},405);
-      if (method === "POST") {
-        if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      }
       if (!(await rateLimit(env,request,"media-remote-inventory",60,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
       const scanId=url.searchParams.get("scan_id")||"";
       if (method === "POST") {
+        if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
         if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) return json({error:"Cloudinary Admin API is not configured."},503);
         const body=await request.json().catch(()=>null);
         if(body?.action==="start"){
