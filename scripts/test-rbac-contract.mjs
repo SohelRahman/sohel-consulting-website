@@ -5,6 +5,7 @@ const worker = fs.readFileSync("src/worker.js", "utf8");
 const migration = fs.readFileSync("migrations/0009_admin_rbac.sql", "utf8");
 const adminHtml = fs.readFileSync("admin.html", "utf8");
 const deletionMigration = fs.readFileSync("migrations/0014_cloudinary_delete_operations.sql", "utf8");
+const referenceLockMigration = fs.readFileSync("migrations/0015_cloudinary_reference_locks.sql", "utf8");
 
 const permissions = [
   "dashboard.view",
@@ -63,6 +64,11 @@ check("Cloudinary reference lookup scans legacy content, CMS drafts/publications
 check("Media deletion refuses referenced assets before creating a deletion journal entry", worker.includes("findCloudinaryReferences(env,publicId)") && worker.includes("This image is still referenced by website content") && worker.indexOf("findCloudinaryReferences(env,publicId)")<worker.indexOf('INSERT INTO cloudinary_delete_operations (id,public_id,target_type,target_id,status) VALUES (?,?, \'media\''));
 check("Course syllabus deletion checks for references outside its own course", worker.includes("findCloudinaryReferences(env,publicId,course.id)") && worker.includes("This syllabus asset is also referenced by other website content"));
 check("Deletion recovery rechecks asset references and reports blocked operations", worker.includes("findCloudinaryReferences(env,operation.public_id") && worker.includes('status:"blocked"') && adminHtml.includes("Blocked by active references"));
+
+check("Cloudinary reference-lock migration installs write guards for every database-managed content store", ["site_content","cms_content","cms_static_content_versions","pages","page_styles","courses"].every(table=>referenceLockMigration.includes("ON "+table)) && (referenceLockMigration.match(/CREATE TRIGGER IF NOT EXISTS/g)||[]).length===11);
+check("Reference-lock triggers reject writes that introduce assets with pending or failed deletion operations", (referenceLockMigration.match(/status IN \\(\'pending\',\'failed\'\\)/g)||[]).length>=11 && referenceLockMigration.includes("RAISE(ABORT,'Cloudinary asset is pending deletion')"));
+check("Media and syllabus deletion reserve the asset then recheck references before calling Cloudinary", worker.includes("DELETE FROM cloudinary_delete_operations WHERE id=? AND status='pending'") && worker.indexOf("references=await findCloudinaryReferences(env,publicId)")<worker.indexOf("const result=await destroyCloudinaryAsset(env,publicId)"));
+
 
 check("English and Bangla course detail pages display reference and uploaded syllabus links separately", /course-reference-link/.test(fs.readFileSync("course.html","utf8")) && /course-file-link/.test(fs.readFileSync("course.html","utf8")) && /course-reference-link/.test(fs.readFileSync("bn/course.html","utf8")) && /course-file-link/.test(fs.readFileSync("bn/course.html","utf8")));
 check("Course syllabus file URL has a dedicated migration and is persisted by create and update APIs", /ALTER TABLE courses ADD COLUMN syllabus_file_url TEXT/.test(fs.readFileSync("migrations/0011_course_syllabus_file_url.sql","utf8")) && /syllabus_file_url/.test(worker));
