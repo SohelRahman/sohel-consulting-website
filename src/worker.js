@@ -542,12 +542,16 @@ async function handleApi(request, env) {
         }
         const syllabusCount=await env.DB.prepare("SELECT COUNT(*) AS total FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>''").first();
         const {results:syllabi=[]}=await env.DB.prepare("SELECT id AS course_id,title_en,syllabus_file_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' ORDER BY title_en LIMIT 100").all();
+        const {results:uploads=[]}=await env.DB.prepare("SELECT id,public_id,purpose,status,secure_url,bytes,format,last_error,created_at,updated_at FROM cloudinary_upload_operations WHERE status IN ('pending','uploaded','failed','needs_review') ORDER BY created_at DESC LIMIT 100").all();
+        const uploadCountResult=await env.DB.prepare("SELECT status,COUNT(*) AS total FROM cloudinary_upload_operations GROUP BY status").all();
+        const uploadCounts={pending:0,uploaded:0,registered:0,attached:0,failed:0,needs_review:0,deleted:0};
+        for(const row of uploadCountResult.results||[])if(Object.hasOwn(uploadCounts,row.status))uploadCounts[row.status]=Number(row.total||0);
         const {results:journal=[]}=await env.DB.prepare("SELECT status,COUNT(*) AS total FROM cloudinary_delete_operations GROUP BY status").all();
         const journalCounts={pending:0,failed:0,completed:0};
         for (const row of journal) if (Object.hasOwn(journalCounts,row.status)) journalCounts[row.status]=Number(row.total||0);
-        return json({generated_at:new Date().toISOString(),scope:"Database-registered Media Library assets plus attached course syllabus URLs. Cloudinary remote existence is not checked.",media:{items:audited,total,page:requestedPage,page_size:requestedLimit,total_pages:Math.max(1,Math.min(200,Math.ceil(total/requestedLimit))),truncated:total>200*requestedLimit},syllabi:{items:syllabi,total:Number(syllabusCount?.total||0),limit:100,truncated:Number(syllabusCount?.total||0)>100},deletion_journal:journalCounts,summary:{registered_media_assets:total,potential_orphan_candidates:audited.filter(x=>x.classification==="potential_orphan_candidate").length,media_assets_with_references:audited.filter(x=>x.classification==="reference_found").length,syllabus_records_returned:syllabi.length}});
+        return json({generated_at:new Date().toISOString(),scope:"Database-registered Media Library assets plus attached course syllabus URLs. Cloudinary remote existence is not checked.",media:{items:audited,total,page:requestedPage,page_size:requestedLimit,total_pages:Math.max(1,Math.min(200,Math.ceil(total/requestedLimit))),truncated:total>200*requestedLimit},syllabi:{items:syllabi,total:Number(syllabusCount?.total||0),limit:100,truncated:Number(syllabusCount?.total||0)>100},upload_operations:{items:uploads,counts:uploadCounts,returned:uploads.length,limit:100,truncated:uploads.length===100},deletion_journal:journalCounts,summary:{registered_media_assets:total,potential_orphan_candidates:audited.filter(x=>x.classification==="potential_orphan_candidate").length,media_assets_with_references:audited.filter(x=>x.classification==="reference_found").length,syllabus_records_returned:syllabi.length,upload_operations_needing_attention:uploads.length}});
       } catch {
-        return json({error:"Asset audit could not complete. Check that migrations 0006 and 0014 are applied and retry."},503);
+        return json({error:"Asset audit could not complete. Check that migrations 0006, 0014 and 0016 are applied and retry."},503);
       }
     }
     if (path === "/api/admin/media/delete" && method === "POST") {
@@ -728,6 +732,8 @@ async function handleApi(request, env) {
         await env.DB.prepare("INSERT INTO courses (id,slug,title_en,title_bn,summary_en,summary_bn,pricing_type,fixed_fee_minor,currency,discount_type,discount_value,discount_starts_at,discount_ends_at,syllabus_url,syllabus_file_url,active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1)")
           .bind(courseId,slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),["fixed","custom","both"].includes(data.pricingType)?data.pricingType:"both",fixedFee,"BDT",discountType,discountValue,discountStart,discountEnd,safeSyllabus,safeSyllabusFile).run();
       } catch { return json({error:"Could not create course. Check whether the URL slug is already in use."},409); }
+      const uploadedSyllabusId=safeSyllabusFile?cloudinaryPublicIdFromUrl(safeSyllabusFile,env.CLOUDINARY_CLOUD_NAME):"";
+      if(uploadedSyllabusId)await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='attached',updated_at=CURRENT_TIMESTAMP WHERE public_id=? AND purpose='syllabus' AND status IN ('uploaded','attached')").bind(uploadedSyllabusId).run();
       await audit(env,session.email,"course_created","course",courseId,slug);
       return json({ok:true,id:courseId},201);
     }
@@ -808,6 +814,8 @@ async function handleApi(request, env) {
           .bind(slug,title,clean(data.titleBn,140),clean(data.summary,1000),clean(data.summaryBn,1000),pricingType,fixedFee,discountType,discountValue,discountStart,discountEnd,safeSyllabus,safeSyllabusFile,courseEditMatch[1]).run();
         if (!result.meta.changes) return json({error:"Course not found."},404);
       } catch { return json({error:"Could not update course. Check whether the URL slug is already in use."},409); }
+      const uploadedSyllabusId=safeSyllabusFile?cloudinaryPublicIdFromUrl(safeSyllabusFile,env.CLOUDINARY_CLOUD_NAME):"";
+      if(uploadedSyllabusId)await env.DB.prepare("UPDATE cloudinary_upload_operations SET status='attached',updated_at=CURRENT_TIMESTAMP WHERE public_id=? AND purpose='syllabus' AND status IN ('uploaded','attached')").bind(uploadedSyllabusId).run();
       await audit(env,session.email,"course_updated","course",courseEditMatch[1],slug);
       return json({ok:true});
     }
