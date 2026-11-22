@@ -1,3 +1,6 @@
+## 2026-11-22 — Cloudinary upload security review
+- Documented browser-only upload size checks, one-hour signature replay window, and client-supplied media metadata limitations. Remediation design remains pending.
+
 ## 2026-11-22 — Admin API mutation security audit
 - Audited all declared API mutation handlers for same-origin enforcement and added RBAC source-contract regression checks for mutation coverage and Admin API permission boundaries.
 
