@@ -287,3 +287,28 @@ This was a source review, not a penetration test or live Preview validation. Coo
 A static review of `src/worker.js` enumerated the declared POST, PUT, PATCH and DELETE handlers. Every enumerated handler contains a same-origin request check. Admin API authentication is applied before route dispatch; User-role requests require a mapped permission, while unknown/unmapped Admin API routes fail closed for User accounts. Account-management endpoints retain a separate Admin-only role check.
 
 Added RBAC source-contract assertions to guard these properties against regression. These assertions inspect source structure; they do not replace live cross-origin, role-boundary or CSRF testing. Functional Preview testing remains deferred until explicitly requested.
+
+
+## Cloudinary upload security source review — 2026-11-22
+
+Reviewed the Admin upload form and Worker handlers for media and course syllabus uploads/deletions.
+
+### Existing controls observed
+
+- Upload-signature issuance requires an authenticated Admin API session, same-origin request and the relevant media/course management permission.
+- Upload signatures bind the Cloudinary folder, allowed formats and timestamp.
+- The Worker applies hourly and daily limits to signature-issuance requests.
+- The Admin UI checks image size at 3 MB, PDF size at 10 MB, and allowed MIME types before uploading.
+- Media registration checks the Cloudinary host, configured cloud name, approved folder prefix, format allowlist, and basic metadata ranges.
+- Deletion is restricted to the approved folder and requires a matching media-library record for Media Library deletion.
+
+### Limitations requiring remediation
+
+1. The 3 MB image and 10 MB PDF checks exist in browser code only. The Worker does not enforce those file-size limits. A caller can bypass browser validation and request an upload signature directly.
+2. Cloudinary documents timestamp-based upload signatures as valid for one hour. The same signed parameter set can therefore be replayed during that validity period; rate-limiting signature issuance does not guarantee the same limit on actual uploads.
+3. Cloudinary documents that upload presets do not provide a per-preset file-size limit. A true server-side size policy needs a different enforcement design, such as routing uploads through a server that validates the byte stream, or an applicable account-level Cloudinary upload limit. Verify Cloudinary account capabilities and operational cost before choosing.
+4. Media registration accepts client-supplied metadata after structural checks. The source review did not establish cryptographic verification that the submitted metadata corresponds to the uploaded Cloudinary asset.
+
+### Status
+
+These are source-review findings, not observed exploitation or live upload tests. Do not treat the browser's file-size checks or signature-request quotas as server-enforced upload limits. Remediation and live Preview verification are pending. Production resources and data were not changed.
