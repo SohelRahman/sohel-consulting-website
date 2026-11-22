@@ -617,7 +617,7 @@ async function handleApi(request, env) {
         if(scan.status==="complete"){
           const [media,uploads,syllabi]=await Promise.all([
             env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE instr(public_id,'sohel-consulting/')=1 LIMIT 10001").all(),
-            env.DB.prepare("SELECT public_id,secure_url FROM cloudinary_upload_operations WHERE status<>'deleted' AND public_id LIKE 'sohel-consulting/%' LIMIT 10001").all(),
+            env.DB.prepare("SELECT public_id,secure_url FROM cloudinary_upload_operations WHERE status<>'deleted' AND instr(public_id,'sohel-consulting/')=1 LIMIT 10001").all(),
             env.DB.prepare("SELECT syllabus_file_url AS secure_url FROM courses WHERE syllabus_file_url IS NOT NULL AND syllabus_file_url<>'' LIMIT 10001").all()
           ]);
           const local=new Map();
