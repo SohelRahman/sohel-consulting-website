@@ -1,4 +1,5 @@
 import { calculateCoursePrice, validateCourseDiscount } from "./course-pricing.js";
+import { hashPassword, verifyPassword, needsPasswordRehash } from "./password-hash.js";
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
 });
@@ -38,20 +39,6 @@ const ADMIN_PERMISSIONS = [
   "analytics.view","chat.view","chat.reply"
 ];
 const ALL_ADMIN_PERMISSIONS = new Set(ADMIN_PERMISSIONS);
-async function passwordHash(password, saltValue) {
-  const salt=saltValue||b64url(crypto.getRandomValues(new Uint8Array(16)));
-  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
-  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt:fromB64url(salt),iterations:100000,hash:"SHA-256"},key,256);
-  return "pbkdf2$100000$"+salt+"$"+b64url(bits);
-}
-async function passwordVerify(password, stored) {
-  try {
-    const [scheme,rounds,salt,expected]=String(stored||"").split("$");
-    if(scheme!=="pbkdf2" || Number(rounds)!==100000 || !salt || !expected)return false;
-    const actual=await passwordHash(password,salt);
-    return actual===stored;
-  } catch { return false; }
-}
 function permissionsFor(user) {
   if(user?.role==="admin")return ADMIN_PERMISSIONS;
   try {
@@ -358,13 +345,18 @@ async function handleApi(request, env) {
     if(!emailOk(email)||password.length<1||password.length>256)return json({error:"Enter a valid email and password."},400);
     let user=await env.DB.prepare("SELECT id,email,full_name,role,password_hash,permissions_json,is_active,session_version FROM admin_users WHERE email=?").bind(email).first();
     if(!user && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && email===env.ADMIN_EMAIL.toLowerCase() && password===env.ADMIN_PASSWORD){
-      const userId=id(), hash=await passwordHash(password);
+      const userId=id(), hash=await hashPassword(password);
       await env.DB.prepare("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES (?,?,?,'admin',?,'[]',1)")
         .bind(userId,email,"Primary Administrator",hash).run();
       user=await env.DB.prepare("SELECT id,email,full_name,role,password_hash,permissions_json,is_active,session_version FROM admin_users WHERE id=?").bind(userId).first();
       await audit(env,email,"bootstrap_admin_created","admin_user",userId,"Initial administrator account provisioned");
     }
-    if(!user || !user.is_active || !(await passwordVerify(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
+    if(!user || !user.is_active || !(await verifyPassword(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
+    if(needsPasswordRehash(user.password_hash)){
+      const upgradedHash=await hashPassword(password);
+      await env.DB.prepare("UPDATE admin_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND password_hash=?")
+        .bind(upgradedHash,user.id,user.password_hash).run();
+    }
     await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(user.id).run();
     const token=await makeSession(user.id,user.email,user.session_version,env.SESSION_SECRET);
     return new Response(JSON.stringify({ok:true}),{headers:{
@@ -389,8 +381,8 @@ async function handleApi(request, env) {
       const data=await request.json().catch(()=>null),current=String(data?.currentPassword||""),next=String(data?.newPassword||"");
       if(next.length<12||next.length>256)return json({error:"Your new password must contain at least 12 characters."},400);
       const account=await env.DB.prepare("SELECT password_hash FROM admin_users WHERE id=?").bind(user.id).first();
-      if(!account || !(await passwordVerify(current,account.password_hash)))return json({error:"Current password is incorrect."},401);
-      const hash=await passwordHash(next),nextVersion=Number(user.session_version)+1;
+      if(!account || !(await verifyPassword(current,account.password_hash)))return json({error:"Current password is incorrect."},401);
+      const hash=await hashPassword(next),nextVersion=Number(user.session_version)+1;
       await env.DB.prepare("UPDATE admin_users SET password_hash=?,session_version=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(hash,nextVersion,user.id).run();
       await audit(env,user.email,"password_changed","admin_user",user.id,"Self-service password change");
       const renewed=await makeSession(user.id,user.email,nextVersion,env.SESSION_SECRET);
@@ -411,7 +403,7 @@ async function handleApi(request, env) {
         if(!emailOk(email)||!name||password.length<12||password.length>256)return json({error:"Provide a valid email, name and password of at least 12 characters."},400);
         if(role==="admin" && !isAdmin)return json({error:"Only an administrator can create an administrator account."},403);
         try{
-          const newId=id(),hash=await passwordHash(password);
+          const newId=id(),hash=await hashPassword(password);
           await env.DB.prepare("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES (?,?,?,?,?,?,1)")
             .bind(newId,email,name,role,hash,JSON.stringify(role==="admin"?[]:selected)).run();
           await audit(env,session.email,"admin_user_created","admin_user",newId,role);
@@ -435,7 +427,7 @@ async function handleApi(request, env) {
         const name=typeof data?.name==="string"?clean(data.name,120):null;
         const password=typeof data?.password==="string"?data.password:null;
         if(password!==null&&(password.length<12||password.length>256))return json({error:"A new password must contain at least 12 characters."},400);
-        const hash=password?await passwordHash(password):null;
+        const hash=password?await hashPassword(password):null;
         await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?")
           .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||(target.role==="admin"?[]:permissionsFor(target)))),hash,userMatch[1]).run();
         await audit(env,session.email,"admin_user_updated","admin_user",userMatch[1],JSON.stringify({role,is_active:!!active,password_reset:!!password}));
