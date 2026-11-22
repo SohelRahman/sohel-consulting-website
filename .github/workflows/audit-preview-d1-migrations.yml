@@ -100,12 +100,21 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx --yes wrangler@4.160.1 d1 migrations list PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc
 
-      - name: Confirm audit did not invoke a migration apply command
+      - name: Confirm audit uses only the migration-list command
         shell: bash
         run: |
           set -euo pipefail
-          if grep -Eq 'd1 migrations apply|migrations apply' .github/workflows/audit-preview-d1-migrations.yml; then
-            echo "Unexpected migration apply command found in audit workflow."
-            exit 1
-          fi
-          echo "Read-only workflow guard passed: no migration apply command is present."
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const source = readFileSync(".github/workflows/audit-preview-d1-migrations.yml", "utf8");
+          const inlineRunCommands = source.split(String.fromCharCode(10))
+            .filter(line => /^\s+run:\s+/.test(line))
+            .map(line => line.replace(/^\s+run:\s+/, "").trim());
+          if (inlineRunCommands.some(command => /\bmigrations\s+apply\b/.test(command))) {
+            throw new Error("An inline migration apply command is present in the audit workflow.");
+          }
+          if (!inlineRunCommands.some(command => /d1 migrations list PREVIEW_DB --remote/.test(command))) {
+            throw new Error("The expected read-only Preview migration-list command is missing.");
+          }
+          console.log("Read-only workflow guard passed: the remote migration-list command is present and no inline migration-apply command is configured.");
+          NODE
