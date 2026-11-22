@@ -258,3 +258,12 @@
 - Compares supported D1 media, upload-journal and syllabus records against the completed snapshot. Results are limited to the `sohel-consulting/` prefix and are not proof of complete external-reference coverage.
 - Added Admin controls to start, resume, refresh and advance persistent scans.
 - Added contract checks and Preview acceptance documentation. CI and Preview migration/deployment/runtime acceptance remain pending. No Production or `main` change was made.
+
+
+## 2026-11-22 — Cloudinary inventory reconciliation hardening
+
+- Explicitly rejects unsupported HTTP methods on the inventory route and retains same-origin checks for scan POST requests.
+- Replaced SQL LIKE prefix filters with literal SQLite prefix matching to avoid underscore wildcard behavior.
+- Withholds missing-remote comparison when in-scope local assets cannot be classified as image or raw.
+- Preserves specific comparison-withheld reasons in API output and Admin UI.
+- Added regression contract checks and documented the Preview-only rollout sequence and release gates. No migration, deployment, live Cloudinary scan or Production change was performed.
