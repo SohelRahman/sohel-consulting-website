@@ -330,3 +330,29 @@ The development branch now routes Media Library and course syllabus uploads thro
 ### Verification status
 
 These are implementation and source-contract changes only. CI must pass, then the Preview Worker must be deployed and the Admin upload workflows manually tested. Verify boundary sizes, MIME/content mismatches, upload errors, Media Library registration, syllabus save/edit/delete, and quota behavior. Do not treat source checks as proof of Cloudinary account behavior or live upload success. Production remains unchanged.
+
+
+## Cloudinary deletion journal and recovery — 2026-11-22
+
+Migration `0014_cloudinary_delete_operations.sql` adds a durable journal for Media Library and course syllabus deletion requests.
+
+- Each deletion is recorded in D1 as `pending` before calling Cloudinary.
+- Cloudinary deletion accepts both `ok` and `not found` as successful outcomes, making retries safe when the remote deletion succeeded but the Worker did not receive/retain the response.
+- Database finalization happens only after Cloudinary confirms deletion.
+- Failed remote calls or failed D1 finalization remain in the journal with attempt count and last error.
+- The Admin Media Library has a permission-protected recovery action that retries up to 20 pending/failed operations per request.
+- Course syllabus recovery stores the original URL and clears the course field conditionally, so a newer syllabus URL is not overwritten.
+- The recovery action is rate-limited and audited.
+
+### Preview acceptance required
+
+- [ ] Apply migration 0014 to Preview D1 before deploying the updated Worker.
+- [ ] Delete a Media Library image normally; verify both Cloudinary asset and D1 record are removed.
+- [ ] Simulate/induce a Cloudinary failure and verify a failed journal row is retained.
+- [ ] Retry recovery after a failed or ambiguous Cloudinary response; verify `not found` is treated idempotently and the D1 record is finalized.
+- [ ] Verify the recovery action is unavailable to accounts without `media.manage`.
+- [ ] Verify course syllabus deletion journals the prior URL and only clears the matching course field.
+- [ ] Verify a newer syllabus URL is not cleared by recovery of an older deletion.
+- [ ] Verify recovery processes no more than 20 rows per request and rate limits repeated attempts.
+
+These changes are source-level implementation only. Runtime recovery behavior is not yet verified. Do not deploy until migration 0014 is applied to Preview.
