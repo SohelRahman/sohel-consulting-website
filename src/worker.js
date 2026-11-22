@@ -555,7 +555,7 @@ async function handleApi(request, env) {
         return json({error:"Asset audit could not complete. Check that migrations 0006, 0014 and 0016 are applied and retry."},503);
       }
     }
-    if (path === "/api/admin/media/inventory" && (method === "GET" || method === "POST")) {
+    if (path === "/api/admin/media/inventory") {
       if (!["GET","POST"].includes(method)) return json({error:"Method not allowed."},405);
       if (method === "POST") {
         if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
