@@ -556,7 +556,9 @@ async function handleApi(request, env) {
       }
     }
     if (path === "/api/admin/media/inventory" && (method === "GET" || method === "POST")) {
-      if (method === "POST") { if (!sameOrigin(request)) return json({error:"Invalid request origin."},403); }
+      if (method === "POST") {
+        if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
+      }
       if (!(await rateLimit(env,request,"media-remote-inventory",60,60*60*1000))) return json({error:"Remote inventory limit reached. Please try again later."},429);
       const scanId=url.searchParams.get("scan_id")||"";
       if (method !== "GET") {
