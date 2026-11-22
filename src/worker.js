@@ -143,7 +143,7 @@ async function destroyCloudinaryAsset(env, publicId) {
   }
 }
 
-async function findCloudinaryReferences(env, publicId, secureUrl, excludeCourseId = "") {
+async function findCloudinaryReferences(env, publicId, excludeCourseId = "") {
   const needle=publicId;
   const queries=[
     ["Published/legacy website content","SELECT content_key AS label FROM site_content WHERE published=1 AND instr(content_value,?)>0 LIMIT 10",[needle]],
@@ -517,7 +517,7 @@ async function handleApi(request, env) {
       const existing=await env.DB.prepare("SELECT public_id,secure_url FROM media_assets WHERE public_id=?").bind(publicId).first();
       if (!existing) return json({error:"Image not found in the media library."},404);
       let references;
-      try { references=await findCloudinaryReferences(env,publicId,existing.secure_url); }
+      try { references=await findCloudinaryReferences(env,publicId); }
       catch { return json({error:"Could not verify whether this image is still used. Deletion was cancelled."},503); }
       if (references.length) return json({error:"This image is still referenced by website content. Remove or replace those references before deleting it.",references},409);
       const operationId=id();
@@ -548,7 +548,7 @@ async function handleApi(request, env) {
       const outcomes=[];
       for (const operation of results) {
         let references;
-        try { references=await findCloudinaryReferences(env,operation.public_id,"",operation.target_type==="course_syllabus"?operation.target_id:""); }
+        try { references=await findCloudinaryReferences(env,operation.public_id,operation.target_type==="course_syllabus"?operation.target_id:""); }
         catch {
           await env.DB.prepare("UPDATE cloudinary_delete_operations SET status='failed',attempts=attempts+1,last_error=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind("Could not verify asset references; deletion cancelled.",operation.id).run();
           outcomes.push({operation_id:operation.id,status:"failed",error:"Could not verify asset references; deletion was cancelled."});
@@ -683,7 +683,7 @@ async function handleApi(request, env) {
         if(!publicId.startsWith("sohel-consulting/")||!/^[a-zA-Z0-9_./-]+$/.test(publicId)||publicId.split("/").some(part=>!part||part==="."||part===".."))throw new Error();
       } catch { return json({error:"The saved syllabus URL is not a valid Cloudinary asset in the approved folder. The course record was not changed."},400); }
       let references;
-      try { references=await findCloudinaryReferences(env,publicId,course.syllabus_file_url,course.id); }
+      try { references=await findCloudinaryReferences(env,publicId,course.id); }
       catch { return json({error:"Could not verify whether this syllabus asset is still used elsewhere. Deletion was cancelled."},503); }
       if (references.length) return json({error:"This syllabus asset is also referenced by other website content. Remove or replace those references before deleting it.",references},409);
       const operationId=id();
