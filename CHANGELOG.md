@@ -138,3 +138,14 @@
 - Added RBAC source-contract assertions for both paths. CI and Preview live-session acceptance remain pending. No migration or Production change was made.
 
 - Development CI run `44638857897` passed all automated checks for the Admin session-revocation contract commit `7f40889ac5f053a16b8fb8320dc67a4d5f96b0b6`; live Preview session tests remain pending.
+
+
+## 2026-11-22 — Consolidated project history and audit baseline
+
+- Added `docs/MASTER_PROJECT_HISTORY.md`, consolidating available Website 1–4 conversation summaries, standing decisions, repository evidence, feature acceptance gaps, security review items and prioritized next steps.
+- Linked the master history from `README.md`.
+- Added the current audit baseline to `docs/CHATGPT_PROJECT_CONTEXT.md`, retaining dated historical notes and clarifying that the current Preview deployment and browser acceptance have not been independently confirmed.
+- Updated `docs/DATABASE.md` with the development branch's 13 migration files and explicit evidence limitations; prior user-reported D1 observations remain labeled as such.
+- Updated the operational handover to point to the master history and preserve the release blockers.
+- Audit only: no branch reconciliation, merge, deployment, migration, secret access or Production change.
+- GitHub compare at audit time reported `current-focus-development` diverged from `main` (558 ahead, 12 behind). This requires a separate reviewed release plan.
