@@ -63,3 +63,18 @@ Reviewed `migrations/0013_quotation_response_tokens.sql`, the quotation response
 - The existing contract test checks these code-level invariants, including token handling, origin checks, rate limiting, response-page behavior, and migration structure.
 
 **Review outcome:** no blocking SQL/application incompatibility was identified by static review. This is not a live integration test. It does not prove the migration has been applied, nor does it test real concurrent requests, token expiry at runtime, or the complete learner journey against Preview. Migration 0013 remains pending on Preview. Do not apply it until the separate migration-application approval is obtained. Production remains out of scope.
+
+
+## 2026-11-22 — Admin diagnostics and Preview verification follow-up
+
+The three Admin diagnostic workflows were inspected on `current-focus-development`:
+
+- `.github/workflows/diagnose-preview-admin-login.yml`
+- `.github/workflows/diagnose-preview-admin-login-schema.yml`
+- `.github/workflows/diagnose-preview-admin-schema.yml`
+
+All three normalize `CLOUDFLARE_API_TOKEN` with the JavaScript regex literal `/\\\\s+/g`, which matches a literal backslash followed by `s`, rather than whitespace. The intended expression is `/\\s+/g`. These workflows should not be relied on until corrected and revalidated. No workflow files were changed in this follow-up.
+
+Their database inspection steps use table metadata, read-only SELECTs and SQL `EXPLAIN` statements. The workflows are guarded to `current-focus-development` and construct a dedicated Preview D1 binding. Their execution has not been confirmed in this follow-up.
+
+The Preview migration audit remains the authoritative live ledger evidence: run `45024256326` verified Preview D1 identity and reported only `0013_quotation_response_tokens.sql` as pending. Migration 0013 has not been applied. Production and `main` remain untouched.
