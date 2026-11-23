@@ -1,3 +1,8 @@
+## 2026-11-23 — Bulk CMS initialization recovery CI pass
+- Development CI run `45149785654` passed for commit `5deeadf5a574d4a603c9f631821d86ef4599012d`.
+- The run passed the new recovery-path contract test and all existing validation steps.
+- Real D1 failure injection and Preview browser acceptance remain pending. No migration or deployment was performed.
+
 ## 2026-11-23 — Bulk CMS initialization recovery hardening
 - Added a client-side 400-item preflight to stop oversized requests before network submission.
 - Improved Admin UI messaging for atomic draft initialization, preservation of existing drafts and safe retry after ambiguous network failures.
