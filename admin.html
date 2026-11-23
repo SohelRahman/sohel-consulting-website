@@ -511,10 +511,12 @@ loadDashboard();
     add("meta.description","text",doc.querySelector('meta[name="description"]')?.content||"");
    }
    if(!items.length)throw new Error("No eligible static content was found in this page HTML.");
+   if(items.length>400)throw new Error("This page contains "+items.length+" eligible items, above the safe 400-item limit. No data was sent. Narrow the initialization scope or split the page's content manually, then retry.");
+   msg("Submitting "+items.length+" items in one atomic initialization request…");
    const result=await request("/api/admin/cms/initialize",{method:"POST",body:JSON.stringify({page:selectedPage,language:selectedLanguage,items})});
    await load();
-   msg("Initialization complete: "+result.created+" new draft items created; "+result.skipped+" existing items preserved. Review the drafts, then publish when ready.");
-  }catch(error){msg("Initialization failed: "+error.message);}
+   msg("Initialization complete: "+result.created+" new draft items created; "+result.skipped+" existing items preserved. Existing drafts were not overwritten. Review the drafts, then publish when ready.");
+  }catch(error){msg("Initialization failed: "+error.message+". The server validates the full request before writing and uses one atomic batch. If the connection was interrupted after submission, retrying is safe: existing keys are preserved and will be counted as skipped.");}
   finally{button.disabled=false;}
  });
  $cms("cms-inspect").addEventListener("click",()=>{const p=page()==="home"?(lang()==="bn"?"/bn/":"/"):((lang()==="bn"?"/bn/":"/")+page()+".html");window.open(p+"?cmsKeys=1","_blank","noopener");});

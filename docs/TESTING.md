@@ -620,3 +620,10 @@ Never mark MFA as Preview-verified based only on CI success. Production remains 
 
 - [ ] Confirm failed enrollment, login verification and MFA reset attempts are audited without storing the submitted code.
 - [ ] Confirm both IP-keyed and account-keyed throttles apply to enrollment, verification and reset endpoints.
+
+
+## Bulk CMS initialization recovery checks
+
+Development CI runs `node scripts/test-cms-initialization-atomicity.mjs` and `node scripts/test-cms-initialization-recovery.mjs`. The recovery test verifies server/client 400-item limits, validation-before-write, insert-if-absent retry behavior, conditional draft history, one D1 batch for content/history/audit, draft-only behavior, retry guidance and button restoration.
+
+These are source-contract checks. They do not inject a real D1 statement failure or prove Preview browser behavior. Runtime failure-injection and Preview acceptance remain pending and require separately approved Preview access/deployment.

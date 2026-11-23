@@ -177,3 +177,13 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - Content updates, draft history snapshots and audit records remain in one D1 batch. Version/audit inserts are conditional on the compare-and-swap update succeeding.
 - The Admin Content Manager now carries revision tokens from reads through edit/save/archive/restore actions and reports conflicts for reload.
 - Added source-contract checks. Migration 0018 must be applied to the target database before deploying this Worker change. No migration or deployment was performed; runtime concurrency tests remain outstanding.
+
+
+## 2026-11-23 — Bulk initialization recovery hardening
+
+- The Admin initializer counts eligible static items before submission and refuses requests above the endpoint's 400-item limit. It explains that no data was sent.
+- The UI identifies submission as one atomic request and clarifies that initialization creates drafts only; it never publishes.
+- On an ambiguous client-side failure, the UI explains safe retry behavior. `INSERT OR IGNORE` preserves existing content keys and drafts.
+- The Worker validates every submitted value before creating the D1 statement batch. Content, conditional draft history and audit writes remain in one D1 batch.
+- Added a dedicated recovery-path source-contract test for server/client limits, validation-before-write, idempotent inserts, conditional history, atomic batch structure, no auto-publish, retry guidance and button restoration.
+- These are source-level checks. A real D1 statement failure and Preview browser acceptance remain untested. No schema change, migration or deployment is required for this change.

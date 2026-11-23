@@ -548,3 +548,12 @@ The Worker requires password + TOTP enrollment/verification before issuing a ful
 
 
 **Final MFA CI update — 2026-11-23:** Latest development CI run [#45149004614](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149004614) passed for `c6a72eae839c6fcec3310fc26ff6806291798e87`. It includes MFA cryptographic and source-contract tests, account/IP throttling assertions and failed-attempt audit assertions. Preview migration, secret configuration, deployment and browser acceptance remain pending.
+
+
+## 2026-11-23 — Bulk CMS initialization recovery handover
+
+The Admin initializer now rejects more than 400 collected items before sending, explains safe retry after ambiguous network failure, and confirms that initialization creates drafts only. The Worker validates the full request before a single D1 batch with insert-if-absent content writes, conditional draft history and audit.
+
+New CI test: `scripts/test-cms-initialization-recovery.mjs`; the existing atomicity contract test remains. Check the latest Actions run before continuing. Source tests do not prove real D1 rollback under failure or Preview browser acceptance.
+
+Next priority after green CI: CMS revision/concurrency runtime test planning. Do not deploy or apply migrations without explicit approval.

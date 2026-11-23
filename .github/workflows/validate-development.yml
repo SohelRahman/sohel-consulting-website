@@ -36,6 +36,8 @@ jobs:
         run: node scripts/test-page-builder-atomicity.mjs
       - name: Check bulk CMS initialization atomicity contract
         run: node scripts/test-cms-initialization-atomicity.mjs
+      - name: Check bulk CMS initialization recovery paths
+        run: node scripts/test-cms-initialization-recovery.mjs
       - name: Check CMS revision concurrency contract
         run: node scripts/test-cms-revision-contract.mjs
       - name: Password hashing compatibility tests

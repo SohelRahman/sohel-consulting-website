@@ -1,3 +1,9 @@
+## 2026-11-23 — Bulk CMS initialization recovery hardening
+- Added a client-side 400-item preflight to stop oversized requests before network submission.
+- Improved Admin UI messaging for atomic draft initialization, preservation of existing drafts and safe retry after ambiguous network failures.
+- Added a CI recovery-path test for validation-before-write, insert-if-absent retry behavior, conditional draft history, one-batch content/history/audit writes, no auto-publish and UI recovery.
+- No migration, Preview operation or Production change was performed. Real D1 failure-injection and Preview acceptance remain pending.
+
 ## 2026-11-23 — Admin MFA final development CI pass
 - Latest development CI run `45149004614` passed for commit `c6a72eae839c6fcec3310fc26ff6806291798e87`.
 - The run includes TOTP/encryption/recovery unit tests, source-contract assertions, separate IP/account throttling and failed MFA attempt audit coverage.
