@@ -39,3 +39,22 @@ Application secrets (Admin credentials/session secret and Cloudinary credentials
 - Preview deployment does not authorize Production deployment, Production D1 changes, merging the development branch, or changing `main`.
 - After deployment, verify the deployment URL and commit in Cloudflare/GitHub, then perform the manual Preview QA checklist in `docs/TESTING.md`.
 - CI/source validation is not browser acceptance. Do not mark login, uploads, media inventory, CMS, registration or other runtime tests as passed without direct evidence.
+
+## GitHub Actions workflow visibility
+
+GitHub's official Actions documentation states that a workflow using `workflow_dispatch` must exist on the repository's default branch before it can be manually triggered from the Actions UI. After it is available on the default branch, the operator can select another branch in the Run workflow branch dropdown.
+
+Current repository state reviewed on 2026-11-23:
+
+- Default branch: `main`.
+- `.github/workflows/deploy-cloudflare-preview.yml` exists on `current-focus-development`.
+- The workflow file is absent from `main`.
+- Therefore, the Actions UI cannot offer this workflow for manual dispatch yet.
+- The workflow must not be copied to `main` without explicit approval. If approved, only this workflow definition should be added; do not merge the development application code or change the Production deployment workflow.
+- Once the file is present on the default branch, run it with `current-focus-development` selected. The job-level branch guard rejects any other branch.
+
+Reference: [GitHub Docs — Manually running a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
+
+## Deployment status
+
+The workflow and isolated configuration are committed to the development branch and development CI passed. The workflow has not been dispatched. No Preview Worker deployment is confirmed. Preview browser acceptance remains pending.
