@@ -375,3 +375,18 @@ There is still no per-editor optimistic-lock revision token. Concurrent saves to
 
 ### Verification boundary
 Source changes and documentation are on `current-focus-development` only. CI is required before marking the changes validated. No Preview deployment, D1 migration, Production change, `main` update or branch reconciliation is part of this work.
+
+
+## 2026-11-23 — Custom Page Builder transaction consistency
+
+### Finding
+Custom Page Builder create, update and delete operations previously committed the page row, CMS key/version records and audit/cleanup records in separate D1 calls. A mid-sequence failure could leave incomplete CMS registration, missing audit history or orphaned CMS records.
+
+### Development-branch correction
+- Page creation and initial CMS registration/audit now share one D1 batch.
+- Page structure updates, conditional insert-if-absent CMS registration, draft snapshots and audit now share one D1 batch.
+- Page deletion, CMS content/history cleanup and audit now share one D1 batch.
+- Added the Page Builder atomicity source-contract test to development CI.
+
+### Verification boundary
+The source-contract test is included in CI; runtime D1 failure-injection and concurrent-editor tests remain separate. No Preview deployment, D1 migration, Production change, main update or branch reconciliation is part of this work.

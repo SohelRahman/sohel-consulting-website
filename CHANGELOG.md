@@ -292,3 +292,11 @@
 - The first CI run after the Cloudinary inventory permission fix exposed a false positive in the RBAC contract test: its mutation-handler scanner also matched HTTP-method comparisons inside the `requiredPermission` helper, which is not a request handler.
 - Scoped the scanner to `handleApi` so it checks actual API route handlers rather than permission-mapping expressions.
 - The first run failed at the RBAC contract check; syntax and HTML validation passed. Re-run CI is required before treating the correction as verified.
+
+
+## 2026-11-23 — Custom Page Builder transaction consistency
+- Batched page creation with initial CMS registration and audit logging.
+- Batched page structure updates with conditional CMS key registration, draft version snapshots and audit logging.
+- Batched page deletion with associated CMS content/history cleanup and audit logging.
+- Added a Page Builder atomicity source-contract test to development CI.
+- Runtime D1 integration and Preview browser acceptance remain pending. No migration, deployment, Production change or main update was performed.

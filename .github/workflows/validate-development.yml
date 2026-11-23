@@ -32,6 +32,8 @@ jobs:
         run: node scripts/test-rbac-contract.mjs
       - name: Check CMS write atomicity contract
         run: node scripts/test-cms-atomicity.mjs
+      - name: Check Page Builder write atomicity contract
+        run: node scripts/test-page-builder-atomicity.mjs
       - name: Password hashing compatibility tests
         run: node scripts/test-password-hash.mjs
       - name: Course pricing unit tests

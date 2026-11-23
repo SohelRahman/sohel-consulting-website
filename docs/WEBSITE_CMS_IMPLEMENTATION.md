@@ -136,3 +136,13 @@ Custom pages have one configured language per page record. To publish a translat
 ## Concurrency and consistency boundary
 
 The static CMS write paths use D1 batch transactions for content, version-history and audit consistency. Publication reads the current draft values inside the publication batch when creating published snapshots, avoiding a stale pre-read snapshot. This does not implement per-editor optimistic locking: if two administrators save the same page/language/content key, the last successful save wins. Add revision-based conflict detection before enabling simultaneous editing as a supported workflow. Custom Page Builder structure writes and bulk initialization still have separate multi-statement steps and require their own transaction review.
+
+
+## 2026-11-23 — Custom Page Builder write consistency
+
+- Page creation, initial title/SEO CMS registration and the creation audit record now execute in one D1 batch.
+- Page structure saves, insert-if-absent CMS key registration, draft version snapshots and the page audit record now execute in one D1 batch. CMS registration statements are conditional on the page still existing with the selected language.
+- Page deletion, associated CMS record cleanup, version-history cleanup and the deletion audit record now execute in one D1 batch.
+- Existing CMS values remain protected by insert-if-absent behavior. Empty CMS values are still not seeded.
+- Added a source-contract regression test to development CI.
+- This is source-level transaction hardening. Runtime D1 integration, failure-injection and concurrent-editor tests remain outstanding; no Preview deployment or database migration was performed.

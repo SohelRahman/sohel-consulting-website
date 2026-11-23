@@ -89,7 +89,7 @@ function sameOrigin(request) {
   const origin = request.headers.get("origin");
   return Boolean(origin) && origin === new URL(request.url).origin;
 }
-async function seedBuilderPageCms(env, email, slug, language, title, seoTitle, seoDescription, sections) {
+function builderPageCmsStatements(env, email, slug, language, title, seoTitle, seoDescription, sections) {
   const items = [["page.title","text",title],["meta.title","text",seoTitle || title],["meta.description","textarea",seoDescription || ""]];
   for (const section of sections || []) {
     const sid=clean(section?.id,60).toLowerCase();
@@ -106,13 +106,17 @@ async function seedBuilderPageCms(env, email, slug, language, title, seoTitle, s
       add("card."+index+".button.text","text",card.buttonText); add("card."+index+".button.url","url",card.buttonUrl);
     });
   }
+  const statements=[];
   for(const [key,type,value] of items){
     if(!value.trim()) continue;
-    const inserted=await env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)")
-      .bind(slug,language,key,type,value,email).run();
-    if(inserted.meta.changes)await env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)")
-      .bind(slug,language,key,type,value,email).run();
+    statements.push(
+      env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) SELECT ?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP WHERE EXISTS (SELECT 1 FROM pages WHERE slug=? AND language=?)")
+        .bind(slug,language,key,type,value,email,slug,language),
+      env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT page_key,language,content_key,content_type,draft_value,'draft',? FROM cms_content WHERE page_key=? AND language=? AND content_key=? AND changes()>0")
+        .bind(email,slug,language,key)
+    );
   }
+  return statements;
 }
 
 async function audit(env, email, action, entityType, entityId, details = "") {
@@ -964,10 +968,16 @@ async function handleApi(request, env) {
       const title=clean(data?.title,140), language=["en","bn"].includes(data?.language)?data.language:"en";
       if (!slug || !title || ["admin","api","assets","bn","src","migrations","index","services","training","register","case-studies","about","faq","contact","privacy","terms","refund","404","page"].includes(slug)) return json({error:"Enter a valid page title and URL slug."},400);
       const pageId=id();
-      try { await env.DB.prepare("INSERT INTO pages (id,slug,title,language,draft_json,seo_title,seo_description) VALUES (?,?,?,?,?,?,?)").bind(pageId,slug,title,language,JSON.stringify({sections:[]}),clean(data?.seoTitle,160),clean(data?.seoDescription,300)).run(); }
-      catch { return json({error:"That page URL already exists."},409); }
-      await seedBuilderPageCms(env,session.email,slug,language,title,clean(data?.seoTitle,160),clean(data?.seoDescription,300),[]);
-      await audit(env,session.email,"page_created","page",pageId,slug);
+      const seoTitle=clean(data?.seoTitle,160),seoDescription=clean(data?.seoDescription,300);
+      const statements=[
+        env.DB.prepare("INSERT INTO pages (id,slug,title,language,draft_json,seo_title,seo_description) VALUES (?,?,?,?,?,?,?)")
+          .bind(pageId,slug,title,language,JSON.stringify({sections:[]}),seoTitle,seoDescription),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'page_created','page',?,? WHERE changes()>0")
+          .bind(id(),session.email,pageId,slug),
+        ...builderPageCmsStatements(env,session.email,slug,language,title,seoTitle,seoDescription,[])
+      ];
+      try { await env.DB.batch(statements); }
+      catch { return json({error:"That page URL already exists or could not be created."},409); }
       return json({ok:true,id:pageId,slug,language,cmsRegistered:true},201);
     }
     const pageAdminSlug=path.startsWith("/api/admin/pages/")?path.slice("/api/admin/pages/".length):"";
@@ -994,22 +1004,28 @@ async function handleApi(request, env) {
       }
       const draft={sections:safeSections};
       const publish=data?.publish===true;
-      const result=await env.DB.prepare("UPDATE pages SET title=?,language=?,seo_title=?,seo_description=?,draft_json=?,published_json=CASE WHEN ?=1 THEN ? ELSE published_json END,status=CASE WHEN ?=1 THEN 'published' ELSE status END,published_at=CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE published_at END,updated_at=CURRENT_TIMESTAMP WHERE slug=?")
-        .bind(title,language,clean(data?.seoTitle,160),clean(data?.seoDescription,300),JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageAdminSlug).run();
-      if(!result.meta.changes)return json({error:"Page not found."},404);
-      await seedBuilderPageCms(env,session.email,pageAdminSlug,language,title,clean(data?.seoTitle,160),clean(data?.seoDescription,300),safeSections);
-      await audit(env,session.email,publish?"page_published":"page_draft_saved","page",pageAdminSlug,String(safeSections.length)+" sections; CMS keys registered");
+      const seoTitle=clean(data?.seoTitle,160),seoDescription=clean(data?.seoDescription,300);
+      const statements=[
+        env.DB.prepare("UPDATE pages SET title=?,language=?,seo_title=?,seo_description=?,draft_json=?,published_json=CASE WHEN ?=1 THEN ? ELSE published_json END,status=CASE WHEN ?=1 THEN 'published' ELSE status END,published_at=CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE published_at END,updated_at=CURRENT_TIMESTAMP WHERE slug=?")
+          .bind(title,language,seoTitle,seoDescription,JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageAdminSlug),
+        ...builderPageCmsStatements(env,session.email,pageAdminSlug,language,title,seoTitle,seoDescription,safeSections),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,?, 'page',?,? WHERE EXISTS (SELECT 1 FROM pages WHERE slug=?)")
+          .bind(id(),session.email,publish?"page_published":"page_draft_saved",pageAdminSlug,String(safeSections.length)+" sections; CMS keys registered",pageAdminSlug)
+      ];
+      const results=await env.DB.batch(statements);
+      if(!results[0]?.meta?.changes)return json({error:"Page not found."},404);
       return json({ok:true,published:publish});
     }
     if (/^[a-z0-9-]+$/.test(pageAdminSlug) && method === "DELETE") {
       if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-      const result=await env.DB.prepare("DELETE FROM pages WHERE slug=?").bind(pageAdminSlug).run();
-      if(!result.meta.changes)return json({error:"Page not found."},404);
-      await env.DB.batch([
+      const results=await env.DB.batch([
+        env.DB.prepare("DELETE FROM pages WHERE slug=?").bind(pageAdminSlug),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'page_deleted','page',?,'Page, active CMS records and associated version history deleted' WHERE changes()>0")
+          .bind(id(),session.email,pageAdminSlug),
         env.DB.prepare("DELETE FROM cms_content WHERE page_key=?").bind(pageAdminSlug),
         env.DB.prepare("DELETE FROM cms_static_content_versions WHERE page_key=?").bind(pageAdminSlug)
       ]);
-      await audit(env,session.email,"page_deleted","page",pageAdminSlug,"Page, active CMS records and associated version history deleted");
+      if(!results[0]?.meta?.changes)return json({error:"Page not found."},404);
       return json({ok:true});
     }
     if (path === "/api/admin/cms/pages" && method === "GET") {
