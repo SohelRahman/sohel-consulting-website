@@ -76,3 +76,10 @@ Reference: [GitHub Docs — Manually running a workflow](https://docs.github.com
 ## Deployment status
 
 The workflow and isolated configuration are committed to the development branch and development CI passed. The workflow has not been dispatched. No Preview Worker deployment is confirmed. Preview browser acceptance remains pending.
+
+
+## 2026-11-23 — Preview migration audit Run #5 result
+
+Read-only audit [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45155468446) completed successfully on `current-focus-development`. Its `List remote Preview migration history (read-only)` step ran Wrangler 4.160.1 against `PREVIEW_DB` and listed `0018_cms_content_revision.sql` and `0019_admin_mfa.sql` under **Migrations to be applied**. The preceding workflow step is designed to verify the dedicated Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`; the workflow also excludes the known Production D1 ID.
+
+**Current gate:** Both migrations are pending. Run #5 did not apply either migration. Applying migrations requires explicit approval. Migration 0018 must be applied and verified before deploying Worker code that reads or writes `cms_content.revision`. Migration 0019 requires a separately configured Preview-only `MFA_ENCRYPTION_KEY`; never expose its value. Preview Worker deployment requires separate explicit approval and is not authorized by this successful read-only audit. Do not modify `main` to expose the deployment workflow without separate approval.
