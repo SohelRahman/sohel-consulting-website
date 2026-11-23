@@ -148,3 +148,12 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - This is source-level transaction hardening. Runtime D1 integration, failure-injection and concurrent-editor tests remain outstanding; no Preview deployment or database migration was performed.
 
 - Page structure saves are capped at 400 generated CMS fields (800 prepared statements) so the operation remains below Cloudflare D1's documented approximate 5,000-binding per-Worker-invocation limit.
+
+
+## 2026-11-23 — Custom Page Builder language integrity
+
+- A custom page's language is now immutable after creation. The Admin editor displays the selected language as read-only and explicitly submits it when saving.
+- The Worker checks the persisted page language and rejects a mismatch with HTTP 409 before changing the page or registering CMS keys.
+- The page update statement also matches both slug and language, preventing a stale update from writing against a page whose language no longer matches the editor's state.
+- This avoids orphaning language-scoped CMS content and version history. Create a separate custom page for the other language.
+- Extended the Page Builder source-contract test. No schema migration or deployment is required; runtime Preview verification remains separate.
