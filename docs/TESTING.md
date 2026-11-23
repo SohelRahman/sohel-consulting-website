@@ -657,3 +657,6 @@ Expected model results:
 - [ ] Record deployed SHA, browser/device, API status and database evidence.
 
 No Preview migration, deployment or database operation is authorized by these source-level tests. Production and `main` remain out of scope.
+
+
+**CI result — 2026-11-23:** Run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`. Both CMS revision checks passed. Preview runtime acceptance remains pending.

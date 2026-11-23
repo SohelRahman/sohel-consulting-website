@@ -8,7 +8,7 @@
 
 ## Active priority — CMS revision and concurrency verification
 
-**Status:** Test implementation and documentation in progress; CI pending.
+**Status:** Source-level concurrency and SQLite transaction-model tests committed; CI passed. Preview runtime acceptance remains pending.
 
 Scope:
 - Two editors saving from the same revision.
@@ -23,7 +23,7 @@ Planned verification layers:
 2. Temporary SQLite SQL/transaction model using the committed migration and the Worker query shapes.
 3. Separately approved Preview browser and D1 acceptance. SQLite model results must not be represented as live D1 proof.
 
-**Next action:** Verify CI for the new source and SQLite tests. If green, prepare a Preview-only acceptance request; first confirm the Preview migration ledger read-only and obtain explicit approval for any migration/deployment action. Do not touch Production or `main`.
+**Implementation commit:** `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`.\n**CI:** [Run #45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) passed for that exact commit, including the Worker/Admin contract test and SQLite concurrent-write/rollback test.\n\n**Next action:** Prepare a Preview-only acceptance plan. First inspect the Preview migration ledger read-only; any migration or deployment requires separate explicit approval. Do not touch Production or `main`.
 
 ## Completed source priority — Bulk CMS initialization recovery
 

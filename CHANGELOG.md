@@ -1,3 +1,9 @@
+## 2026-11-23 — CMS revision/concurrency CI pass
+- Development CI run `45150564334` passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`.
+- Worker/Admin source-contract checks passed for draft save, archive, restore and historical restore revision handling.
+- SQLite transaction tests passed for competing editor writes, stale state changes, history/audit consistency and injected rollback.
+- This is not live Cloudflare D1 or Preview browser acceptance. No migration, deployment or remote database write was performed.
+
 ## 2026-11-23 — CMS revision and concurrency test coverage
 - Added a Worker/Admin source-contract test for revision checks, stale HTTP 409 responses, conditional history/audit writes and Admin revision-token submission.
 - Added a temporary SQLite test that applies migration 0018 and races two editor requests with the same revision; exactly one must succeed.

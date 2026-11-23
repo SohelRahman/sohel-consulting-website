@@ -572,3 +572,6 @@ The existing CMS optimistic concurrency implementation uses migration 0018 and c
 The SQLite model is not a live Cloudflare D1 test. CI must pass before the source-test stage is marked complete. Preview acceptance remains separately gated: inspect the Preview D1 migration ledger read-only, obtain explicit approval for migration/deployment, then test two independent Admin sessions and verify content, revision, history and audit results.
 
 Do not change `main`, Production, Cloudflare secrets/configuration or remote databases without separate explicit approval. Next priority after CI: prepare the Preview-only acceptance request and record any required migration/deployment approvals.
+
+
+**CMS revision/concurrency CI result — 2026-11-23:** Development CI run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`. The Worker/Admin contract checks and SQLite test passed, including two concurrent editor requests with the same revision, stale archive/restore, historical restore and injected history-write rollback. This is not a live Cloudflare D1 or Preview browser test. No migration, deployment or remote database operation was performed.

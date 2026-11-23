@@ -137,3 +137,6 @@ The Worker uses compare-and-swap updates for draft save, archive, restore and hi
 **Remote status:** The migration file exists in the development branch. Its application state on Preview and Production has not been independently verified here. Do not deploy a Worker that depends on this column until the target migration ledger is checked and the operation is separately approved.
 
 The CI test `scripts/test-cms-revision-sqlite.py` applies the committed migration to a temporary SQLite database and exercises competing editor updates, stale archive/restore, historical restore and injected history-write failure. This is a SQLite transaction/SQL model, not a live Cloudflare D1 integration test.
+
+
+**CI result — 2026-11-23:** The migration 0018 SQLite SQL/transaction model and Worker/Admin revision source-contract tests passed in development CI run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334), commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`. This does not verify the remote Preview migration ledger or execute against Cloudflare D1.

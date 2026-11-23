@@ -197,3 +197,6 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - Extended the Worker/Admin source-contract test to cover each revision-required route, HTTP 409 behavior, row-scoped historical version lookup and revision tokens submitted by the Admin editor.
 - Added both checks to development CI.
 - This is SQLite SQL/transaction-model coverage, not live Cloudflare D1 or Preview acceptance. Preview migration state, deployment and browser testing remain pending and separately gated.
+
+
+**Automated verification result — 2026-11-23:** Development CI run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`, including the revision source-contract and SQLite transaction tests. Live Preview concurrency acceptance remains pending.
