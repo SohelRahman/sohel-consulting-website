@@ -135,7 +135,7 @@ Custom pages have one configured language per page record. To publish a translat
 
 ## Concurrency and consistency boundary
 
-The static CMS write paths use D1 batch transactions for content, version-history and audit consistency. Publication reads the current draft values inside the publication batch when creating published snapshots, avoiding a stale pre-read snapshot. This does not implement per-editor optimistic locking: if two administrators save the same page/language/content key, the last successful save wins. Add revision-based conflict detection before enabling simultaneous editing as a supported workflow. Custom Page Builder structure writes and bulk initialization still have separate multi-statement steps and require their own transaction review.
+The static CMS write paths use D1 batch transactions for content, version-history and audit consistency. Publication reads the current draft values inside the publication batch when creating published snapshots, avoiding a stale pre-read snapshot. This does not implement per-editor optimistic locking: if two administrators save the same page/language/content key, the last successful save wins. Add revision-based conflict detection before enabling simultaneous editing as a supported workflow. Custom Page Builder structure writes and bulk initialization are also grouped into D1 batch transactions. Runtime D1 failure-injection and concurrent-editor tests remain separate.
 
 
 ## 2026-11-23 — Custom Page Builder write consistency
@@ -157,3 +157,13 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - The page update statement also matches both slug and language, preventing a stale update from writing against a page whose language no longer matches the editor's state.
 - This avoids orphaning language-scoped CMS content and version history. Create a separate custom page for the other language.
 - Extended the Page Builder source-contract test. No schema migration or deployment is required; runtime Preview verification remains separate.
+
+
+## 2026-11-23 — Bulk CMS initialization consistency
+
+- The bulk initialization endpoint validates every submitted item before issuing database writes.
+- Content inserts, conditional draft-version snapshots and the audit event now execute in one D1 batch. A failed statement therefore rolls back the initialization transaction instead of leaving a partially initialized page.
+- Existing content keys remain protected by `INSERT OR IGNORE`; version history is added only when the corresponding content insert changed a row. Duplicate keys in one request are counted as created once and skipped thereafter.
+- The request cap is 400 items to keep the two statements per item plus audit write within the Worker invocation's approximate D1 binding budget.
+- Created/skipped response counts are derived from the batch insert results.
+- Source-contract CI coverage was added. Runtime D1 failure-injection and Preview acceptance remain outstanding; no migration or deployment is required or performed.

@@ -1046,20 +1046,32 @@ async function handleApi(request, env) {
     if (path === "/api/admin/cms/initialize" && method === "POST") {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",items=Array.isArray(data?.items)?data.items:[];
-      if(!/^[a-z0-9._-]+$/.test(page)||!items.length||items.length>500)return json({error:"A valid page and between 1 and 500 content items are required."},400);
-      let created=0,skipped=0;
+      if(!/^[a-z0-9._-]+$/.test(page)||!items.length||items.length>400)return json({error:"A valid page and between 1 and 400 content items are required."},400);
+      const prepared=[];
       for(const item of items){
         const key=clean(item?.key,120).toLowerCase(),value=String(item?.value??"").slice(0,10000),type=["text","textarea","url","image","richtext"].includes(item?.type)?item.type:"text";
         if(!/^[a-z0-9._-]+$/.test(key)||!value.trim())return json({error:"Invalid content key or empty value in initialization request."},400);
         if(type==="url"||type==="image"){try{const parsed=new URL(value);if(!["https:","http:"].includes(parsed.protocol))throw new Error();}catch{return json({error:"Invalid HTTP or HTTPS URL for "+key+"."},400);}}
-        const inserted=await env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)").bind(page,language,key,type,value,session.email).run();
-        if(inserted.meta.changes){
-          created++;
-          await env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) VALUES(?,?,?,?,?,'draft',?)").bind(page,language,key,type,value,session.email).run();
-        }else skipped++;
+        prepared.push({key,value,type});
       }
-      await audit(env,session.email,"cms_page_initialized","cms_content",page+":"+language,"Created "+created+" items; preserved "+skipped+" existing items");
-      return json({ok:true,created,skipped,total:items.length});
+      const statements=[];
+      for(const item of prepared){
+        statements.push(
+          env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)")
+            .bind(page,language,item.key,item.type,item.value,session.email),
+          env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT ?,?,?,?,?, 'draft',? WHERE changes()>0")
+            .bind(page,language,item.key,item.type,item.value,session.email)
+        );
+      }
+      statements.push(
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES (?,?, 'cms_page_initialized','cms_content',?,?)")
+          .bind(id(),session.email,page+":"+language,"Processed "+prepared.length+" submitted items; existing content keys preserved")
+      );
+      const results=await env.DB.batch(statements);
+      let created=0;
+      for(let index=0;index<prepared.length;index++)created+=Number(results[index*2]?.meta?.changes||0);
+      const skipped=prepared.length-created;
+      return json({ok:true,created,skipped,total:prepared.length});
     }
     if (path === "/api/admin/cms/save" && method === "POST") {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);

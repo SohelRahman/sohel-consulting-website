@@ -102,7 +102,7 @@ The implemented static CMS uses the following routes. The Worker remains authori
 | --- | --- | --- |
 | GET | `/api/cms-content?page=...&lang=...` | Public published values for one page/language |
 | GET | `/api/admin/cms?page=...&lang=...` | Admin draft/published content list; requires `content.view` |
-| POST | `/api/admin/cms/save` | Save one draft value and append a draft version; requires `content.manage` |
+| POST | `/api/admin/cms/initialize` | Initialize up to 400 CMS draft items without overwriting existing keys; requires `content.manage` |\n| POST | `/api/admin/cms/save` | Save one draft value and append a draft version; requires `content.manage` |
 | POST | `/api/admin/cms/publish` | Publish the selected page/language; requires `content.manage` |
 | POST | `/api/admin/cms/delete` | Soft-delete a content key; requires `content.manage` |
 | POST | `/api/admin/cms/restore` | Restore an archived key to draft; requires `content.manage` |
@@ -110,7 +110,7 @@ The implemented static CMS uses the following routes. The Worker remains authori
 | GET | `/api/admin/cms/preview?page=...&lang=...` | Authenticated draft preview; requires `content.view` |
 | POST | `/api/admin/cms/restore-version` | Restore a historical value to draft; requires `content.manage` |
 
-The Dashboard editor and on-page editor share `POST /api/admin/cms/save`. Draft content, its version snapshot and its audit record are written in one D1 batch. Publishing updates the selected page/language, writes published snapshots from the current draft rows and records the audit event in one D1 batch. Archive, restore and restore-version operations also batch their state/history/audit writes. The on-page editor is opened from a page URL containing `?cmsKeys=1`; it does not introduce a separate API or data store. The preview binding uses `?cmsPreview=1` and the protected preview route.
+The Dashboard editor and on-page editor share `POST /api/admin/cms/save`. Draft content, its version snapshot and its audit record are written in one D1 batch. Bulk initialization validates the full request before writing, then batches insert-if-absent content rows, conditional draft snapshots and one audit record; the response reports created and skipped item counts. Publishing updates the selected page/language, writes published snapshots from the current draft rows and records the audit event in one D1 batch. Archive, restore and restore-version operations also batch their state/history/audit writes. The on-page editor is opened from a page URL containing `?cmsKeys=1`; it does not introduce a separate API or data store. The preview binding uses `?cmsPreview=1` and the protected preview route.
 
 CMS mutation endpoints enforce same-origin checks. URL and image values accept HTTP/HTTPS URLs only. Public content responses expose published values only. Publishing is scoped to one page and one language. See [CMS implementation notes](WEBSITE_CMS_IMPLEMENTATION.md).
 
@@ -121,4 +121,4 @@ CMS mutation endpoints enforce same-origin checks. URL and image values accept H
 - The legacy `cms_content_versions` table belongs to the pre-existing legacy CMS schema and is not used by this implementation.
 
 
-**Concurrency limitation:** CMS writes are transactionally grouped, but there is no per-editor revision token or optimistic-lock conflict response. Concurrent saves to the same content key remain last-write-wins. Custom Page Builder structure saves and bulk initialization are not covered by the static CMS transaction guarantee.
+**Concurrency limitation:** CMS writes are transactionally grouped, but there is no per-editor revision token or optimistic-lock conflict response. Concurrent saves to the same content key remain last-write-wins. Custom Page Builder structure saves and bulk initialization also use D1 batches; bulk initialization accepts up to 400 items per request.

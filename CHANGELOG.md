@@ -302,3 +302,12 @@
 - Runtime D1 integration and Preview browser acceptance remain pending. No migration, deployment, Production change or main update was performed.
 
 - Capped generated Page Builder CMS fields at 400 per save to stay within D1 Worker binding limits while preserving transaction atomicity.
+
+
+## 2026-11-23 — Bulk CMS initialization transaction safety
+
+- Validated the full initialization payload before any database write.
+- Batched insert-if-absent CMS rows, conditional draft history snapshots and the audit event in one D1 transaction.
+- Preserved existing drafts and published values; duplicate submitted keys are counted as skipped after the first successful insert.
+- Capped requests at 400 items to bound D1 statement and binding usage, and derive created/skipped counts from batch results.
+- Added a dedicated source-contract test to development CI. Runtime D1 failure-injection and Preview acceptance remain pending; no deployment or migration was performed.
