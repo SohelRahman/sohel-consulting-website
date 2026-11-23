@@ -3,9 +3,9 @@
 **Latest handover update:** 2026-11-23  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Latest code and test commit:** `432a59fc62c3b80f68948fa62db13a6e88ef0cff`  
+**Latest code and test commit:** `c6a72eae839c6fcec3310fc26ff6806291798e87`  
 **MFA implementation commits:** `bad4a5904617047abe256bd416ed5a2b513238b0`, `8ba829c633f4a4ed5cf0caeecc94c61087e87382`  
-**CI:** Run [#45148706139](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45148706139) passed for code/test commit `432a59fc62c3b80f68948fa62db13a6e88ef0cff`, including Admin MFA cryptographic and source-contract tests.
+**CI:** Run [#45149004614](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149004614) passed for latest code/test commit `c6a72eae839c6fcec3310fc26ff6806291798e87`, including MFA cryptographic/source-contract tests, dual IP/account throttling and failed-attempt audit assertions.
 
 ## Latest active priority — Admin MFA
 

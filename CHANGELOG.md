@@ -1,3 +1,8 @@
+## 2026-11-23 — Admin MFA final development CI pass
+- Latest development CI run `45149004614` passed for commit `c6a72eae839c6fcec3310fc26ff6806291798e87`.
+- The run includes TOTP/encryption/recovery unit tests, source-contract assertions, separate IP/account throttling and failed MFA attempt audit coverage.
+- This verifies source and automated checks only. Migration 0019, Preview encryption-secret configuration, Preview deployment and end-to-end browser acceptance remain pending.
+
 ## 2026-11-23 — MFA rate-limit and audit hardening
 - Added independent IP-keyed and account-keyed rate limits to MFA enrollment, login verification and MFA reset operations.
 - Added audit events for rejected enrollment codes, rejected second-factor codes and rejected MFA reset verification. Submitted codes and secrets are not included in audit details.

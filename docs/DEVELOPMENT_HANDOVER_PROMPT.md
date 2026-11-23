@@ -545,3 +545,6 @@ The Worker requires password + TOTP enrollment/verification before issuing a ful
 
 
 **CI verification update — 2026-11-23:** Development CI run [#45148706139](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45148706139) passed for commit `432a59fc62c3b80f68948fa62db13a6e88ef0cff`. This includes Worker syntax, HTML/inline-script validation, existing RBAC/CMS checks, password hashing and the new Admin MFA cryptographic/source-contract test. It does not establish Preview deployment or runtime acceptance.
+
+
+**Final MFA CI update — 2026-11-23:** Latest development CI run [#45149004614](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149004614) passed for `c6a72eae839c6fcec3310fc26ff6806291798e87`. It includes MFA cryptographic and source-contract tests, account/IP throttling assertions and failed-attempt audit assertions. Preview migration, secret configuration, deployment and browser acceptance remain pending.
