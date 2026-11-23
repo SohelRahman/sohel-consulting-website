@@ -576,3 +576,24 @@ The current development branch contains these relevant workflows:
 - No dedicated Preview Worker deployment workflow is present in the repository tree at this review. The Preview Worker deployment method and its exact target must therefore be verified separately before deployment; do not substitute the Production workflow or guess a Wrangler command.
 
 The correct first operational step, after explicit approval, is to run the read-only Preview migration audit and inspect its full output. Only then may the separate migration workflow be considered. Migration approval does not imply deployment approval.
+
+
+## Administrator MFA acceptance tests — planned, not yet implemented
+
+The current Admin login is password-only. Do not mark MFA tests as passed until the feature and its test suite exist. After implementation, verify:
+
+- [ ] Password-only login cannot access protected Admin routes.
+- [ ] First-time enrollment requires password authentication and confirmation of a valid TOTP code.
+- [ ] TOTP seed encryption at rest; no plaintext seed in API responses, D1 values, logs or audit details.
+- [ ] RFC 6238 test vectors, six-digit formatting, 30-second time step and narrow clock-skew handling.
+- [ ] A TOTP time-step counter cannot be accepted twice, including concurrent requests.
+- [ ] Expired, malformed, replayed and wrong-purpose challenge cookies are rejected.
+- [ ] One-time recovery codes are hashed at rest and atomically consumed once.
+- [ ] MFA disable/reset requires fresh verification and revokes prior sessions.
+- [ ] Password and MFA rate limits are independently enforced with generic errors.
+- [ ] Challenge cookies and full-session cookies have the required Secure, HttpOnly, SameSite and path attributes.
+- [ ] Admin and permission-limited User accounts complete the required MFA flow.
+- [ ] English and Bangla login, enrollment, challenge and recovery messages are accessible and usable.
+- [ ] Preview end-to-end tests cover setup, login, logout, recovery, revocation and failure cases on the exact deployed commit.
+
+See [Administrator Authentication and MFA Security Assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md) for the design and security requirements.

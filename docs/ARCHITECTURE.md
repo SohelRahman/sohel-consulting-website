@@ -62,3 +62,10 @@ The static-page CMS extends the existing architecture without replacing static p
 - English, Bangla and Global are separate content contexts.
 
 The CMS intentionally excludes forms, dynamic course records, registration records, chat, analytics and other interactive/operational data. It does not replace the custom Pages builder or Page Styles module. See [CMS implementation](WEBSITE_CMS_IMPLEMENTATION.md) and [API reference](API.md).
+
+
+## Administrator authentication and MFA status
+
+The current development source implements password-only administrator authentication. Password hashes use PBKDF2-HMAC-SHA-256; signed eight-hour sessions are carried in an HttpOnly, Secure, SameSite=Strict cookie and checked against D1 account state and `session_version`. Admin mutations require same-origin validation and Worker-side RBAC.
+
+**MFA is not implemented yet.** Do not describe administrator login as MFA-protected. The planned TOTP enrollment, short-lived challenge, encrypted seed storage, replay prevention and recovery-code design is documented in [Administrator Authentication and MFA Security Assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md).

@@ -521,3 +521,10 @@ Resume only when the user asks to test:
 - Keep documentation current when material work occurs.
 - Do not claim all development or release readiness is complete.
 - Keep `main`, Production resources and PR/branch history untouched unless the user separately authorizes a specific operation.
+
+
+## Current project handover — 2026-11-23
+
+**Start here:** [Project Master Status](PROJECT_MASTER_STATUS.md). The latest verified development branch head is `f4cadf992879052d9ee8fd76cf143613c4361610`; CI run [#45140128176](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45140128176) passed for that commit. The next active task is implementation of Admin MFA and login security. The source audit confirmed password-only login and no MFA flow. Read [Administrator Authentication and MFA Security Assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md) before coding.
+
+Update `docs/PROJECT_MASTER_STATUS.md`, the relevant technical docs and `CHANGELOG.md` in every task commit. Verify the branch and CI at the start of each new chat. Continue from the next pending action; do not repeat completed work. No migration, deployment, Preview configuration change, Production change, merge/rebase or branch reconciliation is authorized without separate explicit approval. Migration 0018 is present in source but its remote application state is not independently verified.
