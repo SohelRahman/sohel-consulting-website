@@ -3,24 +3,43 @@
 **Latest handover update:** 2026-11-23  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Baseline commit:** `b892595514e94af5c1f6398ff8303bcf39b79bac`  
-**CI:** [Run #45149785654](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149785654) passed for implementation commit `5deeadf5a574d4a603c9f631821d86ef4599012d`.
+**Baseline commit:** `bb86dae5d0b1a061b4bb65d28b334f8e187d9308`  
+**Latest verified CI:** [Run #45149919998](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149919998) passed for baseline commit `bb86dae5d0b1a061b4bb65d28b334f8e187d9308`.
 
-## Active priority — Bulk CMS initialization recovery
+## Active priority — CMS revision and concurrency verification
 
-**Status:** Source hardening implemented in this commit; CI pending.
+**Status:** Test implementation and documentation in progress; CI pending.
 
-- Admin UI blocks more than 400 eligible items before sending the request.
-- Ambiguous failures explain that retry is safe because existing CMS keys are preserved by insert-if-absent writes.
-- Initialization remains draft-only. It does not publish.
-- Worker validates the entire request before one D1 batch containing content inserts, conditional draft-history inserts and audit record.
-- Added CI source-contract coverage for recovery paths.
+Scope:
+- Two editors saving from the same revision.
+- Stale draft save and HTTP 409 handling.
+- Archive/restore conflicts.
+- Historical-version restore conflicts.
+- Version-history and audit consistency.
+- Transaction rollback when a history write fails.
 
-**Next action:** Plan CMS revision/concurrency runtime testing, with Preview runtime access only after explicit approval. Real D1 failure-injection and Preview browser acceptance remain separate. No migration, D1 write or deployment was performed.
+Planned verification layers:
+1. Worker/Admin source-contract test.
+2. Temporary SQLite SQL/transaction model using the committed migration and the Worker query shapes.
+3. Separately approved Preview browser and D1 acceptance. SQLite model results must not be represented as live D1 proof.
 
-## Prior source priority — Admin MFA
+**Next action:** Verify CI for the new source and SQLite tests. If green, prepare a Preview-only acceptance request; first confirm the Preview migration ledger read-only and obtain explicit approval for any migration/deployment action. Do not touch Production or `main`.
 
-MFA source implementation and automated checks passed in [CI run #45149126646](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149126646) for `b892595514e94af5c1f6398ff8303bcf39b79bac`. Preview-only `MFA_ENCRYPTION_KEY`, migration `0019_admin_mfa.sql`, Preview deployment and browser acceptance remain pending and require explicit approval. Production and `main` remain untouched.
+## Completed source priority — Bulk CMS initialization recovery
 
----
+- Admin preflight blocks more than 400 eligible items before network submission.
+- Ambiguous network failures explain safe retry behavior; existing keys are preserved.
+- Initialization remains draft-only and content/history/audit writes use one D1 batch.
+- CI run [#45149919998](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149919998) passed for the previous baseline.
 
+## Completed source priority — Admin MFA
+
+MFA source implementation and automated checks passed in [CI run #45149126646](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149126646). Preview-only `MFA_ENCRYPTION_KEY`, migration `0019_admin_mfa.sql`, Preview deployment and browser acceptance remain pending and require explicit approval.
+
+## Mandatory operating gates
+
+- Work only on `current-focus-development`; do not modify, merge, rebase or reconcile `main`.
+- Never access or expose secret values.
+- No migration, D1 write, Cloudflare configuration change or deployment without explicit approval.
+- Distinguish source implementation, CI, Preview deployment, Preview runtime acceptance and Production release.
+- Update this file, relevant technical documentation and `CHANGELOG.md` in the same implementation commit.

@@ -126,3 +126,14 @@ The migration file's presence on `current-focus-development` does not prove it h
 ## Migration 0018 — CMS revision counter
 
 Migration 0018 adds a non-null integer `revision` column to `cms_content`, defaulting existing and newly inserted records to revision 1. CMS draft save, archive, restore and historical-version restore use the value for compare-and-swap updates. The migration is additive and does not rewrite CMS content or version history. Its presence in the development branch does not mean it has been applied to Preview or Production.
+
+
+## CMS migration 0018 — optimistic concurrency
+
+Migration `0018_cms_content_revision.sql` adds `cms_content.revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1)`. Existing rows receive revision 1. No CMS content or version-history values are rewritten.
+
+The Worker uses compare-and-swap updates for draft save, archive, restore and historical-version restore. Each successful operation increments the revision; stale requests return HTTP 409. Conditional history and audit statements are included in the same D1 batch and add no records when the revision comparison changes no row.
+
+**Remote status:** The migration file exists in the development branch. Its application state on Preview and Production has not been independently verified here. Do not deploy a Worker that depends on this column until the target migration ledger is checked and the operation is separately approved.
+
+The CI test `scripts/test-cms-revision-sqlite.py` applies the committed migration to a temporary SQLite database and exercises competing editor updates, stale archive/restore, historical restore and injected history-write failure. This is a SQLite transaction/SQL model, not a live Cloudflare D1 integration test.

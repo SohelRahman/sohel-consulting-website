@@ -560,3 +560,15 @@ Next priority after green CI: CMS revision/concurrency runtime test planning. Do
 
 
 **Bulk CMS initialization CI result — 2026-11-23:** Development CI run [#45149785654](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149785654) passed for implementation commit `5deeadf5a574d4a603c9f631821d86ef4599012d`. All existing validation jobs and the new initialization recovery source-contract test passed. This does not prove live D1 rollback behavior or Preview browser acceptance.
+
+
+## 2026-11-23 — CMS revision and concurrency test handover
+
+The existing CMS optimistic concurrency implementation uses migration 0018 and compare-and-swap revision updates for draft save, archive, restore and historical restore. This source work adds two automated verification layers:
+
+- `scripts/test-cms-revision-contract.mjs` checks Worker route and Admin revision-token contracts.
+- `scripts/test-cms-revision-sqlite.py` applies migration 0018 to a temporary SQLite database and tests competing editor writes, stale archive/restore, historical restore and transaction rollback after an injected history insert failure.
+
+The SQLite model is not a live Cloudflare D1 test. CI must pass before the source-test stage is marked complete. Preview acceptance remains separately gated: inspect the Preview D1 migration ledger read-only, obtain explicit approval for migration/deployment, then test two independent Admin sessions and verify content, revision, history and audit results.
+
+Do not change `main`, Production, Cloudflare secrets/configuration or remote databases without separate explicit approval. Next priority after CI: prepare the Preview-only acceptance request and record any required migration/deployment approvals.

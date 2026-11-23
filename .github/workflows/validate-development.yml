@@ -40,6 +40,8 @@ jobs:
         run: node scripts/test-cms-initialization-recovery.mjs
       - name: Check CMS revision concurrency contract
         run: node scripts/test-cms-revision-contract.mjs
+      - name: Check CMS revision SQL and transaction behavior in SQLite
+        run: python3 scripts/test-cms-revision-sqlite.py
       - name: Password hashing compatibility tests
         run: node scripts/test-password-hash.mjs
       - name: Admin MFA cryptographic and source-contract tests

@@ -627,3 +627,33 @@ Never mark MFA as Preview-verified based only on CI success. Production remains 
 Development CI runs `node scripts/test-cms-initialization-atomicity.mjs` and `node scripts/test-cms-initialization-recovery.mjs`. The recovery test verifies server/client 400-item limits, validation-before-write, insert-if-absent retry behavior, conditional draft history, one D1 batch for content/history/audit, draft-only behavior, retry guidance and button restoration.
 
 These are source-contract checks. They do not inject a real D1 statement failure or prove Preview browser behavior. Runtime failure-injection and Preview acceptance remain pending and require separately approved Preview access/deployment.
+
+
+## CMS revision and concurrency tests
+
+Development CI runs both:
+- `node scripts/test-cms-revision-contract.mjs` — verifies the Worker routes, HTTP conflict behavior, revision tokens in the Admin UI and conditional history/audit statements.
+- `python3 scripts/test-cms-revision-sqlite.py` — applies migration 0018 to a temporary SQLite database and exercises two competing editor requests, stale-write rejection, archive/restore, historical restore and a simulated history-insert failure.
+
+Expected model results:
+- Exactly one of two writes using the same starting revision succeeds.
+- The stale write does not change content, append version history or create an audit event.
+- Successful archive, restore and historical restore each advance the revision.
+- Stale archive/restore operations do not reverse a newer state.
+- A history insert failure rolls back the content update and audit write in the transaction.
+
+**Verification boundary:** The SQLite test executes SQLite SQL and transaction behavior in CI. It is not a Cloudflare D1 remote integration test and does not prove Preview deployment or browser behavior.
+
+### Preview acceptance checklist — pending separate approval
+
+- [ ] Verify Preview D1 identity and read-only migration ledger; confirm migration 0018 is applied before deploying dependent Worker code.
+- [ ] Deploy the exact approved development commit to Preview only after separate deployment approval.
+- [ ] Open the same CMS item in two independent Admin sessions. Save from session A, then attempt to save the stale copy from session B; expect HTTP 409 and no overwritten value.
+- [ ] Repeat with archive versus save, restore versus archive, and historical restore versus a newer draft.
+- [ ] Confirm revision increments exactly once per successful mutation.
+- [ ] Confirm stale requests create no version-history or audit rows.
+- [ ] Confirm a fresh reload obtains the current revision and allows the next save.
+- [ ] Check English and Bangla contexts independently and verify publication behavior is unchanged.
+- [ ] Record deployed SHA, browser/device, API status and database evidence.
+
+No Preview migration, deployment or database operation is authorized by these source-level tests. Production and `main` remain out of scope.

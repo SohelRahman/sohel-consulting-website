@@ -121,13 +121,13 @@ CMS mutation endpoints enforce same-origin checks. URL and image values accept H
 - The legacy `cms_content_versions` table belongs to the pre-existing legacy CMS schema and is not used by this implementation.
 
 
-**Concurrency limitation:** CMS writes are transactionally grouped, but there is no per-editor revision token or optimistic-lock conflict response. Concurrent saves to the same content key remain last-write-wins. Custom Page Builder structure saves and bulk initialization also use D1 batches; bulk initialization accepts up to 400 items per request.
+### CMS revision and concurrency model
 
-
-### CMS optimistic concurrency
-
-- `GET /api/admin/cms?page=...&lang=...` includes an integer `revision` on each content item.
-- `POST /api/admin/cms/save` accepts `revision`: omit/null only when creating a new key; send the current positive integer when updating an existing key. Successful saves return the next revision.
-- Archive, restore and historical-version restore require the current revision and increment it on success.
-- A stale or missing row returns HTTP `409 Conflict`; reload the item before retrying. This prevents silent last-write-wins updates from the Admin Content Manager.
-- Migration `0018_cms_content_revision.sql` is required before deploying the Worker change.
+- `GET /api/admin/cms?page=...&lang=...` returns an integer `revision` for every content row.
+- `POST /api/admin/cms/save` accepts a positive `revision` when updating an existing row. Omit, send null or an empty value only when creating a new key. Successful saves return the next revision.
+- Archive (`/api/admin/cms/delete`), restore (`/api/admin/cms/restore`) and historical restore (`/api/admin/cms/restore-version`) require the current positive revision and increment it on success.
+- Each update uses compare-and-swap semantics: the SQL update includes the expected revision in its WHERE clause and increments the stored revision in the same statement.
+- A stale revision or missing row returns HTTP `409 Conflict`. The Admin UI displays the Worker error; reload the content to obtain the latest revision before retrying. Invalid or missing revisions on revision-required actions return HTTP `400`.
+- Content changes, conditional draft-history snapshots and audit records are grouped in a D1 batch. When the compare-and-swap update changes no row, conditional history/audit statements do not add records.
+- This protects individual `cms_content` rows. It does not add a revision token to page-level publication, bulk initialization or custom Page Builder structure. Bulk initialization uses insert-if-absent semantics instead.
+- Migration `0018_cms_content_revision.sql` must be present in the target database before deploying the Worker code that queries and updates `revision`. Its presence in Git is not proof of remote application.

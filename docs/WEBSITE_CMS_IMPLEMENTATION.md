@@ -187,3 +187,13 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - The Worker validates every submitted value before creating the D1 statement batch. Content, conditional draft history and audit writes remain in one D1 batch.
 - Added a dedicated recovery-path source-contract test for server/client limits, validation-before-write, idempotent inserts, conditional history, atomic batch structure, no auto-publish, retry guidance and button restoration.
 - These are source-level checks. A real D1 statement failure and Preview browser acceptance remain untested. No schema change, migration or deployment is required for this change.
+
+
+## 2026-11-23 — CMS revision and concurrency verification
+
+- Added a temporary SQLite test database using the committed migration 0018 and the same compare-and-swap SQL shapes used by the Worker.
+- The test races two independent editor requests using the same initial revision and asserts exactly one succeeds. The stale request must not alter the draft or append history/audit records.
+- Added stale and successful archive/restore checks, historical-version restore checks, and injected history-write failure to verify transaction rollback of content/history/audit.
+- Extended the Worker/Admin source-contract test to cover each revision-required route, HTTP 409 behavior, row-scoped historical version lookup and revision tokens submitted by the Admin editor.
+- Added both checks to development CI.
+- This is SQLite SQL/transaction-model coverage, not live Cloudflare D1 or Preview acceptance. Preview migration state, deployment and browser testing remain pending and separately gated.
