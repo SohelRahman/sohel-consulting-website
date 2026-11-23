@@ -390,3 +390,5 @@ Custom Page Builder create, update and delete operations previously committed th
 
 ### Verification boundary
 The source-contract test is included in CI; runtime D1 failure-injection and concurrent-editor tests remain separate. No Preview deployment, D1 migration, Production change, main update or branch reconciliation is part of this work.
+
+- Added a 400-field cap to Page Builder structure saves to stay below D1's documented approximate 5,000-binding per-Worker-invocation limit while retaining a single atomic batch.

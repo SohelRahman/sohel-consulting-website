@@ -1005,10 +1005,12 @@ async function handleApi(request, env) {
       const draft={sections:safeSections};
       const publish=data?.publish===true;
       const seoTitle=clean(data?.seoTitle,160),seoDescription=clean(data?.seoDescription,300);
+      const cmsStatements=builderPageCmsStatements(env,session.email,pageAdminSlug,language,title,seoTitle,seoDescription,safeSections);
+      if(cmsStatements.length>800)return json({error:"This page has too many CMS fields. Reduce the number of sections or cards before saving."},400);
       const statements=[
         env.DB.prepare("UPDATE pages SET title=?,language=?,seo_title=?,seo_description=?,draft_json=?,published_json=CASE WHEN ?=1 THEN ? ELSE published_json END,status=CASE WHEN ?=1 THEN 'published' ELSE status END,published_at=CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE published_at END,updated_at=CURRENT_TIMESTAMP WHERE slug=?")
           .bind(title,language,seoTitle,seoDescription,JSON.stringify(draft),publish?1:0,JSON.stringify(draft),publish?1:0,publish?1:0,pageAdminSlug),
-        ...builderPageCmsStatements(env,session.email,pageAdminSlug,language,title,seoTitle,seoDescription,safeSections),
+        ...cmsStatements,
         env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,?, 'page',?,? WHERE EXISTS (SELECT 1 FROM pages WHERE slug=?)")
           .bind(id(),session.email,publish?"page_published":"page_draft_saved",pageAdminSlug,String(safeSections.length)+" sections; CMS keys registered",pageAdminSlug)
       ];

@@ -10,6 +10,7 @@ const checks=[
   ["Page CMS seed helper prepares guarded content inserts and version snapshots",helper.includes("INSERT OR IGNORE INTO cms_content")&&helper.includes("WHERE EXISTS (SELECT 1 FROM pages")&&helper.includes("changes()>0")],
   ["Page creation, CMS seed and audit are committed in one D1 batch",create.includes("env.DB.batch(statements)")&&create.includes("builderPageCmsStatements")&&create.includes("INSERT INTO audit_logs")],
   ["Page structure update, CMS registration and audit share one D1 batch",update.includes("env.DB.batch(statements)")&&update.includes("builderPageCmsStatements")&&update.includes("INSERT INTO audit_logs")],
+  ["CMS key registration is capped below the D1 per-invocation binding limit",update.includes("cmsStatements.length>800")&&update.includes("too many CMS fields")],
   ["Missing page update does not seed CMS records or report success",update.includes("if(!results[0]?.meta?.changes)")],
   ["Page deletion, CMS cleanup, history cleanup and audit share one D1 batch",remove.includes("env.DB.batch([")&&remove.includes("DELETE FROM pages")&&remove.includes("DELETE FROM cms_content")&&remove.includes("DELETE FROM cms_static_content_versions")&&remove.includes("INSERT INTO audit_logs")],
   ["Missing page deletion is reported after the atomic batch",remove.includes("if(!results[0]?.meta?.changes)")],

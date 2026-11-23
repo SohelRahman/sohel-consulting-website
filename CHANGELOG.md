@@ -300,3 +300,5 @@
 - Batched page deletion with associated CMS content/history cleanup and audit logging.
 - Added a Page Builder atomicity source-contract test to development CI.
 - Runtime D1 integration and Preview browser acceptance remain pending. No migration, deployment, Production change or main update was performed.
+
+- Capped generated Page Builder CMS fields at 400 per save to stay within D1 Worker binding limits while preserving transaction atomicity.

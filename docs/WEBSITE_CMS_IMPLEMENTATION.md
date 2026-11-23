@@ -146,3 +146,5 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - Existing CMS values remain protected by insert-if-absent behavior. Empty CMS values are still not seeded.
 - Added a source-contract regression test to development CI.
 - This is source-level transaction hardening. Runtime D1 integration, failure-injection and concurrent-editor tests remain outstanding; no Preview deployment or database migration was performed.
+
+- Page structure saves are capped at 400 generated CMS fields (800 prepared statements) so the operation remains below Cloudflare D1's documented approximate 5,000-binding per-Worker-invocation limit.
