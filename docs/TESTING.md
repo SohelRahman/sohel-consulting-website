@@ -617,3 +617,6 @@ Preview acceptance remains pending:
 - [ ] Record exact Preview deployment SHA, browser/device and test evidence.
 
 Never mark MFA as Preview-verified based only on CI success. Production remains out of scope.
+
+- [ ] Confirm failed enrollment, login verification and MFA reset attempts are audited without storing the submitted code.
+- [ ] Confirm both IP-keyed and account-keyed throttles apply to enrollment, verification and reset endpoints.

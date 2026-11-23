@@ -474,7 +474,8 @@ async function handleApi(request, env) {
     if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
     if(!env.MFA_ENCRYPTION_KEY)return json({error:"MFA encryption is not configured."},503);
     const ctx=await readMfaChallenge(request,env,"enroll");if(!ctx)return mfaRejected();
-    if(!(await rateLimit(env,request,"admin-mfa-setup",5,15*60*1000,ctx.user.email)))return json({error:"Too many setup attempts. Try again later."},429);
+    if(!(await rateLimit(env,request,"admin-mfa-setup-ip",5,15*60*1000)))return json({error:"Too many setup attempts. Try again later."},429);
+    if(!(await rateLimit(env,request,"admin-mfa-setup-account",5,15*60*1000,ctx.user.email)))return json({error:"Too many setup attempts. Try again later."},429);
     const old=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(ctx.user.id).first();
     if(old?.enabled_at)return mfaRejected(409);
     const secret=generateTotpSecret();let cipher;
@@ -489,12 +490,13 @@ async function handleApi(request, env) {
     if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
     if(!env.MFA_ENCRYPTION_KEY||!env.SESSION_SECRET)return json({error:"MFA encryption is not configured."},503);
     const ctx=await readMfaChallenge(request,env,"enroll");if(!ctx)return mfaRejected();
-    if(!(await rateLimit(env,request,"admin-mfa-confirm",5,15*60*1000,ctx.user.email)))return json({error:"Too many verification attempts. Try again later."},429);
+    if(!(await rateLimit(env,request,"admin-mfa-confirm-ip",5,15*60*1000)))return json({error:"Too many verification attempts. Try again later."},429);
+    if(!(await rateLimit(env,request,"admin-mfa-confirm-account",5,15*60*1000,ctx.user.email)))return json({error:"Too many verification attempts. Try again later."},429);
     const data=await request.json().catch(()=>null),code=String(data?.code||"");
     const pending=await env.DB.prepare("SELECT pending_secret_ciphertext,pending_expires_at,enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(ctx.user.id).first();
     if(!pending?.pending_secret_ciphertext||pending.enabled_at||Number(pending.pending_expires_at)<=Date.now())return mfaRejected(409);
     let secret;try{secret=await decryptTotpSecret(pending.pending_secret_ciphertext,env.MFA_ENCRYPTION_KEY,ctx.user.id);}catch{return json({error:"Pending MFA setup cannot be decrypted. Restart enrollment."},503);}
-    const counter=await verifyTotp(secret,code,Date.now(),-1);if(counter===null)return json({error:"Authenticator code is invalid or expired. Check your device clock."},401);
+    const counter=await verifyTotp(secret,code,Date.now(),-1);if(counter===null){await audit(env,ctx.user.email,"admin_mfa_enrollment_verification_failed","admin_user",ctx.user.id,"TOTP enrollment code rejected");return json({error:"Authenticator code is invalid or expired. Check your device clock."},401);}
     const codes=generateRecoveryCodes(10),batchId=id(),nextVersion=Number(ctx.user.session_version)+1,prepared=[];
     for(const recoveryCode of codes){const salt=generateRecoverySalt(),codeHash=await hashRecoveryCode(recoveryCode,salt);prepared.push({salt,codeHash});}
     const statements=[
@@ -513,7 +515,8 @@ async function handleApi(request, env) {
     if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
     if(!env.MFA_ENCRYPTION_KEY||!env.SESSION_SECRET)return json({error:"MFA encryption is not configured."},503);
     const ctx=await readMfaChallenge(request,env,"login");if(!ctx)return mfaRejected();
-    if(!(await rateLimit(env,request,"admin-mfa-verify",5,15*60*1000,ctx.user.email)))return json({error:"Too many verification attempts. Try again later."},429);
+    if(!(await rateLimit(env,request,"admin-mfa-verify-ip",5,15*60*1000)))return json({error:"Too many verification attempts. Try again later."},429);
+    if(!(await rateLimit(env,request,"admin-mfa-verify-account",5,15*60*1000,ctx.user.email)))return json({error:"Too many verification attempts. Try again later."},429);
     const data=await request.json().catch(()=>null),code=String(data?.code||""),recoveryCode=String(data?.recoveryCode||"");
     const credential=await env.DB.prepare("SELECT secret_ciphertext,last_totp_counter FROM admin_mfa_credentials WHERE user_id=? AND enabled_at IS NOT NULL").bind(ctx.user.id).first();
     if(!credential?.secret_ciphertext)return mfaRejected(409);
@@ -524,7 +527,7 @@ async function handleApi(request, env) {
       const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(ctx.user.id).all();
       for(const row of rows.results||[]){const candidate=await hashRecoveryCode(recoveryCode,row.code_salt);if(constantTimeTextEqual(candidate,row.code_hash)){const used=await env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL").bind(ctx.user.id,row.code_hash).run();accepted=Boolean(used.meta?.changes);usedRecovery=accepted;break;}}
     }
-    if(!accepted)return json({error:"Authenticator or recovery code is invalid or already used."},401);
+    if(!accepted){await audit(env,ctx.user.email,"admin_mfa_verification_failed","admin_user",ctx.user.id,"Second-factor code rejected or already consumed");return json({error:"Authenticator or recovery code is invalid or already used."},401);}
     await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(ctx.user.id).run();
     await audit(env,ctx.user.email,usedRecovery?"admin_mfa_recovery_code_used":"admin_mfa_verified","admin_user",ctx.user.id,usedRecovery?"One-time recovery code consumed":"TOTP challenge verified");
     return mfaCompleteJson({ok:true},await makeSession(ctx.user.id,ctx.user.email,ctx.user.session_version,env.SESSION_SECRET));
@@ -554,6 +557,9 @@ async function handleApi(request, env) {
 
     if(path==="/api/admin/mfa/disable"&&method==="POST"){
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      if(!env.MFA_ENCRYPTION_KEY)return json({error:"MFA encryption is not configured."},503);
+      if(!(await rateLimit(env,request,"admin-mfa-disable-ip",3,15*60*1000)))return json({error:"Too many MFA reset attempts. Try again later."},429);
+      if(!(await rateLimit(env,request,"admin-mfa-disable-account",3,15*60*1000,user.email)))return json({error:"Too many MFA reset attempts. Try again later."},429);
       const data=await request.json().catch(()=>null),password=String(data?.password||""),code=String(data?.code||""),recoveryCode=String(data?.recoveryCode||"");
       const account=await env.DB.prepare("SELECT password_hash FROM admin_users WHERE id=?").bind(user.id).first();
       if(!account||!(await verifyPassword(password,account.password_hash)))return json({error:"Current password is incorrect."},401);
@@ -562,7 +568,7 @@ async function handleApi(request, env) {
       let accepted=false;
       if(/^\d{6}$/.test(code)){const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,user.id),counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));if(counter!==null){const r=await env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=? WHERE user_id=? AND last_totp_counter<?").bind(counter,user.id,counter).run();accepted=Boolean(r.meta?.changes);}}
       else if(recoveryCode){const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(user.id).all();for(const row of rows.results||[]){if(constantTimeTextEqual(await hashRecoveryCode(recoveryCode,row.code_salt),row.code_hash)){const r=await env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL").bind(user.id,row.code_hash).run();accepted=Boolean(r.meta?.changes);break;}}}
-      if(!accepted)return json({error:"A valid unused authenticator or recovery code is required."},401);
+      if(!accepted){await audit(env,user.email,"admin_mfa_reset_verification_failed","admin_user",user.id,"MFA reset second-factor code rejected");return json({error:"A valid unused authenticator or recovery code is required."},401);}
       const nextVersion=Number(user.session_version)+1;
       const result=await env.DB.batch([
         env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=?").bind(user.id,user.session_version),

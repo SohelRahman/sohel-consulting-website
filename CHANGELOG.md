@@ -1,3 +1,8 @@
+## 2026-11-23 — MFA rate-limit and audit hardening
+- Added independent IP-keyed and account-keyed rate limits to MFA enrollment, login verification and MFA reset operations.
+- Added audit events for rejected enrollment codes, rejected second-factor codes and rejected MFA reset verification. Submitted codes and secrets are not included in audit details.
+- Extended the MFA source-contract test to require the throttles and failed-attempt audit coverage.
+
 ## 2026-11-23 — Admin MFA CI verification
 - Development CI run `45148706139` passed for commit `432a59fc62c3b80f68948fa62db13a6e88ef0cff`.
 - The run included the new Admin MFA cryptographic and source-contract tests along with the existing development validation suite.
