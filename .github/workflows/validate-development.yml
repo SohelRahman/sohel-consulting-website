@@ -30,6 +30,8 @@ jobs:
         run: node scripts/validate-site.mjs
       - name: Check RBAC security contract
         run: node scripts/test-rbac-contract.mjs
+      - name: Check CMS write atomicity contract
+        run: node scripts/test-cms-atomicity.mjs
       - name: Password hashing compatibility tests
         run: node scripts/test-password-hash.mjs
       - name: Course pricing unit tests

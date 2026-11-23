@@ -25,7 +25,9 @@ The migration copies currently published `site_content` rows into the English ho
 
 - Saving creates or updates a draft and records a draft version.
 - Public endpoints return only non-null published values.
-- Publishing applies all content rows for one page and one language in a single D1 batch.
+- Saving a draft and its version-history and audit entries are committed together in one D1 batch.
+- Publishing applies all content rows for one page and one language, records published snapshots from the current draft values, and writes the audit entry in one D1 batch. A failure rolls back the complete publication batch.
+- Archive, restore and historical-version restore state changes are batched with their audit/history writes.
 - English and Bangla are independent publication contexts.
 - Archiving is a soft delete. The current published value remains visible until the next publication of that page/language.
 - Restoring an archived item returns it to draft state; it does not publish automatically.
@@ -129,3 +131,8 @@ Custom pages created from **Admin → Pages → Create Page** are registered aut
 - Deleting a custom page also deletes its active CMS records and version history for that slug, preventing orphaned records or history from appearing if the slug is reused.
 
 Custom pages have one configured language per page record. To publish a translated counterpart, create a separate page with its own slug and select the other language. Static-page CMS language behavior remains unchanged.
+
+
+## Concurrency and consistency boundary
+
+The static CMS write paths use D1 batch transactions for content, version-history and audit consistency. Publication reads the current draft values inside the publication batch when creating published snapshots, avoiding a stale pre-read snapshot. This does not implement per-editor optimistic locking: if two administrators save the same page/language/content key, the last successful save wins. Add revision-based conflict detection before enabling simultaneous editing as a supported workflow. Custom Page Builder structure writes and bulk initialization still have separate multi-statement steps and require their own transaction review.

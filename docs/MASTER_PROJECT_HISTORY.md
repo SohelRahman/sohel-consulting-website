@@ -357,3 +357,21 @@ A source review found that `/api/admin/media/inventory` mapped both GET and POST
 - The first CI run after the Cloudinary inventory permission fix exposed a false positive in the RBAC contract test: its mutation-handler scanner also matched HTTP-method comparisons inside the `requiredPermission` helper, which is not a request handler.
 - Scoped the scanner to `handleApi` so it checks actual API route handlers rather than permission-mapping expressions.
 - The first run failed at the RBAC contract check; syntax and HTML validation passed. Re-run CI is required before treating the correction as verified.
+
+## 2026-11-23 — Static CMS write consistency hardening
+
+### Findings
+Static CMS draft save, publication, archive/restore and historical restore previously performed content, history and audit writes as separate database operations. A mid-sequence failure could leave content and its history/audit trail inconsistent. Publication also selected draft rows before updating published values and later inserted history snapshots from that earlier read, creating a stale-snapshot window under concurrent editing.
+
+### Development-branch correction
+- Draft upsert, draft snapshot and audit entry now execute in one D1 batch.
+- Publication updates the page/language and inserts published snapshots by selecting the current draft rows within the same D1 batch; its audit entry is included in that batch.
+- Archive and restore state changes are batched with their audit entries.
+- Historical-version restore, draft snapshot and audit entry are batched together.
+- Added a dedicated CMS atomicity source-contract test to CI.
+
+### Remaining concurrency boundary
+There is still no per-editor optimistic-lock revision token. Concurrent saves to the same content key remain last-write-wins. Custom Page Builder structure saves and bulk CMS initialization still have multi-statement sequences outside this static CMS transaction hardening and require separate review.
+
+### Verification boundary
+Source changes and documentation are on `current-focus-development` only. CI is required before marking the changes validated. No Preview deployment, D1 migration, Production change, `main` update or branch reconciliation is part of this work.
