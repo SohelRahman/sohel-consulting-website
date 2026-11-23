@@ -149,3 +149,15 @@ The last recorded read-only Preview migration audit is GitHub Actions run [#4502
 The read-only audit workflow `.github/workflows/audit-preview-d1-migrations.yml` is present on both `main` and `current-focus-development`, so it can be manually dispatched from GitHub Actions with the development branch selected. The connected GitHub integration does not expose workflow dispatch; the user must start the audit in the UI. Confirm the full output identifies Preview D1 `consulting-preview-db` / `e0317397-77cb-4f36-9d19-2594ff75b0c2` and explicitly shows whether migration 0018 is pending.
 
 No migration or database write is authorized by the audit. If 0018 is pending, stop and obtain separate explicit approval before applying it. Production remains out of scope.
+
+
+## 2026-11-23 — Preview D1 migration audit Run #5
+
+The read-only GitHub Actions audit [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45155468446) completed successfully on `current-focus-development`. Its Wrangler 4.160.1 migration-list output showed these files under **Migrations to be applied** for the dedicated remote Preview D1 binding:
+
+- `0018_cms_content_revision.sql`
+- `0019_admin_mfa.sql`
+
+The workflow's target-verification step is designed to verify Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2` and exclude the known Production ID. The supplied Run #5 screenshot shows the successful migration-list step and both pending filenames. Neither migration was applied by this read-only audit.
+
+Migration 0018 adds `cms_content.revision` as a positive, non-null integer defaulting to 1. Migration 0019 creates Admin MFA credential and recovery-code tables and indexes. Review SQL and recovery plans and obtain explicit approval before applying either migration. Apply and verify 0018 before deploying Worker code that depends on the revision column. Configure the Preview-only MFA encryption secret through the approved secret process before enabling MFA functionality. Preview deployment is a separate approval gate. Production remains out of scope.
