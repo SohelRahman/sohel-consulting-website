@@ -271,3 +271,12 @@
 
 - Added a partial unique D1 index to prevent concurrent scan starts from creating multiple active scans; concurrent starts return the already active scan ID.
 - Documented that paginated Cloudinary inventory is not an atomic point-in-time snapshot and missing-remote rows are reconciliation leads, not proof of deletion.
+
+## 2026-11-23 — Isolated Preview Worker deployment preparation
+
+- Added `wrangler.preview.toml` with the dedicated Preview Worker name and exact Preview D1 database ID; the Production D1 binding is not included.
+- Added `.github/workflows/deploy-cloudflare-preview.yml` with a development-branch guard, Preview target checks, Cloudflare token/database verification, source validation and a Preview-only Wrangler deploy command.
+- Added `docs/PREVIEW_DEPLOYMENT.md` describing required secrets, branch restrictions and post-deployment acceptance boundaries.
+- Development CI passed for the workflow/configuration changes (runs `45047751169`, `45047779916`, `45047850957`, and `45047891708`).
+- GitHub Actions UI did not expose the workflow because it is present only on `current-focus-development`. GitHub documentation confirms a `workflow_dispatch` workflow must also exist on the default branch to be manually triggered in the UI. The default branch currently does not contain this workflow.
+- No change was made to `main`, no workflow was dispatched, and no Cloudflare Worker deployment was performed. Adding the workflow file to `main` remains a separately authorized action.
