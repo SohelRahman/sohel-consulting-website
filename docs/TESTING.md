@@ -669,3 +669,8 @@ The next operational prerequisite is a fresh read-only Preview D1 migration audi
 The audit workflow is present on `main` and `current-focus-development`. In GitHub Actions, select **Audit Cloudflare Preview D1 migrations (read-only)**, choose `current-focus-development`, and run it. Confirm the exact Preview D1 ID and whether migration 0018 is pending. The workflow only lists remote migrations; it does not apply them. The connected GitHub integration cannot dispatch workflows.
 
 Do not apply migration 0018 or deploy the Preview Worker without separate explicit approval. The Preview deployment workflow is still absent from `main`; do not copy it there without approval. After these gates, use the CMS concurrency checklist above for two-session browser acceptance.
+
+
+## Preview CMS concurrency and Admin MFA release gates — 2026-11-23
+
+The read-only Preview D1 migration audit [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45155468446) reported `0018_cms_content_revision.sql` and `0019_admin_mfa.sql` as pending. Do not run the Preview Worker deployment or attempt live CMS/MFA acceptance until the required Preview migrations have been separately approved, applied and verified. Migration 0018 is required before testing CMS revision-token compare-and-swap behavior against Preview. Migration 0019 and a Preview-only `MFA_ENCRYPTION_KEY` are prerequisites for MFA runtime acceptance. Migration application and Worker deployment each require explicit approval. No Production or `main` action is included.
