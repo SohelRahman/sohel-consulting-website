@@ -140,3 +140,12 @@ The CI test `scripts/test-cms-revision-sqlite.py` applies the committed migratio
 
 
 **CI result — 2026-11-23:** The migration 0018 SQLite SQL/transaction model and Worker/Admin revision source-contract tests passed in development CI run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334), commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`. This does not verify the remote Preview migration ledger or execute against Cloudflare D1.
+
+
+## 2026-11-23 — CMS migration 0018 Preview status check
+
+The last recorded read-only Preview migration audit is GitHub Actions run [#45024256326](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45024256326), dated 2026-11-22. It predates the addition of migration 0018 and therefore cannot establish whether `0018_cms_content_revision.sql` is currently applied.
+
+The read-only audit workflow `.github/workflows/audit-preview-d1-migrations.yml` is present on both `main` and `current-focus-development`, so it can be manually dispatched from GitHub Actions with the development branch selected. The connected GitHub integration does not expose workflow dispatch; the user must start the audit in the UI. Confirm the full output identifies Preview D1 `consulting-preview-db` / `e0317397-77cb-4f36-9d19-2594ff75b0c2` and explicitly shows whether migration 0018 is pending.
+
+No migration or database write is authorized by the audit. If 0018 is pending, stop and obtain separate explicit approval before applying it. Production remains out of scope.

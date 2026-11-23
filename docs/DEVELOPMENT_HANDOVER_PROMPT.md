@@ -575,3 +575,12 @@ Do not change `main`, Production, Cloudflare secrets/configuration or remote dat
 
 
 **CMS revision/concurrency CI result — 2026-11-23:** Development CI run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`. The Worker/Admin contract checks and SQLite test passed, including two concurrent editor requests with the same revision, stale archive/restore, historical restore and injected history-write rollback. This is not a live Cloudflare D1 or Preview browser test. No migration, deployment or remote database operation was performed.
+
+
+## 2026-11-23 — Preview CMS concurrency acceptance handover
+
+Development source and SQLite transaction-model tests passed in CI. The next prerequisite is a fresh read-only Preview D1 migration audit because the previous successful audit (#45024256326, 2026-11-22) predates migration 0018.
+
+The read-only audit workflow exists on both `main` and `current-focus-development`. Start it manually in GitHub Actions, selecting `current-focus-development`. Verify the complete output names Preview D1 `consulting-preview-db` / `e0317397-77cb-4f36-9d19-2594ff75b0c2` and states whether `0018_cms_content_revision.sql` is pending. The GitHub connector cannot dispatch workflows. This audit is read-only.
+
+If 0018 is pending, stop and request explicit migration approval. If already applied, record evidence and request separate Preview deployment approval. The Preview deployment workflow is absent from `main`; adding it to `main` requires separate approval. Never deploy or migrate Production. After deployment, perform the two-session CMS concurrency acceptance checklist in `docs/TESTING.md`.

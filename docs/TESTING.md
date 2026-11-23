@@ -660,3 +660,12 @@ No Preview migration, deployment or database operation is authorized by these so
 
 
 **CI result — 2026-11-23:** Run [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`. Both CMS revision checks passed. Preview runtime acceptance remains pending.
+
+
+### Preview CMS concurrency acceptance — current gate
+
+The next operational prerequisite is a fresh read-only Preview D1 migration audit. The previous successful audit [#45024256326](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45024256326) predates migration 0018 and is not sufficient evidence of its current status.
+
+The audit workflow is present on `main` and `current-focus-development`. In GitHub Actions, select **Audit Cloudflare Preview D1 migrations (read-only)**, choose `current-focus-development`, and run it. Confirm the exact Preview D1 ID and whether migration 0018 is pending. The workflow only lists remote migrations; it does not apply them. The connected GitHub integration cannot dispatch workflows.
+
+Do not apply migration 0018 or deploy the Preview Worker without separate explicit approval. The Preview deployment workflow is still absent from `main`; do not copy it there without approval. After these gates, use the CMS concurrency checklist above for two-session browser acceptance.

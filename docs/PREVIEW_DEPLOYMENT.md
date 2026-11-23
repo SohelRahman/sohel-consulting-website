@@ -40,18 +40,36 @@ Application secrets (Admin credentials/session secret and Cloudinary credentials
 - After deployment, verify the deployment URL and commit in Cloudflare/GitHub, then perform the manual Preview QA checklist in `docs/TESTING.md`.
 - CI/source validation is not browser acceptance. Do not mark login, uploads, media inventory, CMS, registration or other runtime tests as passed without direct evidence.
 
-## GitHub Actions workflow visibility
+## GitHub Actions workflow visibility and dispatch status
 
-GitHub's official Actions documentation states that a workflow using `workflow_dispatch` must exist on the repository's default branch before it can be manually triggered from the Actions UI. After it is available on the default branch, the operator can select another branch in the Run workflow branch dropdown.
+GitHub requires a `workflow_dispatch` workflow to exist on the repository's default branch before the Actions UI can manually start it.
 
-Current repository state reviewed on 2026-11-23:
-
+Repository state checked on 2026-11-23:
 - Default branch: `main`.
-- `.github/workflows/deploy-cloudflare-preview.yml` exists on `current-focus-development`.
-- The workflow file is absent from `main`.
-- Therefore, the Actions UI cannot offer this workflow for manual dispatch yet.
-- The workflow must not be copied to `main` without explicit approval. If approved, only this workflow definition should be added; do not merge the development application code or change the Production deployment workflow.
-- Once the file is present on the default branch, run it with `current-focus-development` selected. The job-level branch guard rejects any other branch.
+- `.github/workflows/audit-preview-d1-migrations.yml` exists on both `main` and `current-focus-development`. Its manual dispatch UI prerequisite is satisfied.
+- `.github/workflows/deploy-cloudflare-preview.yml` exists on `current-focus-development` but is absent from `main`. Its manual dispatch UI prerequisite is not yet satisfied.
+- Do not add the deployment workflow to `main` without separate explicit approval. Do not merge or copy application code to `main`.
+
+### Read-only Preview migration audit
+
+Start the audit from GitHub Actions:
+1. Open **Actions**.
+2. Select **Audit Cloudflare Preview D1 migrations (read-only)**.
+3. Select **Run workflow**.
+4. Select branch `current-focus-development`.
+5. Start the workflow and inspect the complete log.
+
+The audit checks the Cloudflare token, verifies the exact Preview D1 identity and runs `wrangler d1 migrations list --remote`. It contains no migration-apply command and does not write application data. The connected GitHub integration used for this task has no workflow-dispatch operation, so the user must start this read-only run in the GitHub UI.
+
+The last recorded audit, run [#45024256326](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45024256326), is dated 2026-11-22 and predates migration 0018. It is not evidence of the current 0018 status. A fresh run is required.
+
+### Separate migration and deployment gates
+
+- If migration 0018 appears as pending, do not deploy the Worker. Review the migration, target identity and recovery plan, then obtain explicit approval before applying it to Preview.
+- If migration 0018 is already applied, record the audit run and exact target evidence.
+- Preview Worker deployment remains separate and requires explicit approval. Its workflow UI prerequisite is currently unresolved because the workflow is absent from `main`.
+- Never use the Production deployment workflow for Preview.
+- No step here authorizes Production changes, merging, or modifications to `main`.
 
 Reference: [GitHub Docs — Manually running a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
 

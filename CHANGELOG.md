@@ -1,3 +1,9 @@
+## 2026-11-23 — Preview CMS concurrency audit gate clarified
+- Rechecked the repository's default branch: the read-only Preview D1 migration audit workflow is present on both `main` and `current-focus-development`, so its Actions UI dispatch prerequisite is satisfied.
+- The last successful audit (#45024256326) predates migration 0018 and cannot establish its current Preview application status. A fresh read-only audit is required.
+- The Preview deployment workflow remains absent from `main`; its Actions UI dispatch prerequisite is still unresolved and must not be addressed by modifying `main` without separate approval.
+- Documented the manual read-only audit steps and the separate approval gates for migration and deployment. No workflow was dispatched, no migration/database write or deployment occurred, and no `main` change was made.
+
 ## 2026-11-23 — CMS revision/concurrency CI pass
 - Development CI run `45150564334` passed for commit `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`.
 - Worker/Admin source-contract checks passed for draft save, archive, restore and historical restore revision handling.
