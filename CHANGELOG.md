@@ -1,3 +1,8 @@
+## 2026-11-23 — Admin MFA CI verification
+- Development CI run `45148706139` passed for commit `432a59fc62c3b80f68948fa62db13a6e88ef0cff`.
+- The run included the new Admin MFA cryptographic and source-contract tests along with the existing development validation suite.
+- Preview D1 migration 0019, Preview-only `MFA_ENCRYPTION_KEY` configuration, Worker deployment and browser/runtime acceptance remain pending and require separate approval.
+
 ## 2026-11-23 — Admin MFA source implementation
 - Added mandatory password-plus-TOTP enrollment/verification for Admin and User dashboard accounts. Existing password-only sessions are rejected by the Admin API session guard.
 - Added AES-256-GCM account-bound TOTP seed encryption, five-minute signed purpose-bound challenge cookies, replay-safe TOTP counter updates, ten one-time salted recovery-code hashes, account/IP login throttling and a verified MFA reset flow.

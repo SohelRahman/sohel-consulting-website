@@ -69,3 +69,11 @@ The CMS intentionally excludes forms, dynamic course records, registration recor
 The current development source implements password-only administrator authentication. Password hashes use PBKDF2-HMAC-SHA-256; signed eight-hour sessions are carried in an HttpOnly, Secure, SameSite=Strict cookie and checked against D1 account state and `session_version`. Admin mutations require same-origin validation and Worker-side RBAC.
 
 **MFA is not implemented yet.** Do not describe administrator login as MFA-protected. The planned TOTP enrollment, short-lived challenge, encrypted seed storage, replay prevention and recovery-code design is documented in [Administrator Authentication and MFA Security Assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md).
+
+## Administrator MFA enforcement
+
+The administrator API now requires a completed MFA credential for every authenticated session. Password verification issues only a short-lived, purpose-bound enrollment or verification challenge. A full eight-hour session is issued only after TOTP enrollment or second-factor verification.
+
+TOTP secrets are encrypted with AES-256-GCM using the dedicated `MFA_ENCRYPTION_KEY` secret and user-ID-bound additional authenticated data. A conditional D1 counter update rejects TOTP replay. Recovery codes are individually salted and hashed, then consumed once. MFA enrollment increments the account session version to invalidate pre-MFA sessions. See [Configuration and Secrets](CONFIGURATION.md), [Testing and QA](TESTING.md), and the [MFA security assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md).
+
+Migration `0019_admin_mfa.sql` and a separate Preview runtime encryption secret are required before deploying the new Worker. Neither has been applied/configured by the source implementation change.
