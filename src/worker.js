@@ -1,5 +1,6 @@
 import { calculateCoursePrice, validateCourseDiscount } from "./course-pricing.js";
 import { hashPassword, verifyPassword, needsPasswordRehash } from "./password-hash.js";
+import { generateTotpSecret,verifyTotp,encryptTotpSecret,decryptTotpSecret,generateRecoveryCodes,hashRecoveryCode,generateRecoverySalt,constantTimeTextEqual } from "./admin-mfa.js";
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
 });
@@ -17,9 +18,9 @@ async function verifySignature(value, signature, secret) {
   try { return await crypto.subtle.verify("HMAC", key, fromB64url(signature), new TextEncoder().encode(value)); }
   catch { return false; }
 }
-async function rateLimit(env, request, scope, maxRequests, windowMs) {
+async function rateLimit(env, request, scope, maxRequests, windowMs, identityOverride = null) {
   const ip = request.headers.get("cf-connecting-ip") || "unknown";
-  const identity = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(scope + ":" + ip));
+  const identity = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(scope + ":" + (identityOverride || ip)));
   const key = scope + ":" + Array.from(new Uint8Array(identity), b => b.toString(16).padStart(2,"0")).join("");
   const now = Date.now();
   await env.DB.prepare("DELETE FROM rate_limits WHERE expires_at < ?").bind(now).run();
@@ -85,6 +86,34 @@ async function readSession(request, secret) {
     return data.exp > Date.now() ? data : null;
   } catch { return null; }
 }
+
+async function makeMfaChallenge(user,purpose,secret) {
+ const payload=b64url(new TextEncoder().encode(JSON.stringify({userId:user.id,email:user.email,sessionVersion:Number(user.session_version),purpose,nonce:id(),exp:Date.now()+5*60*1000})));
+ return payload+"."+await sign(payload,secret);
+}
+function mfaChallengeCookie(token){return "__Host-sr_admin_challenge="+token+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=300";}
+function clearMfaChallengeCookie(){return "__Host-sr_admin_challenge=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0";}
+async function readMfaChallenge(request,env,purpose){
+ if(!env.SESSION_SECRET)return null;
+ const cookie=request.headers.get("cookie")||"";
+ const token=cookie.split(";").map(x=>x.trim()).find(x=>x.startsWith("__Host-sr_admin_challenge="))?.slice("__Host-sr_admin_challenge=".length);
+ if(!token||token.length>2048)return null;
+ const [payload,signature,extra]=token.split(".");
+ if(!payload||!signature||extra||!(await verifySignature(payload,signature,env.SESSION_SECRET)))return null;
+ let challenge;try{challenge=JSON.parse(new TextDecoder().decode(fromB64url(payload)));}catch{return null;}
+ if(challenge.purpose!==purpose||!challenge.userId||!challenge.email||!Number.isFinite(challenge.exp)||challenge.exp<=Date.now())return null;
+ const user=await env.DB.prepare("SELECT id,email,role,is_active,session_version FROM admin_users WHERE id=?").bind(challenge.userId).first();
+ if(!user||!user.is_active||user.email!==challenge.email||Number(user.session_version)!==Number(challenge.sessionVersion))return null;
+ return {challenge,user};
+}
+function mfaChallengeJson(data,token,status=200){return new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","set-cookie":mfaChallengeCookie(token)}});}
+function mfaCompleteJson(data,sessionToken,status=200){
+ const headers=new Headers({"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
+ headers.append("set-cookie","sr_admin="+sessionToken+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800");
+ headers.append("set-cookie",clearMfaChallengeCookie());
+ return new Response(JSON.stringify(data),{status,headers});
+}
+function mfaRejected(status=401){return new Response(JSON.stringify({error:"The verification challenge is invalid or expired. Sign in again."}),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","set-cookie":clearMfaChallengeCookie()}});}
 function sameOrigin(request) {
   const origin = request.headers.get("origin");
   return Boolean(origin) && origin === new URL(request.url).origin;
@@ -410,37 +439,95 @@ async function handleApi(request, env) {
     return json({ok:true,reference:inquiryId.slice(0,8).toUpperCase(),message:"Your inquiry has been received."},201);
   }
 
+
   if (path === "/api/admin/login" && method === "POST") {
-    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-    if (!(await rateLimit(env,request,"admin-login",5,15*60*1000))) return json({error:"Too many login attempts. Please try again in 15 minutes."},429);
-    if (!env.SESSION_SECRET) return json({error:"Administrator session security is not configured."},503);
-    const data=await request.json().catch(()=>null);
-    const email=clean(data?.email,180).toLowerCase(), password=String(data?.password||"");
+    if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+    if(!(await rateLimit(env,request,"admin-login",5,15*60*1000)))return json({error:"Too many login attempts. Please try again in 15 minutes."},429);
+    const data=await request.json().catch(()=>null),email=clean(data?.email,180).toLowerCase(),password=String(data?.password||"");
     if(!emailOk(email)||password.length<1||password.length>256)return json({error:"Enter a valid email and password."},400);
+    if(!(await rateLimit(env,request,"admin-login-account",5,15*60*1000,email)))return json({error:"Too many sign-in attempts for this account. Please try again later."},429);
+    if(!env.SESSION_SECRET||!env.MFA_ENCRYPTION_KEY)return json({error:"Administrator session and MFA encryption secrets must be configured."},503);
     let user=await env.DB.prepare("SELECT id,email,full_name,role,password_hash,permissions_json,is_active,session_version FROM admin_users WHERE email=?").bind(email).first();
-    if(!user && env.ADMIN_EMAIL && env.ADMIN_PASSWORD && email===env.ADMIN_EMAIL.toLowerCase() && password===env.ADMIN_PASSWORD){
-      const userId=id(), hash=await hashPassword(password);
-      await env.DB.prepare("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES (?,?,?,'admin',?,'[]',1)")
-        .bind(userId,email,"Primary Administrator",hash).run();
+    if(!user&&env.ADMIN_EMAIL&&env.ADMIN_PASSWORD&&email===env.ADMIN_EMAIL.toLowerCase()&&password===env.ADMIN_PASSWORD){
+      const userId=id(),hash=await hashPassword(password);
+      await env.DB.prepare("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active) VALUES (?,?,?,?,?,?,1)").bind(userId,email,"Primary Administrator","admin",hash,"[]").run();
       user=await env.DB.prepare("SELECT id,email,full_name,role,password_hash,permissions_json,is_active,session_version FROM admin_users WHERE id=?").bind(userId).first();
       await audit(env,email,"bootstrap_admin_created","admin_user",userId,"Initial administrator account provisioned");
     }
-    if(!user || !user.is_active || !(await verifyPassword(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
-    if(needsPasswordRehash(user.password_hash)){
-      const upgradedHash=await hashPassword(password);
-      await env.DB.prepare("UPDATE admin_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND password_hash=?")
-        .bind(upgradedHash,user.id,user.password_hash).run();
-    }
-    await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(user.id).run();
-    const token=await makeSession(user.id,user.email,user.session_version,env.SESSION_SECRET);
-    return new Response(JSON.stringify({ok:true}),{headers:{
-      "content-type":"application/json","cache-control":"no-store",
-      "set-cookie":`sr_admin=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`
-    }});
+    if(!user||!user.is_active||!(await verifyPassword(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
+    if(needsPasswordRehash(user.password_hash)){const upgradedHash=await hashPassword(password);await env.DB.prepare("UPDATE admin_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND password_hash=?").bind(upgradedHash,user.id,user.password_hash).run();}
+    const credential=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(user.id).first();
+    const purpose=credential?.enabled_at?"login":"enroll",challenge=await makeMfaChallenge(user,purpose,env.SESSION_SECRET);
+    await audit(env,email,purpose==="login"?"admin_mfa_challenge_issued":"admin_mfa_enrollment_required","admin_user",user.id,"Password accepted; full session withheld pending MFA");
+    return mfaChallengeJson({ok:true,step:purpose==="login"?"verify_mfa":"enroll_mfa"},challenge);
   }
+
   if (path === "/api/admin/logout" && method === "POST") {
-    if (!sameOrigin(request)) return json({error:"Invalid request origin."},403);
-    return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","set-cookie":"sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
+    if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+    const headers=new Headers({"content-type":"application/json","cache-control":"no-store"});
+    headers.append("set-cookie","sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
+    headers.append("set-cookie",clearMfaChallengeCookie());
+    return new Response(JSON.stringify({ok:true}),{headers});
+  }
+
+  if(path==="/api/admin/mfa/setup"&&method==="POST"){
+    if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+    if(!env.MFA_ENCRYPTION_KEY)return json({error:"MFA encryption is not configured."},503);
+    const ctx=await readMfaChallenge(request,env,"enroll");if(!ctx)return mfaRejected();
+    if(!(await rateLimit(env,request,"admin-mfa-setup",5,15*60*1000,ctx.user.email)))return json({error:"Too many setup attempts. Try again later."},429);
+    const old=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(ctx.user.id).first();
+    if(old?.enabled_at)return mfaRejected(409);
+    const secret=generateTotpSecret();let cipher;
+    try{cipher=await encryptTotpSecret(secret,env.MFA_ENCRYPTION_KEY,ctx.user.id);}catch{return json({error:"MFA encryption configuration is invalid."},503);}
+    const saved=await env.DB.prepare("INSERT INTO admin_mfa_credentials (user_id,pending_secret_ciphertext,pending_expires_at) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET pending_secret_ciphertext=excluded.pending_secret_ciphertext,pending_expires_at=excluded.pending_expires_at,updated_at=CURRENT_TIMESTAMP WHERE admin_mfa_credentials.enabled_at IS NULL").bind(ctx.user.id,cipher,Date.now()+300000).run();
+    if(!saved.meta?.changes)return mfaRejected(409);
+    const issuer="Sohel Consulting",uri="otpauth://totp/"+encodeURIComponent(issuer+":"+ctx.user.email)+"?secret="+secret+"&issuer="+encodeURIComponent(issuer)+"&algorithm=SHA1&digits=6&period=30";
+    await audit(env,ctx.user.email,"admin_mfa_setup_started","admin_user",ctx.user.id,"Pending TOTP enrollment created");
+    return json({ok:true,secret,otpauthUri:uri,expiresInSeconds:300});
+  }
+  if(path==="/api/admin/mfa/confirm"&&method==="POST"){
+    if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+    if(!env.MFA_ENCRYPTION_KEY||!env.SESSION_SECRET)return json({error:"MFA encryption is not configured."},503);
+    const ctx=await readMfaChallenge(request,env,"enroll");if(!ctx)return mfaRejected();
+    if(!(await rateLimit(env,request,"admin-mfa-confirm",5,15*60*1000,ctx.user.email)))return json({error:"Too many verification attempts. Try again later."},429);
+    const data=await request.json().catch(()=>null),code=String(data?.code||"");
+    const pending=await env.DB.prepare("SELECT pending_secret_ciphertext,pending_expires_at,enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(ctx.user.id).first();
+    if(!pending?.pending_secret_ciphertext||pending.enabled_at||Number(pending.pending_expires_at)<=Date.now())return mfaRejected(409);
+    let secret;try{secret=await decryptTotpSecret(pending.pending_secret_ciphertext,env.MFA_ENCRYPTION_KEY,ctx.user.id);}catch{return json({error:"Pending MFA setup cannot be decrypted. Restart enrollment."},503);}
+    const counter=await verifyTotp(secret,code,Date.now(),-1);if(counter===null)return json({error:"Authenticator code is invalid or expired. Check your device clock."},401);
+    const codes=generateRecoveryCodes(10),batchId=id(),nextVersion=Number(ctx.user.session_version)+1,prepared=[];
+    for(const recoveryCode of codes){const salt=generateRecoverySalt(),codeHash=await hashRecoveryCode(recoveryCode,salt);prepared.push({salt,codeHash});}
+    const statements=[
+      env.DB.prepare("UPDATE admin_mfa_credentials SET secret_ciphertext=pending_secret_ciphertext,pending_secret_ciphertext=NULL,pending_expires_at=NULL,last_totp_counter=?,recovery_batch_id=?,enabled_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND enabled_at IS NULL AND pending_secret_ciphertext=? AND pending_expires_at>? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(counter,batchId,ctx.user.id,pending.pending_secret_ciphertext,Date.now(),ctx.user.id,ctx.user.session_version),
+      env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=?").bind(ctx.user.id,ctx.user.session_version)
+    ];
+    for(const item of prepared)statements.push(env.DB.prepare("INSERT INTO admin_mfa_recovery_codes (user_id,code_hash,code_salt) SELECT ?,?,? WHERE EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND recovery_batch_id=? AND enabled_at IS NOT NULL) AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(ctx.user.id,item.codeHash,item.salt,ctx.user.id,batchId,ctx.user.id,nextVersion));
+    const results=await env.DB.batch(statements);
+    if(!results[0]?.meta?.changes||!results[1]?.meta?.changes)return mfaRejected(409);
+    if(results.slice(2).some(x=>!x.meta?.changes))return json({error:"Recovery-code storage needs review. Sign in with your authenticator code."},500);
+    await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(ctx.user.id).run();
+    await audit(env,ctx.user.email,"admin_mfa_enabled","admin_user",ctx.user.id,"TOTP enabled; old sessions revoked and ten hashed recovery codes issued");
+    return mfaCompleteJson({ok:true,recoveryCodes:codes},await makeSession(ctx.user.id,ctx.user.email,nextVersion,env.SESSION_SECRET));
+  }
+  if(path==="/api/admin/mfa/verify"&&method==="POST"){
+    if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+    if(!env.MFA_ENCRYPTION_KEY||!env.SESSION_SECRET)return json({error:"MFA encryption is not configured."},503);
+    const ctx=await readMfaChallenge(request,env,"login");if(!ctx)return mfaRejected();
+    if(!(await rateLimit(env,request,"admin-mfa-verify",5,15*60*1000,ctx.user.email)))return json({error:"Too many verification attempts. Try again later."},429);
+    const data=await request.json().catch(()=>null),code=String(data?.code||""),recoveryCode=String(data?.recoveryCode||"");
+    const credential=await env.DB.prepare("SELECT secret_ciphertext,last_totp_counter FROM admin_mfa_credentials WHERE user_id=? AND enabled_at IS NOT NULL").bind(ctx.user.id).first();
+    if(!credential?.secret_ciphertext)return mfaRejected(409);
+    let accepted=false,usedRecovery=false;
+    if(/^\d{6}$/.test(code)){
+      try{const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,ctx.user.id),counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));if(counter!==null){const result=await env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=?,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND last_totp_counter<?").bind(counter,ctx.user.id,counter).run();accepted=Boolean(result.meta?.changes);}}catch{return json({error:"MFA verification is temporarily unavailable."},503);}
+    }else if(recoveryCode){
+      const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(ctx.user.id).all();
+      for(const row of rows.results||[]){const candidate=await hashRecoveryCode(recoveryCode,row.code_salt);if(constantTimeTextEqual(candidate,row.code_hash)){const used=await env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL").bind(ctx.user.id,row.code_hash).run();accepted=Boolean(used.meta?.changes);usedRecovery=accepted;break;}}
+    }
+    if(!accepted)return json({error:"Authenticator or recovery code is invalid or already used."},401);
+    await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(ctx.user.id).run();
+    await audit(env,ctx.user.email,usedRecovery?"admin_mfa_recovery_code_used":"admin_mfa_verified","admin_user",ctx.user.id,usedRecovery?"One-time recovery code consumed":"TOTP challenge verified");
+    return mfaCompleteJson({ok:true},await makeSession(ctx.user.id,ctx.user.email,ctx.user.session_version,env.SESSION_SECRET));
   }
   if (path.startsWith("/api/admin/")) {
     const session=await readSession(request,env.SESSION_SECRET);
@@ -449,7 +536,7 @@ async function handleApi(request, env) {
     if(!user || !user.is_active || user.email!==session.email || Number(user.session_version)!==Number(session.sessionVersion))return json({error:"Account is disabled or its session has been revoked. Please sign in again."},401);
     const permissions=permissionsFor(user);
     const isAdmin=user.role==="admin";
-    if(path==="/api/admin/me" && method==="GET")return json({user:{id:user.id,email:user.email,name:user.full_name,role:user.role,permissions}});
+    if(path==="/api/admin/me" && method==="GET"){const mfa=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(user.id).first();return json({user:{id:user.id,email:user.email,name:user.full_name,role:user.role,permissions,mfaEnabled:Boolean(mfa?.enabled_at)}});}
     if(path==="/api/admin/password" && method==="POST"){
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
       const data=await request.json().catch(()=>null),current=String(data?.currentPassword||""),next=String(data?.newPassword||"");
@@ -461,6 +548,30 @@ async function handleApi(request, env) {
       await audit(env,user.email,"password_changed","admin_user",user.id,"Self-service password change");
       const renewed=await makeSession(user.id,user.email,nextVersion,env.SESSION_SECRET);
       return new Response(JSON.stringify({ok:true}),{headers:{"content-type":"application/json","cache-control":"no-store","set-cookie":`sr_admin=${renewed}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`}});
+    }
+
+    if(path==="/api/admin/mfa/disable"&&method==="POST"){
+      if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
+      const data=await request.json().catch(()=>null),password=String(data?.password||""),code=String(data?.code||""),recoveryCode=String(data?.recoveryCode||"");
+      const account=await env.DB.prepare("SELECT password_hash FROM admin_users WHERE id=?").bind(user.id).first();
+      if(!account||!(await verifyPassword(password,account.password_hash)))return json({error:"Current password is incorrect."},401);
+      const credential=await env.DB.prepare("SELECT secret_ciphertext,last_totp_counter FROM admin_mfa_credentials WHERE user_id=? AND enabled_at IS NOT NULL").bind(user.id).first();
+      if(!credential?.secret_ciphertext)return json({error:"MFA is not enabled for this account."},409);
+      let accepted=false;
+      if(/^\d{6}$/.test(code)){const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,user.id),counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));if(counter!==null){const r=await env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=? WHERE user_id=? AND last_totp_counter<?").bind(counter,user.id,counter).run();accepted=Boolean(r.meta?.changes);}}
+      else if(recoveryCode){const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(user.id).all();for(const row of rows.results||[]){if(constantTimeTextEqual(await hashRecoveryCode(recoveryCode,row.code_salt),row.code_hash)){const r=await env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL").bind(user.id,row.code_hash).run();accepted=Boolean(r.meta?.changes);break;}}}
+      if(!accepted)return json({error:"A valid unused authenticator or recovery code is required."},401);
+      const nextVersion=Number(user.session_version)+1;
+      const result=await env.DB.batch([
+        env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=?").bind(user.id,user.session_version),
+        env.DB.prepare("DELETE FROM admin_mfa_recovery_codes WHERE user_id=? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(user.id,user.id,nextVersion),
+        env.DB.prepare("DELETE FROM admin_mfa_credentials WHERE user_id=? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(user.id,user.id,nextVersion)
+      ]);
+      if(!result[0]?.meta?.changes)return json({error:"Account state changed. Sign in again and retry."},409);
+      await audit(env,user.email,"admin_mfa_disabled","admin_user",user.id,"MFA reset after password and second-factor verification; re-enrollment required next login");
+      const headers=new Headers({"content-type":"application/json","cache-control":"no-store"});
+      headers.append("set-cookie","sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");headers.append("set-cookie",clearMfaChallengeCookie());
+      return new Response(JSON.stringify({ok:true,reauthenticationRequired:true}),{headers});
     }
     if(path==="/api/admin/users" || path.startsWith("/api/admin/users/")){
       if(!isAdmin)return json({error:"Only administrators can manage dashboard accounts."},403);
