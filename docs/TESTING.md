@@ -597,3 +597,23 @@ The current Admin login is password-only. Do not mark MFA tests as passed until 
 - [ ] Preview end-to-end tests cover setup, login, logout, recovery, revocation and failure cases on the exact deployed commit.
 
 See [Administrator Authentication and MFA Security Assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md) for the design and security requirements.
+
+## Administrator MFA implementation tests
+
+Development CI now runs `node scripts/test-admin-mfa.mjs`. It covers RFC-compatible TOTP vectors, current-step verification, replay rejection, malformed-code rejection, random secret format, AES-GCM encryption/decryption with account-bound associated data, and recovery-code hashing/salting. The same script checks key source-level security invariants and migration structure. These are unit/source-contract checks, not Preview runtime acceptance.
+
+Preview acceptance remains pending:
+- [ ] Add a unique 32-byte base64url `MFA_ENCRYPTION_KEY` to the development Preview runtime secrets.
+- [ ] Apply migration `0019_admin_mfa.sql` to the Preview D1 database only after explicit approval and verify both new tables/indexes.
+- [ ] Deploy the exact approved development commit to Preview only after the key and migration are ready.
+- [ ] Verify password-only login never receives an Admin session and old password-only sessions are rejected.
+- [ ] Complete first-login enrollment in an authenticator app and save the one-time recovery codes.
+- [ ] Sign out and verify a new login requires a fresh TOTP code.
+- [ ] Verify a recovery code works once and is rejected on reuse.
+- [ ] Verify a TOTP time-step code cannot be replayed.
+- [ ] Verify wrong/expired challenge cookies and cross-origin requests are rejected.
+- [ ] Verify MFA reset requires current password plus fresh TOTP/recovery code and forces re-enrollment.
+- [ ] Verify both Admin and permission-limited User accounts and bilingual instructions.
+- [ ] Record exact Preview deployment SHA, browser/device and test evidence.
+
+Never mark MFA as Preview-verified based only on CI success. Production remains out of scope.

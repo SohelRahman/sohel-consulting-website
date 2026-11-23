@@ -528,3 +528,17 @@ Resume only when the user asks to test:
 **Start here:** [Project Master Status](PROJECT_MASTER_STATUS.md). The latest verified development branch head is `f4cadf992879052d9ee8fd76cf143613c4361610`; CI run [#45140128176](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45140128176) passed for that commit. The next active task is implementation of Admin MFA and login security. The source audit confirmed password-only login and no MFA flow. Read [Administrator Authentication and MFA Security Assessment](ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md) before coding.
 
 Update `docs/PROJECT_MASTER_STATUS.md`, the relevant technical docs and `CHANGELOG.md` in every task commit. Verify the branch and CI at the start of each new chat. Continue from the next pending action; do not repeat completed work. No migration, deployment, Preview configuration change, Production change, merge/rebase or branch reconciliation is authorized without separate explicit approval. Migration 0018 is present in source but its remote application state is not independently verified.
+
+
+## Current handover — Admin MFA implementation (2026-11-23)
+
+The first Admin MFA source implementation is on `current-focus-development`:
+- MFA feature commit: `bad4a5904617047abe256bd416ed5a2b513238b0`.
+- Follow-up security commit: `8ba829c633f4a4ed5cf0caeecc94c61087e87382`.
+- Migration: `0019_admin_mfa.sql` (not applied).
+- New module: `src/admin-mfa.js`.
+- New unit/source-contract test: `scripts/test-admin-mfa.mjs`.
+
+The Worker requires password + TOTP enrollment/verification before issuing a full Admin session. It uses encrypted TOTP seeds, short-lived signed challenge cookies, replay-safe counters, single-use hashed recovery codes and account/IP throttling. The Admin UI includes English/Bangla MFA setup and verification instructions.
+
+**Mandatory prerequisites before Preview deployment:** configure a unique Preview-only `MFA_ENCRYPTION_KEY` (32 random bytes, base64url) and obtain explicit approval to apply migration 0019 and deploy. No Preview or Production resource was changed. Check `docs/PROJECT_MASTER_STATUS.md` and latest CI before continuing.

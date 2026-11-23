@@ -21,6 +21,7 @@ The Worker expects these administrator secrets:
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `SESSION_SECRET`
+- `MFA_ENCRYPTION_KEY` — a dedicated 32-byte AES-256-GCM key encoded as unpadded base64url (43 characters). It encrypts authenticator seeds at rest and must not be reused as `SESSION_SECRET`.
 
 The Preview secret workflow also configures Cloudinary credentials:
 
@@ -29,6 +30,14 @@ The Preview secret workflow also configures Cloudinary credentials:
 - `CLOUDINARY_API_SECRET`
 
 The Preview GitHub Actions workflow requires repository secrets for Cloudflare access and Preview-specific credentials. Its current YAML is the source of truth for exact secret names, including the Cloudinary folder-access setup.
+
+Generate a new key locally with Node.js 22:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+Configure this value as an encrypted runtime secret in the development Preview before deploying the MFA-enabled Worker. Use a different key for Production; do not configure Production as part of this task. Store a protected backup in an approved secret vault. If the key is lost, encrypted TOTP seeds cannot be recovered and affected accounts must re-enroll through a controlled recovery process. Never paste the value into chat or commit it.
 
 ## Secret handling rules
 

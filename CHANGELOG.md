@@ -1,3 +1,11 @@
+## 2026-11-23 — Admin MFA source implementation
+- Added mandatory password-plus-TOTP enrollment/verification for Admin and User dashboard accounts. Existing password-only sessions are rejected by the Admin API session guard.
+- Added AES-256-GCM account-bound TOTP seed encryption, five-minute signed purpose-bound challenge cookies, replay-safe TOTP counter updates, ten one-time salted recovery-code hashes, account/IP login throttling and a verified MFA reset flow.
+- Added bilingual MFA enrollment, verification and recovery instructions to the Admin login page.
+- Added D1 migration 0019 and cryptographic/source-contract tests. The new `MFA_ENCRYPTION_KEY` must be configured as a separate encrypted Preview runtime secret.
+- Source commits: `bad4a5904617047abe256bd416ed5a2b513238b0` and `8ba829c633f4a4ed5cf0caeecc94c61087e87382`.
+- Migration 0019 has not been applied, Preview encryption key has not been configured, and no Preview or Production deployment/configuration was changed. CI and runtime acceptance remain pending.
+
 ## 2026-11-23 — Admin authentication security assessment and project handover baseline
 - Verified the current development branch head and its successful CI run.
 - Reviewed Worker login/session/RBAC controls and Admin login UI. Confirmed that administrator authentication is password-only and no MFA enrollment, challenge or recovery flow is implemented.

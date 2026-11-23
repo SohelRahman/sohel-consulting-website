@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {generateTotpSecret,totpCode,verifyTotp,encryptTotpSecret,decryptTotpSecret,generateRecoveryCodes,hashRecoveryCode,generateRecoverySalt,normalizeRecoveryCode} from "../src/admin-mfa.js";
 const secret="GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 assert.equal(await totpCode(secret,1),"287082");
@@ -17,3 +18,16 @@ const salt=generateRecoverySalt(),hash=await hashRecoveryCode(codes[0],salt);
 assert.equal(hash,await hashRecoveryCode(normalizeRecoveryCode(codes[0]),salt));
 assert.notEqual(hash,await hashRecoveryCode(codes[1],salt));
 console.log("Admin MFA cryptographic tests passed.");
+
+const workerSource=readFileSync(new URL("../src/worker.js",import.meta.url),"utf8");
+const migrationSource=readFileSync(new URL("../migrations/0019_admin_mfa.sql",import.meta.url),"utf8");
+const adminSource=readFileSync(new URL("../admin.html",import.meta.url),"utf8");
+const loginSource=workerSource.slice(workerSource.indexOf('if (path === "/api/admin/login"'),workerSource.indexOf('if (path === "/api/admin/logout"'));
+assert.ok(loginSource.includes("mfaChallengeJson")&&!loginSource.includes("makeSession("),"password login must issue only a restricted MFA challenge");
+assert.ok(workerSource.includes('if(!mfaState?.enabled_at)return json({error:"MFA enrollment is required.'),"all existing Admin sessions must require completed MFA");
+assert.ok(workerSource.includes('"admin-login-account"')&&workerSource.includes('"admin-mfa-verify"'),"account and second-factor throttles must be present");
+assert.ok(workerSource.includes("last_totp_counter<?")&&workerSource.includes("used_at IS NULL"),"TOTP replay and recovery-code reuse must be prevented atomically");
+assert.ok(workerSource.includes("__Host-sr_admin_challenge")&&workerSource.includes("Max-Age=300"),"challenge cookie must be host-only and short-lived");
+assert.ok(migrationSource.includes("admin_mfa_credentials")&&migrationSource.includes("secret_ciphertext")&&migrationSource.includes("admin_mfa_recovery_codes"),"migration must persist encrypted credentials and recovery-code hashes");
+assert.ok(adminSource.includes("দ্বি-ধাপ যাচাইকরণ")&&adminSource.includes("রিকভারি কোড"),"Admin MFA instructions must include Bangla");
+console.log("Admin MFA source-contract checks passed.");

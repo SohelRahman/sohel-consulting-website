@@ -1,5 +1,44 @@
 # Project Master Status
 
+**Latest handover update:** 2026-11-23  
+**Repository:** `SohelRahman/sohel-consulting-website`  
+**Development branch:** `current-focus-development`  
+**Latest source commit:** `8ba829c633f4a4ed5cf0caeecc94c61087e87382`  
+**MFA implementation commits:** `bad4a5904617047abe256bd416ed5a2b513238b0`, `8ba829c633f4a4ed5cf0caeecc94c61087e87382`  
+**CI:** Run [#45148496333](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45148496333) was in progress at last check; earlier implementation commit CI run [#45148389140](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45148389140) passed.
+
+## Latest active priority — Admin MFA
+
+**Implementation status:** Source implementation committed; final CI, Preview configuration and runtime acceptance pending.
+
+Completed in source:
+- RFC 6238 six-digit TOTP (30-second time step; narrow ±1-step clock window).
+- AES-256-GCM encrypted authenticator seeds, bound to the user ID with additional authenticated data.
+- Five-minute signed purpose-bound enrollment/login challenge cookie; challenge cookie is HttpOnly, Secure, SameSite=Strict and host-prefixed.
+- Full Admin session withheld until enrollment or second-factor verification succeeds.
+- Existing password-only sessions are rejected by the Admin API session guard; challenge issuance clears any old session cookie.
+- Conditional D1 counter advancement prevents TOTP replay.
+- Ten one-time recovery codes; only salted SHA-256 hashes are stored.
+- Account-keyed and IP-keyed login rate limits.
+- MFA reset requires the current password and a fresh TOTP or unused recovery code, then revokes sessions and requires enrollment again.
+- English/Bangla enrollment and verification guidance.
+- Additive D1 migration 0019 and cryptographic/source-contract tests.
+
+**Commits**
+- `bad4a5904617047abe256bd416ed5a2b513238b0` — MFA endpoints, cryptographic module, migration, Admin UI and tests.
+- `8ba829c633f4a4ed5cf0caeecc94c61087e87382` — enforce MFA for all authenticated Admin API sessions and clear old sessions when a challenge is issued.
+
+**Dependencies and gates**
+1. Configure a unique 32-byte unpadded-base64url `MFA_ENCRYPTION_KEY` as an encrypted development Preview runtime secret. It has not been generated or configured by this work.
+2. Migration `0019_admin_mfa.sql` must be applied to Preview D1 before deploying this Worker. It has not been applied.
+3. Preview deployment and browser/runtime acceptance require separate explicit approval.
+4. Do not change Production secrets, database, deployment or `main`.
+
+**Next action:** Verify the latest CI run including the new MFA test step. Fix any failures, then update this file with the passing run and prepare a separate Preview-only migration/deployment approval request. Do not perform those operations without approval.
+
+---
+
+
 **Last verified:** 2026-11-23  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  

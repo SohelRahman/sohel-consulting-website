@@ -40,6 +40,8 @@ jobs:
         run: node scripts/test-cms-revision-contract.mjs
       - name: Password hashing compatibility tests
         run: node scripts/test-password-hash.mjs
+      - name: Admin MFA cryptographic and source-contract tests
+        run: node scripts/test-admin-mfa.mjs
       - name: Course pricing unit tests
         run: node scripts/test-course-pricing.mjs
       - name: Registration workflow contract tests
