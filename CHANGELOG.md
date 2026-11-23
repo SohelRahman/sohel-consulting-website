@@ -286,3 +286,9 @@
 - Restricted persistent Cloudinary inventory scan-start and scan-step POST operations to administrators with `media.manage`; GET status and result reads remain available with `media.view`.
 - Updated the RBAC contract test to assert the read/write permission split and prevent regression.
 - Source-level change only. CI and Preview verification are pending; no deployment or database operation was performed.
+
+## 2026-11-23 — RBAC regression-test scanner correction
+
+- The first CI run after the Cloudinary inventory permission fix exposed a false positive in the RBAC contract test: its mutation-handler scanner also matched HTTP-method comparisons inside the `requiredPermission` helper, which is not a request handler.
+- Scoped the scanner to `handleApi` so it checks actual API route handlers rather than permission-mapping expressions.
+- The first run failed at the RBAC contract check; syntax and HTML validation passed. Re-run CI is required before treating the correction as verified.

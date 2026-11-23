@@ -351,3 +351,9 @@ A source review found that `/api/admin/media/inventory` mapped both GET and POST
 - Change committed to `current-focus-development` only.
 - CI result and Preview browser verification are pending; do not treat this as deployed or runtime-verified.
 - No D1 migration, deployment, Production change, `main` change or PR merge was performed.
+
+## 2026-11-23 — RBAC regression-test scanner correction
+
+- The first CI run after the Cloudinary inventory permission fix exposed a false positive in the RBAC contract test: its mutation-handler scanner also matched HTTP-method comparisons inside the `requiredPermission` helper, which is not a request handler.
+- Scoped the scanner to `handleApi` so it checks actual API route handlers rather than permission-mapping expressions.
+- The first run failed at the RBAC contract check; syntax and HTML validation passed. Re-run CI is required before treating the correction as verified.

@@ -28,7 +28,7 @@ function check(name, condition) {
 }
 
 
-const mutationHandlers = worker.split("\n");
+const mutationHandlers = worker.slice(worker.indexOf("async function handleApi")).split("\n");
 const mutationRoutes = [];
 for (let index = 0; index < mutationHandlers.length; index++) {
   if (/method\s*===?\s*["'](?:POST|PUT|PATCH|DELETE)["']/.test(mutationHandlers[index])) {
