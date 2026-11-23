@@ -167,3 +167,13 @@ The static CMS write paths use D1 batch transactions for content, version-histor
 - The request cap is 400 items to keep the two statements per item plus audit write within the Worker invocation's approximate D1 binding budget.
 - Created/skipped response counts are derived from the batch insert results.
 - Source-contract CI coverage was added. Runtime D1 failure-injection and Preview acceptance remain outstanding; no migration or deployment is required or performed.
+
+
+## 2026-11-23 — CMS optimistic concurrency
+
+- Added an additive migration that gives each CMS content key a monotonically increasing revision, initialized to 1 for existing records.
+- CMS reads return the revision. Draft saves require the revision observed when the item was loaded; the Worker performs a conditional update and returns HTTP 409 if the revision is stale or the row no longer exists.
+- Archive, restore and historical-version restore also compare the supplied revision and increment it when successful, so they invalidate stale editors.
+- Content updates, draft history snapshots and audit records remain in one D1 batch. Version/audit inserts are conditional on the compare-and-swap update succeeding.
+- The Admin Content Manager now carries revision tokens from reads through edit/save/archive/restore actions and reports conflicts for reload.
+- Added source-contract checks. Migration 0018 must be applied to the target database before deploying this Worker change. No migration or deployment was performed; runtime concurrency tests remain outstanding.

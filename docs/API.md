@@ -122,3 +122,12 @@ CMS mutation endpoints enforce same-origin checks. URL and image values accept H
 
 
 **Concurrency limitation:** CMS writes are transactionally grouped, but there is no per-editor revision token or optimistic-lock conflict response. Concurrent saves to the same content key remain last-write-wins. Custom Page Builder structure saves and bulk initialization also use D1 batches; bulk initialization accepts up to 400 items per request.
+
+
+### CMS optimistic concurrency
+
+- `GET /api/admin/cms?page=...&lang=...` includes an integer `revision` on each content item.
+- `POST /api/admin/cms/save` accepts `revision`: omit/null only when creating a new key; send the current positive integer when updating an existing key. Successful saves return the next revision.
+- Archive, restore and historical-version restore require the current revision and increment it on success.
+- A stale or missing row returns HTTP `409 Conflict`; reload the item before retrying. This prevents silent last-write-wins updates from the Admin Content Manager.
+- Migration `0018_cms_content_revision.sql` is required before deploying the Worker change.

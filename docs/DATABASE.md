@@ -1,6 +1,6 @@
 # Database migration inventory and verification status — 2026-11-22
 
-The development branch contains migration files 0001–0017. File presence is not proof that a migration has been applied to a remote database.
+The development branch contains migration files 0001–0018. File presence is not proof that a migration has been applied to a remote database.
 
 | Migration | File |
 |---|---|
@@ -20,7 +20,7 @@ The development branch contains migration files 0001–0017. File presence is no
 | 0014 | `0014_cloudinary_delete_operations.sql` |
 | 0015 | `0015_cloudinary_reference_locks.sql` |
 | 0016 | `0016_cloudinary_upload_operations.sql` |
-| 0017 | `0017_cloudinary_inventory_snapshots.sql` |
+| 0017 | `0017_cloudinary_inventory_snapshots.sql` |\n| 0018 | `0018_cms_content_revision.sql` |
 
 ## Evidence qualification
 
@@ -121,3 +121,8 @@ These results establish that the inspected tables and columns exist in Preview. 
 Migration 0017 creates `cloudinary_inventory_scans` and `cloudinary_inventory_assets`. It stores independent image/raw cursors, completion states, page counters, processing leases and remote asset metadata. It does not alter existing business records or Cloudinary assets.
 
 The migration file's presence on `current-focus-development` does not prove it has been applied to Preview. Preview migration and Worker deployment are not authorized by the source implementation and must be handled as a separately approved operation. Production and `main` remain untouched.
+
+
+## Migration 0018 — CMS revision counter
+
+Migration 0018 adds a non-null integer `revision` column to `cms_content`, defaulting existing and newly inserted records to revision 1. CMS draft save, archive, restore and historical-version restore use the value for compare-and-swap updates. The migration is additive and does not rewrite CMS content or version history. Its presence in the development branch does not mean it has been applied to Preview or Production.

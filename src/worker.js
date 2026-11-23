@@ -1040,7 +1040,7 @@ async function handleApi(request, env) {
     if (path === "/api/admin/cms" && method === "GET") {
       const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en";
       if(!/^[a-z0-9._-]+$/.test(page))return json({error:"Invalid page identifier."},400);
-      const {results=[]}=await env.DB.prepare("SELECT content_key,content_type,draft_value,published_value,is_deleted,updated_at,updated_by FROM cms_content WHERE page_key=? AND language=? ORDER BY content_key").bind(page,language).all();
+      const {results=[]}=await env.DB.prepare("SELECT content_key,content_type,draft_value,published_value,is_deleted,updated_at,updated_by,revision FROM cms_content WHERE page_key=? AND language=? ORDER BY content_key").bind(page,language).all();
       return json({page,language,content:results});
     }
     if (path === "/api/admin/cms/initialize" && method === "POST") {
@@ -1078,12 +1078,20 @@ async function handleApi(request, env) {
       const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),value=String(data?.value??"").slice(0,10000),type=["text","textarea","url","image","richtext"].includes(data?.type)?data.type:"text";
       if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!value.trim())return json({error:"A valid page, content key and non-empty value are required."},400);
       if(type==="url"||type==="image"){try{const parsed=new URL(value);if(!["https:","http:"].includes(parsed.protocol))throw new Error();}catch{return json({error:"Enter a valid HTTP or HTTPS URL."},400);}}
-      await env.DB.batch([
-        env.DB.prepare("INSERT INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP) ON CONFLICT(page_key,language,content_key) DO UPDATE SET content_type=excluded.content_type,draft_value=excluded.draft_value,is_deleted=0,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP").bind(page,language,key,type,value,session.email),
-        env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT page_key,language,content_key,content_type,draft_value,'draft',? FROM cms_content WHERE page_key=? AND language=? AND content_key=?").bind(session.email,page,language,key),
-        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES (?,?, 'cms_draft_saved','cms_content',?,?)").bind(id(),session.email,page+":"+language+":"+key,type)
-      ]);
-      return json({ok:true});
+      const revision=data?.revision===null||data?.revision===undefined||data?.revision===""?null:Number(data.revision);
+      if(revision!==null&&(!Number.isInteger(revision)||revision<1))return json({error:"Invalid CMS revision. Reload the content and try again."},400);
+      const statements=revision===null?[
+        env.DB.prepare("INSERT OR IGNORE INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP)").bind(page,language,key,type,value,session.email),
+        env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT page_key,language,content_key,content_type,draft_value,'draft',? FROM cms_content WHERE page_key=? AND language=? AND content_key=? AND changes()>0").bind(session.email,page,language,key),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_draft_saved','cms_content',?,? WHERE changes()>0").bind(id(),session.email,page+":"+language+":"+key,type)
+      ]:[
+        env.DB.prepare("UPDATE cms_content SET content_type=?,draft_value=?,is_deleted=0,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=? AND revision=?").bind(type,value,session.email,page,language,key,revision),
+        env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT page_key,language,content_key,draft_value,'draft',? FROM cms_content WHERE page_key=? AND language=? AND content_key=? AND changes()>0").bind(session.email,page,language,key),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_draft_saved','cms_content',?,? WHERE changes()>0").bind(id(),session.email,page+":"+language+":"+key,type)
+      ];
+      const results=await env.DB.batch(statements);
+      if(!results[0]?.meta?.changes)return json({error:"This content was changed by another editor or is no longer available. Reload it before saving again."},409);
+      return json({ok:true,revision:revision===null?1:revision+1});
     }
     if (path === "/api/admin/cms/publish" && method === "POST") {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
@@ -1101,23 +1109,25 @@ async function handleApi(request, env) {
     }
     if (path === "/api/admin/cms/delete" && method === "POST") {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
-      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase();
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),revision=Number(data?.revision);
+      if(!Number.isInteger(revision)||revision<1)return json({error:"Reload the content before archiving it."},400);
       const result=await env.DB.batch([
-        env.DB.prepare("UPDATE cms_content SET is_deleted=1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=?").bind(session.email,page,language,key),
-        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_content_archived','cms_content',?,'Soft delete' WHERE EXISTS (SELECT 1 FROM cms_content WHERE page_key=? AND language=? AND content_key=?)").bind(id(),session.email,page+":"+language+":"+key,page,language,key)
+        env.DB.prepare("UPDATE cms_content SET is_deleted=1,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=? AND revision=?").bind(session.email,page,language,key,revision),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_content_archived','cms_content',?,'Soft delete' WHERE changes()>0").bind(id(),session.email,page+":"+language+":"+key)
       ]);
-      if(!result[0]?.meta?.changes)return json({error:"Content item not found."},404);
-      return json({ok:true});
+      if(!result[0]?.meta?.changes)return json({error:"This content changed or was removed. Reload before archiving it."},409);
+      return json({ok:true,revision:revision+1});
     }
     if (path === "/api/admin/cms/restore" && method === "POST") {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
-      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase();
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),revision=Number(data?.revision);
+      if(!Number.isInteger(revision)||revision<1)return json({error:"Reload the content before restoring it."},400);
       const result=await env.DB.batch([
-        env.DB.prepare("UPDATE cms_content SET is_deleted=0,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=?").bind(session.email,page,language,key),
-        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_content_restored','cms_content',?,'Restored as draft' WHERE EXISTS (SELECT 1 FROM cms_content WHERE page_key=? AND language=? AND content_key=?)").bind(id(),session.email,page+":"+language+":"+key,page,language,key)
+        env.DB.prepare("UPDATE cms_content SET is_deleted=0,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=? AND revision=?").bind(session.email,page,language,key,revision),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_content_restored','cms_content',?,'Restored as draft' WHERE changes()>0").bind(id(),session.email,page+":"+language+":"+key)
       ]);
-      if(!result[0]?.meta?.changes)return json({error:"Content item not found."},404);
-      return json({ok:true});
+      if(!result[0]?.meta?.changes)return json({error:"This content changed or was removed. Reload before restoring it."},409);
+      return json({ok:true,revision:revision+1});
     }
     if (path === "/api/admin/cms/preview" && method === "GET") {
       const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en";
@@ -1127,16 +1137,17 @@ async function handleApi(request, env) {
     }
     if (path === "/api/admin/cms/restore-version" && method === "POST") {
       if(!sameOrigin(request))return json({error:"Invalid request origin."},403);
-      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),versionId=Number(data?.versionId);
-      if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!Number.isInteger(versionId)||versionId<1)return json({error:"Invalid version reference."},400);
+      const data=await request.json().catch(()=>null),page=clean(data?.page,80).toLowerCase(),language=data?.language==="bn"?"bn":"en",key=clean(data?.key,120).toLowerCase(),versionId=Number(data?.versionId),revision=Number(data?.revision);
+      if(!/^[a-z0-9._-]+$/.test(page)||!/^[a-z0-9._-]+$/.test(key)||!Number.isInteger(versionId)||versionId<1||!Number.isInteger(revision)||revision<1)return json({error:"Invalid version reference or CMS revision."},400);
       const version=await env.DB.prepare("SELECT content_type,value FROM cms_static_content_versions WHERE id=? AND page_key=? AND language=? AND content_key=?").bind(versionId,page,language,key).first();
       if(!version)return json({error:"Version not found."},404);
-      await env.DB.batch([
-        env.DB.prepare("INSERT INTO cms_content(page_key,language,content_key,content_type,draft_value,published_value,is_deleted,updated_by,updated_at) VALUES(?,?,?,?,?,NULL,0,?,CURRENT_TIMESTAMP) ON CONFLICT(page_key,language,content_key) DO UPDATE SET content_type=excluded.content_type,draft_value=excluded.draft_value,is_deleted=0,updated_by=excluded.updated_by,updated_at=CURRENT_TIMESTAMP").bind(page,language,key,version.content_type,version.value,session.email),
-        env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT page_key,language,content_key,content_type,draft_value,'draft',? FROM cms_content WHERE page_key=? AND language=? AND content_key=?").bind(session.email,page,language,key),
-        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) VALUES (?,?, 'cms_version_restored','cms_content',?,?)").bind(id(),session.email,page+":"+language+":"+key,"Restored version "+versionId+" to draft")
+      const result=await env.DB.batch([
+        env.DB.prepare("UPDATE cms_content SET content_type=?,draft_value=?,is_deleted=0,revision=revision+1,updated_by=?,updated_at=CURRENT_TIMESTAMP WHERE page_key=? AND language=? AND content_key=? AND revision=?").bind(version.content_type,version.value,session.email,page,language,key,revision),
+        env.DB.prepare("INSERT INTO cms_static_content_versions(page_key,language,content_key,content_type,value,version_type,created_by) SELECT page_key,language,content_key,content_type,draft_value,'draft',? FROM cms_content WHERE page_key=? AND language=? AND content_key=? AND changes()>0").bind(session.email,page,language,key),
+        env.DB.prepare("INSERT INTO audit_logs (id,admin_email,action,entity_type,entity_id,details) SELECT ?,?,'cms_version_restored','cms_content',?,? WHERE changes()>0").bind(id(),session.email,page+":"+language+":"+key,"Restored version "+versionId+" to draft")
       ]);
-      return json({ok:true});
+      if(!result[0]?.meta?.changes)return json({error:"This content changed or was removed. Reload before restoring a version."},409);
+      return json({ok:true,revision:revision+1});
     }
     if (path === "/api/admin/cms/history" && method === "GET") {
       const page=clean(url.searchParams.get("page"),80).toLowerCase(),language=url.searchParams.get("lang")==="bn"?"bn":"en",key=clean(url.searchParams.get("key"),120).toLowerCase();

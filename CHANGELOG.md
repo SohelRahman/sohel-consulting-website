@@ -311,3 +311,12 @@
 - Preserved existing drafts and published values; duplicate submitted keys are counted as skipped after the first successful insert.
 - Capped requests at 400 items to bound D1 statement and binding usage, and derive created/skipped counts from batch results.
 - Added a dedicated source-contract test to development CI. Runtime D1 failure-injection and Preview acceptance remain pending; no deployment or migration was performed.
+
+
+## 2026-11-23 — CMS optimistic concurrency control
+
+- Added migration 0018 for a per-content revision counter.
+- CMS reads expose the revision; draft save, archive, restore and historical restore use compare-and-swap updates and reject stale changes with HTTP 409.
+- Kept content, history and audit writes in D1 batches; history and audit rows are conditional on a successful revision update.
+- Updated the Admin Content Manager to carry revision tokens and documented the API contract.
+- Added migration/source contract coverage to CI. Migration 0018 must be applied before deploying the Worker change. No migration or deployment was performed.
