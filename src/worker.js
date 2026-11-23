@@ -106,7 +106,7 @@ async function readMfaChallenge(request,env,purpose){
  if(!user||!user.is_active||user.email!==challenge.email||Number(user.session_version)!==Number(challenge.sessionVersion))return null;
  return {challenge,user};
 }
-function mfaChallengeJson(data,token,status=200){return new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","set-cookie":mfaChallengeCookie(token)}});}
+function mfaChallengeJson(data,token,status=200){const headers=new Headers({"content-type":"application/json; charset=utf-8","cache-control":"no-store"});headers.append("set-cookie","sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");headers.append("set-cookie",mfaChallengeCookie(token));return new Response(JSON.stringify(data),{status,headers});}
 function mfaCompleteJson(data,sessionToken,status=200){
  const headers=new Headers({"content-type":"application/json; charset=utf-8","cache-control":"no-store"});
  headers.append("set-cookie","sr_admin="+sessionToken+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800");
@@ -534,6 +534,8 @@ async function handleApi(request, env) {
     if (!session?.userId) return json({error:"Authentication required. Please sign in again."},401);
     const user=await env.DB.prepare("SELECT id,email,full_name,role,permissions_json,is_active,session_version FROM admin_users WHERE id=?").bind(session.userId).first();
     if(!user || !user.is_active || user.email!==session.email || Number(user.session_version)!==Number(session.sessionVersion))return json({error:"Account is disabled or its session has been revoked. Please sign in again."},401);
+    const mfaState=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(user.id).first();
+    if(!mfaState?.enabled_at)return json({error:"MFA enrollment is required. Sign in again to complete setup."},401);
     const permissions=permissionsFor(user);
     const isAdmin=user.role==="admin";
     if(path==="/api/admin/me" && method==="GET"){const mfa=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(user.id).first();return json({user:{id:user.id,email:user.email,name:user.full_name,role:user.role,permissions,mfaEnabled:Boolean(mfa?.enabled_at)}});}
