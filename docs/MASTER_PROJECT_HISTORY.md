@@ -335,3 +335,19 @@ Update this document when a material requirement, decision, architecture change,
 - Preserve the remaining acceptance checklist for a later testing session: courses (discounts and syllabus), quotations and learner response security, registrations, roles/permissions and session revocation, payment/email integrations, bilingual/public rendering, and security verification including the stated OWASP ASVS Level 2 target.
 - Do not describe the entire project as complete. The Preview Admin login/dashboard and Website Content have been reported working; other modules and formal security/release checks remain unverified.
 - Production and `main` remain untouched. No Production deployment, merge, rebase or branch reconciliation was performed.
+
+## 2026-11-23 — Backend RBAC audit and correction
+
+### Finding
+A source review found that `/api/admin/media/inventory` mapped both GET and POST requests to `media.view`. POST starts and advances persistent Cloudinary inventory scans and writes scan state/assets to D1, so treating it as a read-only permission was too permissive.
+
+### Development-branch correction
+- GET inventory reads now require `media.view`.
+- POST inventory scan operations now require `media.manage`.
+- Unsupported methods receive no permission mapping for User accounts and remain rejected by the route's method guard for Admin accounts.
+- Updated `scripts/test-rbac-contract.mjs` to assert the GET/POST permission split.
+
+### Verification status
+- Change committed to `current-focus-development` only.
+- CI result and Preview browser verification are pending; do not treat this as deployed or runtime-verified.
+- No D1 migration, deployment, Production change, `main` change or PR merge was performed.

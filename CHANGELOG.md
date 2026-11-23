@@ -280,3 +280,9 @@
 - Development CI passed for the workflow/configuration changes (runs `45047751169`, `45047779916`, `45047850957`, and `45047891708`).
 - GitHub Actions UI did not expose the workflow because it is present only on `current-focus-development`. GitHub documentation confirms a `workflow_dispatch` workflow must also exist on the default branch to be manually triggered in the UI. The default branch currently does not contain this workflow.
 - No change was made to `main`, no workflow was dispatched, and no Cloudflare Worker deployment was performed. Adding the workflow file to `main` remains a separately authorized action.
+
+## 2026-11-23 — Cloudinary inventory RBAC correction
+
+- Restricted persistent Cloudinary inventory scan-start and scan-step POST operations to administrators with `media.manage`; GET status and result reads remain available with `media.view`.
+- Updated the RBAC contract test to assert the read/write permission split and prevent regression.
+- Source-level change only. CI and Preview verification are pending; no deployment or database operation was performed.

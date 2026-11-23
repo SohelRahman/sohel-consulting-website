@@ -62,7 +62,7 @@ function requiredPermission(path, method) {
   if(path==="/api/admin/pages" || path.startsWith("/api/admin/pages/"))return method==="GET"?"pages.view":"pages.manage";
   if(path==="/api/admin/media")return method==="GET"?"media.view":"media.manage";
   if(path==="/api/admin/media/audit")return method==="GET"?"media.view":null;
-  if(path==="/api/admin/media/inventory")return method==="GET"?"media.view":"media.view";
+  if(path==="/api/admin/media/inventory")return method==="GET"?"media.view":method==="POST"?"media.manage":null;
   if(path.startsWith("/api/admin/media/"))return "media.manage";
   if(path==="/api/admin/analytics")return "analytics.view";
   if(path==="/api/admin/chat/conversations")return "chat.view";
