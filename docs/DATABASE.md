@@ -1,4 +1,4 @@
-# Database migration inventory and verification status — 2026-11-22
+# Database migration inventory and verification status — 2026-11-24
 
 The development branch contains migration files 0001–0019. File presence is not proof that a migration has been applied to a remote database.
 
@@ -21,16 +21,17 @@ The development branch contains migration files 0001–0019. File presence is no
 | 0015 | `0015_cloudinary_reference_locks.sql` |
 | 0016 | `0016_cloudinary_upload_operations.sql` |
 | 0017 | `0017_cloudinary_inventory_snapshots.sql` |\n| 0018 | `0018_cms_content_revision.sql` |
+| 0019 | `0019_admin_mfa.sql` |
 
 ## Evidence qualification
 
 - The repository's historical notes record user-supplied D1 Console output for a disposable database and for Preview migration work.
 - Those records are not direct, live database inspection by the repository maintainer.
 - The Stage 9A.8 disposable-target notes explicitly state that manually reconstructed migration checks did not create or update the D1 migration ledger.
-- The user-reported Preview ledger through 0012 and later migration 0013 status must be rechecked read-only before any deployment or migration decision.
+- The dedicated Preview D1 migration ledger was directly checked by GitHub Actions Run #11 on 2026-11-23; migrations 0018 and 0019 were applied successfully and the final remote list reported no pending migrations. Earlier migration history evidence remains as described in the historical records.
 - Production migration state has not been independently verified in this audit.
 
-Before applying any migration, identify the exact target by database name and ID, verify it is not the other environment, inspect the migration ledger, review the SQL and recovery plan, and obtain explicit approval. Never run the general migration workflow against an unverified target.
+Before any future migration, identify the exact target by database name and ID, verify it is not the other environment, inspect the migration ledger, review the SQL and recovery plan, and obtain explicit approval. Never run a migration workflow against an unverified target.
 
 ---
 
