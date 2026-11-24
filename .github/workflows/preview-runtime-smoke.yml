@@ -1,0 +1,57 @@
+name: Preview runtime smoke tests
+
+on:
+  push:
+    branches:
+      - current-focus-development
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-runtime-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.ref == 'refs/heads/current-focus-development' && contains(github.event.head_commit.message, '[preview-smoke]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public Preview pages and security boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://current-focus-development.sohelrahman118.workers.dev"
+
+          check_status() {
+            local path="$1" expected="$2" actual
+            actual="$(curl --silent --show-error --output /tmp/preview-body --write-out '%{http_code}' "$BASE$path")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "FAIL $path expected HTTP $expected, received $actual"
+              head -c 500 /tmp/preview-body || true
+              exit 1
+            fi
+            echo "PASS $path HTTP $actual"
+          }
+
+          check_status "/" "200"
+          grep -Eqi '<!doctype html|<html' /tmp/preview-body
+          check_status "/admin.html" "200"
+          grep -Eqi '<!doctype html|<html' /tmp/preview-body
+          check_status "/bn/index.html" "200"
+          grep -Eqi '<!doctype html|<html' /tmp/preview-body
+          check_status "/quote-response.html" "200"
+          grep -Eqi '<!doctype html|<html' /tmp/preview-body
+
+          check_status "/api/admin/summary" "401"
+          check_status "/src/worker.js" "404"
+          check_status "/migrations/0019_admin_mfa.sql" "404"
+          check_status "/wrangler.toml" "404"
+
+          curl --silent --show-error --dump-header /tmp/quote-headers --output /dev/null "$BASE/quote-response.html"
+          grep -Eqi '^cache-control:.*no-store' /tmp/quote-headers
+          grep -Eqi '^referrer-policy:.*no-referrer' /tmp/quote-headers
+          grep -Eqi '^x-robots-tag:.*noindex, nofollow, noarchive' /tmp/quote-headers
+          echo "PASS quotation response privacy headers"
+
+          echo "Preview HTTP smoke tests passed."
