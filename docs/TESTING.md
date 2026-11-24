@@ -746,3 +746,14 @@ The first responsive-browser smoke attempt completed all HTTP checks, then faile
 ### Browser smoke workflow checkout correction — 2026-11-24
 
 The Ubuntu 24.04 rerun successfully installed Chromium but the test script was not present in the runner workspace because the workflow had not checked out the repository. Added an explicit `actions/checkout@v4` step before the HTTP and browser checks. The responsive browser assertions remain pending a rerun.
+
+
+### Preview responsive browser smoke — accepted — 2026-11-24
+
+Preview runtime smoke [Run #39](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320815398) passed. Playwright/Chromium loaded the English homepage, Bangla homepage, Admin page and quotation-response page at 390px and 1440px widths. All eight page/viewport combinations had document titles and body content, no uncaught page errors, and no horizontal overflow. The same run passed all HTTP/security checks recorded above.
+
+This verifies public page rendering and layout overflow only. It does not prove keyboard/screen-reader accessibility, visual design quality, authenticated Admin login/MFA, role authorization, or protected workflow behavior.
+
+### Admin unauthenticated/MFA UI assertions added — 2026-11-24
+
+Extended the browser suite to verify that the Admin login panel is visible while the dashboard and MFA enrollment, verification and recovery panels remain hidden before authentication; that email/password inputs exist; and that bilingual MFA enrollment/recovery guidance is present. These checks do not submit credentials or mutate Admin state. Results are pending the next smoke run. Live authenticated MFA enrollment and RBAC acceptance still require an authorized test Admin account and its credentials; no credentials are stored in the repository or workflow.
