@@ -181,3 +181,8 @@ Chromium installation succeeded on the Ubuntu 24.04 runner, but the browser test
 Preview runtime smoke [Run #39](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320815398) passed at 390px and 1440px for the English homepage, Bangla homepage, Admin and quotation-response pages. All eight page/viewport combinations loaded with a title and body content, no uncaught page errors and no horizontal overflow. HTTP/API/path/privacy checks also passed in the same run.
 
 The browser script now adds unauthenticated Admin UI assertions: login panel visible; email/password fields present; dashboard and MFA enrollment/verification/recovery panels hidden before authentication; bilingual MFA guidance present. This is read-only UI inspection and does not submit credentials. The next guarded smoke run will execute these new assertions. Authenticated MFA and RBAC acceptance still require a separately authorized test Admin account.
+
+
+## 2026-11-24 — Admin MFA browser assertion correction
+
+Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45321214679) confirmed HTTP/API/path/privacy checks and all responsive page-load/layout checks, but the new bilingual MFA-copy assertions failed at both viewports. The failure was in test visibility semantics: MFA enrollment and recovery panels are hidden before authentication, so their text is absent from visible body text despite being present in the DOM. Updated the browser test to read the hidden panels' DOM text directly and check English/Bangla copy. Test-only correction committed as 72d5c51a2b038445943a5b32ea442ed0d1eb4eaa; smoke rerun pending. No Preview deployment or D1 mutation was performed.
