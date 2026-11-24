@@ -53,10 +53,10 @@ jobs:
           tr -d '\r' < /tmp/quote-headers | grep -Ei '^(HTTP/|cache-control:|referrer-policy:|x-robots-tag:)' || true
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
-          const raw = readFileSync("/tmp/quote-headers", "utf8").replaceAll("\\r", "");
-          const blocks = raw.split("\\n\\n").filter(Boolean);
+          const raw = readFileSync("/tmp/quote-headers", "utf8").replaceAll("\r", "");
+          const blocks = raw.split("\n\n").filter(Boolean);
           const headers = new Map();
-          for (const line of (blocks.at(-1) || "").split("\\n").slice(1)) {
+          for (const line of (blocks.at(-1) || "").split("\n").slice(1)) {
             const i = line.indexOf(":");
             if (i > 0) headers.set(line.slice(0, i).trim().toLowerCase(), line.slice(i + 1).trim().toLowerCase());
           }
