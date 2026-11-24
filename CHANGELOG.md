@@ -422,3 +422,13 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Corrected Preview D1 preflight to use the D1-read credential while retaining the dedicated Worker deployment credential. Retrying the authorized isolated Preview deployment.
 
 - Corrected first-time Preview provisioning order: run validations, bootstrap the isolated Worker, provision the Preview-only MFA key without rotation, then deploy the final Worker bundle.
+
+
+## 2026-11-24 — Isolated Preview deployment completed
+
+- Successfully deployed the development Worker and static assets to the isolated Cloudflare Preview environment via Actions Run #16.
+- Verified the Preview D1 identity before deployment; source, CMS revision/SQLite, and Admin MFA checks passed.
+- Bootstrapped Worker `current-focus-development`, provisioned its Preview-only MFA encryption key, and completed the final deployment.
+- Preview URL: https://current-focus-development.sohelrahman118.workers.dev
+- Worker version: `bd3a71ff-a09c-46f1-897c-8b9a07a6d214`.
+- Browser/runtime acceptance remains pending; Production and `main` were not modified.
