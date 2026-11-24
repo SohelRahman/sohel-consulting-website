@@ -159,3 +159,8 @@ The isolated Preview deployment [Run #34](https://github.com/SohelRahman/sohel-c
 ## 2026-11-24 — Preview HTTP smoke acceptance passed
 
 Guarded runtime smoke [Run #20](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320457740) passed against the deployed Preview origin. It confirmed HTTP 200 for the English homepage, Admin page, Bangla homepage and quotation-response page; HTTP 401 for unauthenticated Admin summary; HTTP 404 for Worker source, migration SQL and Wrangler configuration paths; and all three quotation-response privacy headers (`Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow, noarchive`). The quotation-response route is now explicitly Worker-first in `wrangler.preview.toml`. These results accept only the listed HTTP checks; browser and end-to-end functional acceptance remain pending.
+
+
+## 2026-11-24 — Responsive Chromium smoke added
+
+The guarded Preview runtime smoke workflow now runs `scripts/test-preview-browser.py` with Playwright/Chromium at 390px and 1440px widths for the English homepage, Bangla homepage, Admin page and quotation-response page. It checks page load status, title/body presence, uncaught browser exceptions and horizontal overflow. It does not authenticate to Admin or mutate application data. Browser smoke results are pending the next `[preview-smoke]` workflow execution.
