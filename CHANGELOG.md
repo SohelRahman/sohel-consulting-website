@@ -485,3 +485,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Kept the smoke runner pinned to Ubuntu 24.04 for Playwright compatibility.
 - Updated Preview deployment, QA and master status documentation.
 - Triggering the Preview smoke workflow only; no Worker deployment or D1 mutation.
+
+
+## 2026-11-24 — Responsive Preview acceptance and Admin UI smoke
+
+- Recorded passing responsive Chromium smoke across four pages at mobile and desktop widths (Run #39).
+- Extended the read-only browser suite to assert unauthenticated Admin login visibility, hidden dashboard/MFA panels, required login inputs and bilingual MFA guidance.
+- Updated QA, Preview deployment and master status documentation.
+- Triggering guarded Preview smoke only; no Worker deployment, D1 mutation or authenticated Admin action.
