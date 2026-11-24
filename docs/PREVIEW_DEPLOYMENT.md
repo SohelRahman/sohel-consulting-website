@@ -102,3 +102,10 @@ The development-only `.github/workflows/deploy-cloudflare-preview.yml` now check
 ## Preview deployment trigger gate — 2026-11-24
 
 The guarded Preview deployment workflow now supports a branch-scoped `push` trigger on `current-focus-development` in addition to manual `workflow_dispatch`. The job runs only when the pushed commit message contains the exact marker `[deploy-preview]` or when the event is a manual workflow dispatch. Ordinary pushes to the development branch skip the deployment job. This avoids modifying `main` merely to expose the workflow in the Actions UI, while retaining an explicit deployment gate. The trigger itself does not authorize or execute deployment. No marker commit has been created and no deployment has been run.
+
+
+## 2026-11-24 — Preview deployment Run #7 preflight failure and diagnostic hardening
+
+The authorized isolated Preview deployment attempt [Run #7](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45319057699) started on commit `e93021fa412d1dcf7dcf7c9b23535b8a7808fc15` and failed in the isolated Preview D1 identity preflight. GitHub Actions confirmed both required Cloudflare credential secrets were present, and the Cloudflare token verification step accepted the token as active. The D1 detail response did not satisfy the expected Preview database name/ID check. The workflow stopped before Preview secret provisioning, application tests, or Worker deployment. No deployment is confirmed.
+
+The deployment preflight was hardened on `current-focus-development` to emit sanitized diagnostic fields on identity mismatch: HTTP status, API success flag, Cloudflare error codes/messages, returned database name/ID, and result field names. It does not print the token, account ID, or secret values. The exact Preview ID and name checks remain mandatory; deployment remains fail-closed. The next marker-triggered run must be inspected before any deployment can be considered successful.
