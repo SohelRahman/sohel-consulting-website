@@ -757,3 +757,8 @@ This verifies public page rendering and layout overflow only. It does not prove 
 ### Admin unauthenticated/MFA UI assertions added — 2026-11-24
 
 Extended the browser suite to verify that the Admin login panel is visible while the dashboard and MFA enrollment, verification and recovery panels remain hidden before authentication; that email/password inputs exist; and that bilingual MFA enrollment/recovery guidance is present. These checks do not submit credentials or mutate Admin state. Results are pending the next smoke run. Live authenticated MFA enrollment and RBAC acceptance still require an authorized test Admin account and its credentials; no credentials are stored in the repository or workflow.
+
+
+### Admin MFA browser assertion correction — 2026-11-24
+
+Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45321214679) passed every HTTP/security check and all eight page/viewport load, title/body, page-error and overflow checks, but failed two identical Admin copy assertions at 390px and 1440px. Diagnosis: the test looked for MFA enrollment text in visible body text even though the enrollment and recovery panels are intentionally hidden before authentication. The copy exists in the Admin HTML; hidden content is not included in Playwright's visible inner_text(). Corrected the test to inspect each hidden panel's DOM text_content() independently and verify English/Bangla enrollment and recovery wording. The source correction is commit 72d5c51a2b038445943a5b32ea442ed0d1eb4eaa; its guarded smoke rerun is pending. No application code, Preview Worker or D1 data was changed for this test-only fix.
