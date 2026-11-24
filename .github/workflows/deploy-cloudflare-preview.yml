@@ -75,6 +75,23 @@ jobs:
           console.log("Verified active Cloudflare token and exact Preview D1 database. No secrets were printed.");
           NODE
 
+      - name: Ensure Preview MFA encryption key exists without rotating an existing key
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.1 secret list --name current-focus-development --config wrangler.preview.toml > /tmp/preview-worker-secrets.json
+          if ! node --input-type=module -e 'import fs from "node:fs"; const x=JSON.parse(fs.readFileSync("/tmp/preview-worker-secrets.json","utf8")); const rows=Array.isArray(x)?x:(x.result||[]); process.exit(rows.some(v=>v.name==="MFA_ENCRYPTION_KEY")?0:1);'; then
+            KEY="$(node --input-type=module -e 'import { randomBytes } from "node:crypto"; process.stdout.write(randomBytes(32).toString("base64url"));')"
+            printf '%s' "$KEY" | npx --yes wrangler@4.160.1 secret put MFA_ENCRYPTION_KEY --name current-focus-development --config wrangler.preview.toml
+            unset KEY
+            echo "A new Preview-only MFA encryption key was generated and stored; its value was not displayed."
+          else
+            echo "An MFA encryption key already exists; it was not rotated."
+          fi
+
       - name: Run source validation
         run: |
           set -euo pipefail
@@ -86,6 +103,13 @@ jobs:
           node scripts/test-course-pricing.mjs
           node scripts/test-registration-workflow.mjs
           node scripts/test-quotation-response.mjs
+
+      - name: Check CMS revision and Admin MFA contracts before deployment
+        run: |
+          set -euo pipefail
+          node scripts/test-cms-revision-contract.mjs
+          python3 scripts/test-cms-revision-sqlite.py
+          node scripts/test-admin-mfa.mjs
 
       - name: Deploy Preview Worker and static assets only
         env:
