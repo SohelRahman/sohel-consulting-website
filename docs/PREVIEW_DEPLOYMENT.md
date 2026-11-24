@@ -149,3 +149,8 @@ Preview runtime smoke [Run #5](https://github.com/SohelRahman/sohel-consulting-w
 ## 2026-11-24 — Quotation-response privacy routing fix
 
 The second runtime smoke execution showed that `/quote-response.html` was served directly by the static-assets layer, bypassing the Worker wrapper that sets `Cache-Control: no-store`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive`. The Preview `run_worker_first` asset route list did not include this exact path. `wrangler.preview.toml` now includes `/quote-response.html` in `run_worker_first`, ensuring the Worker applies the intended privacy headers before returning the asset. This Preview-only routing change requires deployment and a passing HTTP smoke rerun; it is not yet accepted.
+
+
+## 2026-11-24 — Preview privacy routing correction deployed
+
+The isolated Preview deployment [Run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541) completed successfully on commit `55585c4fa3f6927df14776eac508c2eed6efd290`. Worker version: `8f6489b1-7ef9-4423-a01a-6bdf63a48755`. The Preview configuration now routes `/quote-response.html` through Worker middleware. The deployment's source, CMS revision/SQLite and Admin MFA checks passed. The HTTP smoke rerun must still confirm the three response headers before this security check is accepted.
