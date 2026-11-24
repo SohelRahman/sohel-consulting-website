@@ -154,3 +154,8 @@ The second runtime smoke execution showed that `/quote-response.html` was served
 ## 2026-11-24 — Preview privacy routing correction deployed
 
 The isolated Preview deployment [Run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541) completed successfully on commit `55585c4fa3f6927df14776eac508c2eed6efd290`. Worker version: `8f6489b1-7ef9-4423-a01a-6bdf63a48755`. The Preview configuration now routes `/quote-response.html` through Worker middleware. The deployment's source, CMS revision/SQLite and Admin MFA checks passed. The HTTP smoke rerun must still confirm the three response headers before this security check is accepted.
+
+
+## 2026-11-24 — Preview HTTP smoke acceptance passed
+
+Guarded runtime smoke [Run #20](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320457740) passed against the deployed Preview origin. It confirmed HTTP 200 for the English homepage, Admin page, Bangla homepage and quotation-response page; HTTP 401 for unauthenticated Admin summary; HTTP 404 for Worker source, migration SQL and Wrangler configuration paths; and all three quotation-response privacy headers (`Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex, nofollow, noarchive`). The quotation-response route is now explicitly Worker-first in `wrangler.preview.toml`. These results accept only the listed HTTP checks; browser and end-to-end functional acceptance remain pending.
