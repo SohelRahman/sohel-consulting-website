@@ -97,3 +97,8 @@ Expanded the guarded Preview runtime smoke workflow with Playwright/Chromium che
 ### Playwright runner adjustment — 2026-11-24
 
 Responsive Chromium smoke execution reached the browser-install step but failed because `ubuntu-latest` resolved to Ubuntu 26.04, unsupported by Playwright 1.55.0. The workflow now uses `ubuntu-24.04`. HTTP smoke checks remain passed; responsive browser results remain pending the rerun.
+
+
+### Browser smoke workflow checkout correction — 2026-11-24
+
+Playwright/Chromium installed successfully on Ubuntu 24.04, but the browser test failed because the workflow had not checked out the repository containing `scripts/test-preview-browser.py`. Added `actions/checkout@v4` before the smoke steps. Responsive browser assertions remain pending the next run.
