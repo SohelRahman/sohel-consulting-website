@@ -695,3 +695,8 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 ## Preview deployment preflight added — 2026-11-24
 
 The guarded Preview deployment workflow now runs the CMS revision source contract, SQLite concurrency/transaction tests, and Admin MFA cryptographic/source-contract tests before deployment. It also checks the Preview Worker secret-name list and creates a random 32-byte base64url `MFA_ENCRYPTION_KEY` only if missing; an existing key is never rotated. These are workflow steps, not evidence that the workflow has run. Live CMS and MFA browser/API acceptance remain pending until a verified Preview deployment is available.
+
+
+## Preview deployment trigger gate — 2026-11-24
+
+The guarded Preview deployment workflow now supports a branch-scoped `push` trigger on `current-focus-development` in addition to manual `workflow_dispatch`. The job runs only when the pushed commit message contains the exact marker `[deploy-preview]` or when the event is a manual workflow dispatch. Ordinary pushes to the development branch skip the deployment job. This avoids modifying `main` merely to expose the workflow in the Actions UI, while retaining an explicit deployment gate. The trigger itself does not authorize or execute deployment. No marker commit has been created and no deployment has been run.
