@@ -447,3 +447,10 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Improved parsing and diagnostics for the quotation-response privacy headers.
 - Updated Preview deployment, QA and master status documentation.
 - Triggering the Preview smoke workflow only; no Worker deployment or D1 mutation.
+
+
+## 2026-11-24 — Preview quotation-response privacy routing fix
+
+- Added `/quote-response.html` to the Preview Worker's `run_worker_first` asset routes so the Worker enforces no-store, no-referrer and noindex response headers.
+- Updated the Preview deployment, QA and master status documentation.
+- Redeploying the isolated Preview Worker only; Production and `main` remain excluded.
