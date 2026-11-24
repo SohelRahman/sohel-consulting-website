@@ -111,3 +111,8 @@ Preview smoke [Run #39](https://github.com/SohelRahman/sohel-consulting-website/
 ### Next acceptance job — Admin login/MFA entry-state UI
 
 Added read-only browser assertions for visible Admin login controls, required email/password fields, hidden unauthenticated dashboard/MFA panels, and bilingual MFA enrollment/recovery guidance. The next guarded smoke run will execute these checks. Live authenticated MFA enrollment, recovery-code lifecycle and RBAC verification remain blocked on a separately authorized test Admin account; no password or TOTP seed will be requested in chat or committed to GitHub.
+
+
+### Admin MFA entry-state smoke diagnosis — 2026-11-24
+
+Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45321214679) failed only two new MFA copy assertions. All HTTP/security checks, eight responsive page/viewport checks and the development validation workflow passed. The test incorrectly searched visible body text for copy inside panels intentionally hidden before authentication. Corrected the browser test to inspect the enrollment and recovery panels' DOM text directly, including English and Bangla wording. Correction commit: 72d5c51a2b038445943a5b32ea442ed0d1eb4eaa. Guarded Preview smoke rerun is pending. This was a test-only change; no application deployment, D1 mutation, or main-branch change occurred.
