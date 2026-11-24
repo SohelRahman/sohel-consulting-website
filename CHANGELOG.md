@@ -1,3 +1,8 @@
+## 2026-11-24 — Add gated Preview deployment trigger
+- Added a push trigger restricted to `current-focus-development`.
+- Deployment job runs only for explicit `[deploy-preview]` commit messages or manual workflow dispatch; ordinary branch pushes skip deployment.
+- Avoids modifying `main` to expose the workflow. No marker commit or Preview deployment was executed.
+
 ## 2026-11-24 — Preview deployment readiness hardening
 - Updated the development Preview deployment workflow to verify the existing Worker secret-name metadata and generate/store a cryptographically random 32-byte base64url `MFA_ENCRYPTION_KEY` only when absent; existing keys are never rotated and values are never logged.
 - Added CMS revision source/SQLite and Admin MFA cryptographic/source-contract checks to the guarded deployment workflow.
