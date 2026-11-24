@@ -705,3 +705,8 @@ The guarded Preview deployment workflow now supports a branch-scoped `push` trig
 ## Preview runtime HTTP smoke tests — 2026-11-24
 
 A guarded workflow `.github/workflows/preview-runtime-smoke.yml` was added. It runs only on `current-focus-development` commits whose message contains `[preview-smoke]`; ordinary pushes do not execute it. The workflow checks HTTP 200 and HTML responses for the English homepage, Admin page, Bangla homepage and quotation-response page; verifies unauthenticated Admin summary returns HTTP 401; verifies Worker source, migration SQL and Wrangler configuration paths return HTTP 404; and checks the quotation-response page's no-store, no-referrer and noindex response headers. These checks validate public HTTP behavior and selected security boundaries, but do not replace browser interaction, responsive, accessibility, form lifecycle, CMS, Cloudinary or authenticated Admin acceptance.
+
+
+### Runtime smoke execution record — 2026-11-24
+
+Initial smoke workflow [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320166771) confirmed HTTP 200 for `/`, `/admin.html`, `/bn/index.html` and `/quote-response.html`; HTTP 401 for unauthenticated `/api/admin/summary`; and HTTP 404 for `/src/worker.js`, `/migrations/0019_admin_mfa.sql` and `/wrangler.toml`. The run failed at the quotation-response privacy-header assertion. The assertion was revised to parse the final HTTP header block and print only the three relevant response headers for diagnosis. Privacy-header acceptance remains pending until a subsequent run passes.
