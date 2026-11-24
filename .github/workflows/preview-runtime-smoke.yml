@@ -15,7 +15,7 @@ concurrency:
 jobs:
   smoke:
     if: github.ref == 'refs/heads/current-focus-development' && contains(github.event.head_commit.message, '[preview-smoke]')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check public Preview pages and security boundaries
         shell: bash
