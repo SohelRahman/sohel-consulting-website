@@ -690,3 +690,8 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - [ ] Run two-session CMS concurrency tests against Preview D1, including stale-write HTTP 409 and history/audit atomicity.
 - [ ] Run MFA enrollment, valid/invalid TOTP, replay prevention, recovery-code single-use and reset/session invalidation tests.
 - [ ] Record browser, API and database evidence. Migration workflow success alone does not complete runtime acceptance.
+
+
+## Preview deployment preflight added — 2026-11-24
+
+The guarded Preview deployment workflow now runs the CMS revision source contract, SQLite concurrency/transaction tests, and Admin MFA cryptographic/source-contract tests before deployment. It also checks the Preview Worker secret-name list and creates a random 32-byte base64url `MFA_ENCRYPTION_KEY` only if missing; an existing key is never rotated. These are workflow steps, not evidence that the workflow has run. Live CMS and MFA browser/API acceptance remain pending until a verified Preview deployment is available.
