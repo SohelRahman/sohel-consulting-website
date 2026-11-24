@@ -470,3 +470,10 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Checks page load, title/body presence, uncaught browser errors and horizontal overflow.
 - Updated Preview deployment, QA and master status documentation.
 - Triggering Preview smoke only; no deployment or D1 changes.
+
+
+## 2026-11-24 — Responsive browser smoke runner correction
+
+- Pinned the Playwright/Chromium Preview smoke job to `ubuntu-24.04` because the latest Ubuntu runner image is not supported by the pinned Playwright release.
+- Updated Preview deployment, QA and master status documentation.
+- Triggering the responsive Preview smoke suite only; no deployment or D1 mutation.
