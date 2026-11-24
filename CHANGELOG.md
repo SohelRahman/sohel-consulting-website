@@ -493,3 +493,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Extended the read-only browser suite to assert unauthenticated Admin login visibility, hidden dashboard/MFA panels, required login inputs and bilingual MFA guidance.
 - Updated QA, Preview deployment and master status documentation.
 - Triggering guarded Preview smoke only; no Worker deployment, D1 mutation or authenticated Admin action.
+
+
+## 2026-11-24 — Admin MFA browser smoke assertion fix
+
+- Diagnosed Run #44: all HTTP/security and responsive page checks passed; two MFA copy assertions failed because the test searched visible text inside intentionally hidden pre-authentication panels.
+- Updated Playwright checks to inspect hidden enrollment/recovery panel DOM text directly and validate English/Bangla copy.
+- Recorded diagnosis and pending rerun in QA, Preview deployment and master status documentation.
+- Test-only change; no Worker deployment, D1 mutation, authenticated Admin action or main-branch change.
