@@ -39,7 +39,9 @@ def main():
                         actual = locator.is_visible() if mode == "visible" else (locator.count() if mode == "count" else not locator.is_visible())
                         if actual != expected:
                             failures.append(f"{viewport['width']}px /admin.html: {selector} {mode} expected {expected}, got {actual}")
-                    if "দ্বি-ধাপ যাচাইকরণ সেটআপ" not in body_text or "রিকভারি কোড" not in page.content():
+                    enroll_copy = page.locator("#mfa-enroll-panel").text_content() or ""
+                    recovery_copy = page.locator("#mfa-recovery-panel").text_content() or ""
+                    if "Set up two-step verification" not in enroll_copy or "দ্বি-ধাপ যাচাইকরণ সেটআপ" not in enroll_copy or "recovery codes" not in recovery_copy.lower() or "রিকভারি কোড" not in recovery_copy:
                         failures.append(f"{viewport['width']}px /admin.html: bilingual MFA enrollment/recovery content missing")
                 dimensions = page.evaluate("({width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth})")
                 if dimensions["scroll"] > dimensions["width"] + 2:
