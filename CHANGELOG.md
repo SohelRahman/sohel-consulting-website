@@ -1,3 +1,9 @@
+## 2026-11-24 — Preview deployment readiness hardening
+- Updated the development Preview deployment workflow to verify the existing Worker secret-name metadata and generate/store a cryptographically random 32-byte base64url `MFA_ENCRYPTION_KEY` only when absent; existing keys are never rotated and values are never logged.
+- Added CMS revision source/SQLite and Admin MFA cryptographic/source-contract checks to the guarded deployment workflow.
+- Documented the remaining dispatch blocker: the workflow is not present on `main`, so it cannot currently be launched through the standard Actions UI without a separately approved default-branch change.
+- No secret provisioning, Worker deployment, Production action or `main` modification was performed.
+
 
 
 ## 2026-11-24 — Preview D1 migrations applied and verified
