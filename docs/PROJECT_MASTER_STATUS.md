@@ -102,3 +102,12 @@ Responsive Chromium smoke execution reached the browser-install step but failed 
 ### Browser smoke workflow checkout correction — 2026-11-24
 
 Playwright/Chromium installed successfully on Ubuntu 24.04, but the browser test failed because the workflow had not checked out the repository containing `scripts/test-preview-browser.py`. Added `actions/checkout@v4` before the smoke steps. Responsive browser assertions remain pending the next run.
+
+
+### Responsive Preview browser smoke accepted — 2026-11-24
+
+Preview smoke [Run #39](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320815398) passed for the English homepage, Bangla homepage, Admin page and quotation-response page at mobile (390px) and desktop (1440px) viewports. All eight combinations loaded successfully, had title/body content, produced no uncaught browser page errors and had no horizontal overflow. HTTP/API/path/privacy checks passed in the same run. This is public-page smoke acceptance only, not full visual/accessibility or authenticated functional acceptance.
+
+### Next acceptance job — Admin login/MFA entry-state UI
+
+Added read-only browser assertions for visible Admin login controls, required email/password fields, hidden unauthenticated dashboard/MFA panels, and bilingual MFA enrollment/recovery guidance. The next guarded smoke run will execute these checks. Live authenticated MFA enrollment, recovery-code lifecycle and RBAC verification remain blocked on a separately authorized test Admin account; no password or TOTP seed will be requested in chat or committed to GitHub.
