@@ -139,3 +139,8 @@ This confirms the Cloudflare Preview deployment operation, not browser/runtime a
 ## 2026-11-24 — Runtime acceptance gate started
 
 The Preview Worker deployment is confirmed by Actions Run #16. A new guarded HTTP smoke workflow, `.github/workflows/preview-runtime-smoke.yml`, now targets the deployed URL `https://current-focus-development.sohelrahman118.workers.dev`. It checks the English and Bangla homepages, Admin and quotation-response static pages, unauthenticated Admin API rejection, denial of direct source/migration/config access, and quotation-response privacy headers. The workflow is marker-gated with `[preview-smoke]` and is separate from deployment; it cannot deploy or change D1. Browser interaction and the wider functional QA matrix remain separate acceptance gates.
+
+
+## 2026-11-24 — Initial runtime smoke result
+
+Preview runtime smoke [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320166771) confirmed the four static-page HTTP 200 responses, unauthenticated Admin API HTTP 401, and HTTP 404 protection for Worker source, migration SQL and Wrangler configuration paths. The run stopped at the quotation-response privacy-header assertion. The smoke workflow now parses the final response header block and emits only the relevant privacy-header names/values to aid diagnosis. No application data was changed by the smoke test. The privacy-header check remains unaccepted pending a passing rerun.
