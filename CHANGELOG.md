@@ -454,3 +454,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Added `/quote-response.html` to the Preview Worker's `run_worker_first` asset routes so the Worker enforces no-store, no-referrer and noindex response headers.
 - Updated the Preview deployment, QA and master status documentation.
 - Redeploying the isolated Preview Worker only; Production and `main` remain excluded.
+
+
+## 2026-11-24 — Preview runtime smoke rerun after privacy routing deployment
+
+- Preview deployment Run #34 applied the Worker-first route for `/quote-response.html`.
+- Worker version `8f6489b1-7ef9-4423-a01a-6bdf63a48755` is deployed on the isolated Preview Worker.
+- QA, Preview deployment and master status documentation updated.
+- Triggering the HTTP smoke workflow only; no deployment or D1 mutation.
