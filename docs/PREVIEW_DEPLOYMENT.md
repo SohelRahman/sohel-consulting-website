@@ -119,3 +119,18 @@ Preview deployment Run #10 confirmed the D1 detail request returned HTTP 401 wit
 ## 2026-11-24 — First-time Worker bootstrap ordering
 
 The Preview D1 identity preflight passed on deployment Run #13, confirming the dedicated Preview database name and ID. The next step failed because Cloudflare reported that Worker `current-focus-development` did not yet exist; Wrangler cannot list or set Worker secrets before the first deployment creates the Worker. The workflow now runs source and contract tests, performs an initial isolated Preview Worker bootstrap deployment, provisions `MFA_ENCRYPTION_KEY` only after the Worker exists (without rotating an existing key), and then performs the final Preview deployment. Both deployments use only `wrangler.preview.toml` and the dedicated Worker name. The workflow remains restricted to `current-focus-development`; Production and `main` are excluded.
+
+
+## 2026-11-24 — Isolated Preview Worker deployed
+
+The authorized Preview deployment [Run #16](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45319857793) completed successfully on commit `dd58978d36e1014c3bd99772fe681521d4aa3458`. The workflow passed credential checks, exact Preview D1 identity verification, source validation, CMS revision contract/SQLite tests, and Admin MFA tests. It bootstrapped Worker `current-focus-development`, created and stored a Preview-only `MFA_ENCRYPTION_KEY` because the Worker did not previously exist, then successfully deployed the final Worker bundle and assets.
+
+Deployment evidence from Wrangler:
+- Preview URL: https://current-focus-development.sohelrahman118.workers.dev
+- Worker version: `bd3a71ff-a09c-46f1-897c-8b9a07a6d214`
+- Worker binding: `DB` → `consulting-preview-db`
+- Environment: `preview`
+- Assets binding: `ASSETS`
+- Wrangler: `4.160.1`
+
+This confirms the Cloudflare Preview deployment operation, not browser/runtime acceptance. Automated source/contract tests passed; the public Worker URL could not be fetched through the available external page inspection path in this session. Continue with Preview runtime smoke checks and browser QA before treating the environment as accepted. Production and `main` were not modified.
