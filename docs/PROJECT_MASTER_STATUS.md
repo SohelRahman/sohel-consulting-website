@@ -72,3 +72,8 @@ A marker-gated HTTP smoke workflow was added to test the deployed Preview origin
 ### Runtime smoke checkpoint — 2026-11-24
 
 Initial Preview HTTP smoke execution confirmed static page delivery (English/Bangla home, Admin and quotation page), unauthenticated Admin API rejection, and denial of source/migration/config paths. The first run failed only at the quotation-response privacy-header assertion; the workflow's header parser and diagnostic output were corrected. Rerun is pending. Do not mark quotation privacy headers or overall runtime acceptance passed until the rerun succeeds.
+
+
+### Quotation-response privacy routing remediation — 2026-11-24
+
+The Preview smoke run found that `/quote-response.html` bypassed Worker middleware because it was absent from `wrangler.preview.toml`'s `run_worker_first` list. The response therefore lacked the intended no-store, no-referrer and noindex headers. Added the exact path to the Preview-only Worker-first route list. Deployment and a passing smoke rerun are pending; do not mark this privacy control accepted until both complete.
