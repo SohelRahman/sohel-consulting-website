@@ -462,3 +462,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Worker version `8f6489b1-7ef9-4423-a01a-6bdf63a48755` is deployed on the isolated Preview Worker.
 - QA, Preview deployment and master status documentation updated.
 - Triggering the HTTP smoke workflow only; no deployment or D1 mutation.
+
+
+## 2026-11-24 — Responsive Preview browser smoke execution
+
+- Added Playwright/Chromium checks at mobile and desktop viewport widths for key English/Bangla and Admin/quotation pages.
+- Checks page load, title/body presence, uncaught browser errors and horizontal overflow.
+- Updated Preview deployment, QA and master status documentation.
+- Triggering Preview smoke only; no deployment or D1 changes.
