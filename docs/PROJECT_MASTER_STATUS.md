@@ -3,7 +3,7 @@
 **Latest handover update:** 2026-11-24  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Latest source checkout for migration run:** `791d90a7446bcd71908730bf2204441aa9ad6b8b`  
+**Latest implementation update:** `4d81d4c99f9a5c9c89340bfd29b185f1db36ae6e`  
 **Latest verified source CI:** [Run #45150713850](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150713850) passed for the previously validated source commit. CI for the latest documentation-only commits is not yet confirmed.
 
 ## Active priority — Preview CMS concurrency acceptance
@@ -26,11 +26,11 @@
 - The migration job verified Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`, applied both migration files, reported success for each, and finished with `No migrations to apply!`.
 - No Production database was targeted. The run does not deploy the Worker or prove runtime acceptance.
 
-### Next steps after the fresh audit
-1. Configure and verify the Preview-only `MFA_ENCRYPTION_KEY` through the approved secret process before enabling MFA runtime functionality; never expose its value.
-2. Review the guarded Preview deployment workflow and verify all required Preview secrets are configured without revealing values.
-3. Obtain/confirm the separate Preview Worker deployment authorization before dispatching `.github/workflows/deploy-cloudflare-preview.yml`.
-4. After deployment, record the exact deployed SHA and verify the Preview Worker uses the migrated D1 schema.
+### Next steps after Preview migration
+1. Make the Preview MFA key provisioner available through the authorized deployment workflow. The updated development workflow now checks Worker secret metadata and creates a cryptographically random 32-byte base64url `MFA_ENCRYPTION_KEY` only when absent; it never rotates an existing key or prints the value.
+2. Verify Preview Admin/session/Cloudinary secrets are configured without revealing values.
+3. Make the guarded Preview deployment workflow dispatchable without changing `main`; current workflow file is only on `current-focus-development`, so Actions default-branch dispatch remains blocked until a separately approved route is available.
+4. Deploy the intended development SHA only after the workflow dispatch prerequisite is resolved; record the deployed SHA.
 5. Run two-session CMS concurrency acceptance (competing same-revision saves, stale HTTP 409, archive/restore races, historical restore, revision increments and history/audit consistency).
 6. Run MFA enrollment, TOTP login, replay rejection, recovery-code and reset acceptance.
 7. Record direct browser/API/D1 evidence. CI and migration-ledger success are not runtime acceptance.
@@ -44,7 +44,7 @@ Run #5 was read-only. The later authorized Run #11 applied migrations 0018 and 0
 - Previous development CI run [#45149919998](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149919998) passed.
 
 ## Completed source priority — Admin MFA
-MFA source implementation and automated checks passed in [CI run #45149126646](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149126646). Migration `0019_admin_mfa.sql` is applied to Preview D1 by Run #11. Preview-only `MFA_ENCRYPTION_KEY`, Preview deployment and browser acceptance remain pending.
+MFA source implementation and automated checks passed in [CI run #45149126646](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149126646). Migration `0019_admin_mfa.sql` is applied to Preview D1 by Run #11. The development Preview deployment workflow now provisions `MFA_ENCRYPTION_KEY` if absent without rotating an existing value. Actual secret provisioning, Preview deployment and browser acceptance remain pending because the workflow is not present on `main` and cannot currently be dispatched through the Actions UI.
 
 ## Mandatory operating gates
 - Work only on `current-focus-development`; do not modify, merge, rebase or reconcile `main`.
