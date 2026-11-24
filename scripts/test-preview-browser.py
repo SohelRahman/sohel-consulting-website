@@ -24,6 +24,23 @@ def main():
                     failures.append(f"{viewport['width']}px {path}: document title is empty")
                 if len(body_text) < 20:
                     failures.append(f"{viewport['width']}px {path}: body text is unexpectedly short")
+                if path == "/admin.html":
+                    checks = [
+                        ("#login-panel", "visible", True),
+                        ("#login-form input[name=email]", "count", 1),
+                        ("#login-form input[name=password]", "count", 1),
+                        ("#mfa-enroll-panel", "hidden", True),
+                        ("#mfa-verify-panel", "hidden", True),
+                        ("#mfa-recovery-panel", "hidden", True),
+                        ("#dashboard", "hidden", True),
+                    ]
+                    for selector, mode, expected in checks:
+                        locator = page.locator(selector)
+                        actual = locator.is_visible() if mode == "visible" else (locator.count() if mode == "count" else not locator.is_visible())
+                        if actual != expected:
+                            failures.append(f"{viewport['width']}px /admin.html: {selector} {mode} expected {expected}, got {actual}")
+                    if "দ্বি-ধাপ যাচাইকরণ সেটআপ" not in body_text or "রিকভারি কোড" not in page.content():
+                        failures.append(f"{viewport['width']}px /admin.html: bilingual MFA enrollment/recovery content missing")
                 dimensions = page.evaluate("({width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth})")
                 if dimensions["scroll"] > dimensions["width"] + 2:
                     failures.append(f"{viewport['width']}px {path}: horizontal overflow ({dimensions['scroll']} > {dimensions['width']})")
