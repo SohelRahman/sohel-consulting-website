@@ -114,3 +114,8 @@ The deployment preflight was hardened on `current-focus-development` to emit san
 ## 2026-11-24 — Credential separation correction
 
 Preview deployment Run #10 confirmed the D1 detail request returned HTTP 401 with Cloudflare error code 10000 (Authentication error), while the deployment token verification succeeded. Inspection of the successful Preview migration workflow showed that D1 identity lookup uses the GitHub Actions secret `CLOUDFLARE_API_TOKEN`, whereas the deployment workflow had incorrectly supplied `CLOUDFLARE_WORKERS_API_TOKEN` to that lookup. The deployment workflow now uses `CLOUDFLARE_API_TOKEN` only for the D1 identity preflight and retains `CLOUDFLARE_WORKERS_API_TOKEN` for Wrangler Worker deployment and secret operations. The exact Preview database ID/name guard remains unchanged. No credentials or values are recorded here.
+
+
+## 2026-11-24 — First-time Worker bootstrap ordering
+
+The Preview D1 identity preflight passed on deployment Run #13, confirming the dedicated Preview database name and ID. The next step failed because Cloudflare reported that Worker `current-focus-development` did not yet exist; Wrangler cannot list or set Worker secrets before the first deployment creates the Worker. The workflow now runs source and contract tests, performs an initial isolated Preview Worker bootstrap deployment, provisions `MFA_ENCRYPTION_KEY` only after the Worker exists (without rotating an existing key), and then performs the final Preview deployment. Both deployments use only `wrangler.preview.toml` and the dedicated Worker name. The workflow remains restricted to `current-focus-development`; Production and `main` are excluded.
