@@ -674,3 +674,19 @@ Do not apply migration 0018 or deploy the Preview Worker without separate explic
 ## Preview CMS concurrency and Admin MFA release gates — 2026-11-23
 
 The read-only Preview D1 migration audit [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45155468446) reported `0018_cms_content_revision.sql` and `0019_admin_mfa.sql` as pending. Do not run the Preview Worker deployment or attempt live CMS/MFA acceptance until the required Preview migrations have been separately approved, applied and verified. Migration 0018 is required before testing CMS revision-token compare-and-swap behavior against Preview. Migration 0019 and a Preview-only `MFA_ENCRYPTION_KEY` are prerequisites for MFA runtime acceptance. Migration application and Worker deployment each require explicit approval. No Production or `main` action is included.
+
+
+## 2026-11-24 — Preview D1 migrations applied and verified
+
+The authorized Preview migration workflow [Run #11](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/4516057616) completed successfully. Job `migrate-preview` verified the dedicated remote Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2` before migration activity. The pre-apply migration list contained `0018_cms_content_revision.sql` and `0019_admin_mfa.sql`. Wrangler reported both migrations with successful status after execution. The final remote migration-list step returned **No migrations to apply!** The job steps `Apply pending migrations to Preview D1 only` and `Verify Preview migration state` both completed successfully.
+
+This is direct GitHub Actions execution evidence for the Preview D1 migration ledger. It confirms the two migrations were applied to the dedicated Preview database. It does not establish that a Worker containing the corresponding source code has been deployed or that runtime/browser acceptance has passed. Production and `main` were not targeted by this workflow.
+
+## Remaining Preview runtime acceptance
+
+- [ ] Confirm Preview-only `MFA_ENCRYPTION_KEY` is configured securely on the Preview Worker; do not print or share its value.
+- [ ] Obtain separate authorization and deploy the intended development SHA with the guarded Preview workflow.
+- [ ] Verify deployed Worker SHA and Preview environment marker.
+- [ ] Run two-session CMS concurrency tests against Preview D1, including stale-write HTTP 409 and history/audit atomicity.
+- [ ] Run MFA enrollment, valid/invalid TOTP, replay prevention, recovery-code single-use and reset/session invalidation tests.
+- [ ] Record browser, API and database evidence. Migration workflow success alone does not complete runtime acceptance.
