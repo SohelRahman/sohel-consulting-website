@@ -720,3 +720,14 @@ The second smoke run confirmed that the quotation-response HTML was being served
 ### Quotation-response privacy routing deployment — 2026-11-24
 
 The Preview-only `run_worker_first` correction was deployed successfully in Preview deployment [Run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541), using commit `55585c4fa3f6927df14776eac508c2eed6efd290`. The resulting Worker version is `8f6489b1-7ef9-4423-a01a-6bdf63a48755`. Source, CMS revision/SQLite and Admin MFA checks passed during the deployment. The final quotation-response privacy-header smoke rerun is pending.
+
+
+### Preview runtime HTTP smoke acceptance — 2026-11-24
+
+The rerun [Run #20](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320457740) passed. Verified results:
+- `/`, `/admin.html`, `/bn/index.html` and `/quote-response.html`: HTTP 200 with HTML content.
+- Unauthenticated `/api/admin/summary`: HTTP 401.
+- `/src/worker.js`, `/migrations/0019_admin_mfa.sql` and `/wrangler.toml`: HTTP 404.
+- `/quote-response.html`: `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer`, and `X-Robots-Tag: noindex, nofollow, noarchive`.
+
+This accepts the listed HTTP smoke checks only. It does not establish browser interaction, accessibility, responsive layout quality, form submission, authenticated Admin workflows, CMS concurrency, Cloudinary behavior or full ASVS Level 2 compliance.
