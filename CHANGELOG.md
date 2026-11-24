@@ -406,3 +406,8 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Kept content, history and audit writes in D1 batches; history and audit rows are conditional on a successful revision update.
 - Updated the Admin Content Manager to carry revision tokens and documented the API contract.
 - Added migration/source contract coverage to CI. Migration 0018 must be applied before deploying the Worker change. No migration or deployment was performed.
+
+## 2026-11-24 — Authorized isolated Preview deployment
+- Explicit user authorization received to deploy `current-focus-development` to the isolated Cloudflare Preview Worker.
+- Scope: Worker `current-focus-development`, Preview D1 `consulting-preview-db` (`e0317397-77cb-4f36-9d19-2594ff75b0c2`), Preview-only MFA key provisioning if absent.
+- Production and `main` are excluded. Deployment workflow performs token/target checks and source/CMS/MFA preflight before deploy.
