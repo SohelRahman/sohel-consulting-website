@@ -3,39 +3,37 @@
 **Latest handover update:** 2026-11-24  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Latest implementation update:** `e38c8edcaa6401876d8f4b1f72305ddea69dc65e`  
-**Latest verified source CI:** [Run #45150713850](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150713850) passed for the previously validated source commit. CI for the latest documentation-only commits is not yet confirmed.
+**Latest implementation update:** `dd58978d36e1014c3bd99772fe681521d4aa3458` (Preview bootstrap/deployment workflow)  
+**Latest verified source CI:** [Run #1015](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45319956996) passed.
 
-## Active priority — Preview CMS concurrency acceptance
+## Active priority — Preview runtime and functional acceptance
 
-**Status:** CMS source/SQLite tests pass. Preview D1 migrations 0018 and 0019 are applied and the final remote migration list is clear (Run #11). Preview Worker runtime acceptance remains pending; deployment and browser/API acceptance are separate gates.
+**Status:** The isolated Preview Worker is deployed successfully. Runtime HTTP smoke tests are now being added and executed; browser-based acceptance and full workflow QA remain pending.
 
-### Verified source and CI
-- CMS optimistic concurrency uses per-row revision tokens and compare-and-swap updates for draft save, archive, restore and historical restore.
-- The Worker/Admin source-contract test and temporary SQLite concurrency/transaction tests passed.
-- Implementation commit: `ced2ce5a08bb00f89401b1cc6b1131b0755d4fd3`.
-- Documentation/CI-result commit: `fa49d673e44a720221ff27e0de84cc72675fe174`.
-- CI runs [#45150564334](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150564334) and [#45150713850](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150713850) passed.
+### Deployment evidence
+- Preview URL: https://current-focus-development.sohelrahman118.workers.dev
+- Deployment workflow [Run #16](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45319857793) succeeded.
+- Deployed source commit: `dd58978d36e1014c3bd99772fe681521d4aa3458`.
+- Worker version: `bd3a71ff-a09c-46f1-897c-8b9a07a6d214`.
+- Preview D1 identity verified; migrations 0018 and 0019 are applied.
+- Source validation, CMS revision contract/SQLite tests and Admin MFA tests passed during deployment.
+- Preview-only `MFA_ENCRYPTION_KEY` was provisioned without exposing its value.
+- No Production deployment or `main` modification occurred.
 
-### Preview migration audit and application
-- Expected Preview D1: `consulting-preview-db`, ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`.
-- Read-only workflow: `.github/workflows/audit-preview-d1-migrations.yml`.
-- The audit workflow is present on both `main` and `current-focus-development`; the Actions UI default-branch prerequisite is satisfied.
-- Read-only audit [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45155468446) showed migrations 0018 and 0019 pending.
-- Authorized migration execution [Run #11](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/4516057616) completed successfully on `current-focus-development`.
-- The migration job verified Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2`, applied both migration files, reported success for each, and finished with `No migrations to apply!`.
-- No Production database was targeted. The run does not deploy the Worker or prove runtime acceptance.
+### Runtime smoke tests
+- Added `.github/workflows/preview-runtime-smoke.yml`, gated to `current-focus-development` commits containing `[preview-smoke]`.
+- Checks English and Bangla homepage delivery, Admin and quotation-response pages, unauthenticated Admin API rejection, source/migration/config path denial, and quotation-response privacy headers.
+- Workflow [run](https://github.com/SohelRahman/sohel-consulting-website/actions/workflows/preview-runtime-smoke.yml) must pass before marking these HTTP checks accepted.
 
-### Next steps after Preview migration
-1. Make the Preview MFA key provisioner available through the authorized deployment workflow. The updated development workflow now checks Worker secret metadata and creates a cryptographically random 32-byte base64url `MFA_ENCRYPTION_KEY` only when absent; it never rotates an existing key or prints the value.
-2. Verify Preview Admin/session/Cloudinary secrets are configured without revealing values.
-3. The guarded Preview deployment workflow now has a branch-scoped push trigger that runs only for a commit message containing `[deploy-preview]`; ordinary pushes skip the job. This avoids changing `main`. Do not create a marker commit until explicit Preview deployment approval is recorded.
-4. Deploy the intended development SHA only after the workflow dispatch prerequisite is resolved; record the deployed SHA.
-5. Run two-session CMS concurrency acceptance (competing same-revision saves, stale HTTP 409, archive/restore races, historical restore, revision increments and history/audit consistency).
-6. Run MFA enrollment, TOTP login, replay rejection, recovery-code and reset acceptance.
-7. Record direct browser/API/D1 evidence. CI and migration-ledger success are not runtime acceptance.
+### Remaining acceptance sequence
+1. Complete and record the guarded HTTP smoke workflow.
+2. Perform browser QA for English/Bangla navigation, mobile/desktop layouts, accessibility, console/network errors and consent behavior.
+3. Verify Admin bootstrap/account readiness, login/MFA enrollment and role-based access.
+4. Execute two-session CMS concurrency tests and verify stale-write HTTP 409, revision increments and history/audit consistency.
+5. Test Page Builder, Media Library/Cloudinary, course, registration, inquiry, quotation and chat workflows.
+6. Complete formal OWASP ASVS Level 2 verification and release-readiness review.
 
-Run #5 was read-only. The later authorized Run #11 applied migrations 0018 and 0019 to Preview D1. No Preview Worker deployment, Production action or `main` modification was performed.
+Do not treat deployment success or CI as browser/runtime acceptance. Keep all tests on Preview and preserve the Production/`main` boundary.
 
 ## Completed source priority — Bulk CMS initialization recovery
 - Admin preflight blocks more than 400 eligible items before network submission.
@@ -64,3 +62,8 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 ## Preview deployment trigger gate — 2026-11-24
 
 The guarded Preview deployment workflow now supports a branch-scoped `push` trigger on `current-focus-development` in addition to manual `workflow_dispatch`. The job runs only when the pushed commit message contains the exact marker `[deploy-preview]` or when the event is a manual workflow dispatch. Ordinary pushes to the development branch skip the deployment job. This avoids modifying `main` merely to expose the workflow in the Actions UI, while retaining an explicit deployment gate. The trigger itself does not authorize or execute deployment. No marker commit has been created and no deployment has been run.
+
+
+## 2026-11-24 — Preview runtime smoke testing initiated
+
+A marker-gated HTTP smoke workflow was added to test the deployed Preview origin. The checks cover the English/Bangla homepage, Admin and quotation-response static pages, unauthenticated Admin API rejection, sensitive source/config path denial, and quotation-response privacy headers. The workflow does not mutate D1 or deploy code. Browser-based functional acceptance remains pending.
