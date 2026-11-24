@@ -715,3 +715,8 @@ Initial smoke workflow [Run #5](https://github.com/SohelRahman/sohel-consulting-
 ### Quotation-response routing diagnosis — 2026-11-24
 
 The second smoke run confirmed that the quotation-response HTML was being served directly by the static-assets layer: it returned generic cache/referrer headers and omitted the Worker-enforced `no-store`, `no-referrer` and `X-Robots-Tag` policies. The Preview asset configuration's `run_worker_first` list covered the homepage, APIs, Admin and protected source paths, but omitted `/quote-response.html`. The Preview configuration now routes that exact path through the Worker so its dedicated privacy-header wrapper executes. Redeployment and a passing smoke rerun are required before acceptance.
+
+
+### Quotation-response privacy routing deployment — 2026-11-24
+
+The Preview-only `run_worker_first` correction was deployed successfully in Preview deployment [Run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541), using commit `55585c4fa3f6927df14776eac508c2eed6efd290`. The resulting Worker version is `8f6489b1-7ef9-4423-a01a-6bdf63a48755`. Source, CMS revision/SQLite and Admin MFA checks passed during the deployment. The final quotation-response privacy-header smoke rerun is pending.
