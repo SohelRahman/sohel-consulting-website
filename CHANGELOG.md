@@ -432,3 +432,10 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Preview URL: https://current-focus-development.sohelrahman118.workers.dev
 - Worker version: `bd3a71ff-a09c-46f1-897c-8b9a07a6d214`.
 - Browser/runtime acceptance remains pending; Production and `main` were not modified.
+
+
+## 2026-11-24 — Preview runtime smoke cycle
+
+- Added guarded HTTP smoke checks for the deployed Preview origin.
+- Updated the master status, Preview deployment notes and QA checklist.
+- Triggering the smoke workflow only; this commit does not trigger deployment.
