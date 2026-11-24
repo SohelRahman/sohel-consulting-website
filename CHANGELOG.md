@@ -417,3 +417,6 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 
 - Recorded the Run #7 fail-closed Preview D1 preflight result and added sanitized API-response diagnostics to the Preview deployment workflow.
 - Retrying the isolated Preview deployment from `current-focus-development` only; Production and `main` remain excluded.
+
+
+- Corrected Preview D1 preflight to use the D1-read credential while retaining the dedicated Worker deployment credential. Retrying the authorized isolated Preview deployment.
