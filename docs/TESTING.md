@@ -731,3 +731,8 @@ The rerun [Run #20](https://github.com/SohelRahman/sohel-consulting-website/acti
 - `/quote-response.html`: `Cache-Control: no-store, max-age=0`, `Referrer-Policy: no-referrer`, and `X-Robots-Tag: noindex, nofollow, noarchive`.
 
 This accepts the listed HTTP smoke checks only. It does not establish browser interaction, accessibility, responsive layout quality, form submission, authenticated Admin workflows, CMS concurrency, Cloudinary behavior or full ASVS Level 2 compliance.
+
+
+## Responsive Chromium smoke coverage — 2026-11-24
+
+The guarded Preview runtime workflow now also installs Playwright/Chromium and runs `scripts/test-preview-browser.py` against the deployed Preview origin. It loads the English homepage, Bangla homepage, Admin page and quotation-response page at 390px mobile and 1440px desktop viewports. It checks HTTP 200, non-empty document titles/body content, uncaught browser page errors and horizontal overflow. This is automated browser smoke coverage, not a substitute for visual review, keyboard/screen-reader testing, cross-browser testing or exercising authenticated workflows. Results remain pending until the next `[preview-smoke]` run completes.
