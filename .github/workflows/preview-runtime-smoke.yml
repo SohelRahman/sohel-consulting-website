@@ -17,6 +17,9 @@ jobs:
     if: github.ref == 'refs/heads/current-focus-development' && contains(github.event.head_commit.message, '[preview-smoke]')
     runs-on: ubuntu-24.04
     steps:
+      - name: Check out development branch
+        uses: actions/checkout@v4
+
       - name: Check public Preview pages and security boundaries
         shell: bash
         run: |
