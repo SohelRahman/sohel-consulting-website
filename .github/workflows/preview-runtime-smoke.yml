@@ -74,3 +74,11 @@ jobs:
           NODE
 
           echo "Preview HTTP smoke tests passed."
+
+      - name: Run responsive Chromium browser smoke tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check playwright==1.55.0
+          python3 -m playwright install --with-deps chromium
+          python3 scripts/test-preview-browser.py
