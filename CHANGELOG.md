@@ -439,3 +439,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Added guarded HTTP smoke checks for the deployed Preview origin.
 - Updated the master status, Preview deployment notes and QA checklist.
 - Triggering the smoke workflow only; this commit does not trigger deployment.
+
+
+## 2026-11-24 — Preview runtime smoke diagnostic rerun
+
+- Preserved the successful page/API/path-boundary observations from the first smoke cycle.
+- Improved parsing and diagnostics for the quotation-response privacy headers.
+- Updated Preview deployment, QA and master status documentation.
+- Triggering the Preview smoke workflow only; no Worker deployment or D1 mutation.
