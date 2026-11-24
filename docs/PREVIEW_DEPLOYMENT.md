@@ -134,3 +134,8 @@ Deployment evidence from Wrangler:
 - Wrangler: `4.160.1`
 
 This confirms the Cloudflare Preview deployment operation, not browser/runtime acceptance. Automated source/contract tests passed; the public Worker URL could not be fetched through the available external page inspection path in this session. Continue with Preview runtime smoke checks and browser QA before treating the environment as accepted. Production and `main` were not modified.
+
+
+## 2026-11-24 — Runtime acceptance gate started
+
+The Preview Worker deployment is confirmed by Actions Run #16. A new guarded HTTP smoke workflow, `.github/workflows/preview-runtime-smoke.yml`, now targets the deployed URL `https://current-focus-development.sohelrahman118.workers.dev`. It checks the English and Bangla homepages, Admin and quotation-response static pages, unauthenticated Admin API rejection, denial of direct source/migration/config access, and quotation-response privacy headers. The workflow is marker-gated with `[preview-smoke]` and is separate from deployment; it cannot deploy or change D1. Browser interaction and the wider functional QA matrix remain separate acceptance gates.
