@@ -77,3 +77,8 @@ Initial Preview HTTP smoke execution confirmed static page delivery (English/Ban
 ### Quotation-response privacy routing remediation — 2026-11-24
 
 The Preview smoke run found that `/quote-response.html` bypassed Worker middleware because it was absent from `wrangler.preview.toml`'s `run_worker_first` list. The response therefore lacked the intended no-store, no-referrer and noindex headers. Added the exact path to the Preview-only Worker-first route list. Deployment and a passing smoke rerun are pending; do not mark this privacy control accepted until both complete.
+
+
+### Preview privacy routing deployment — 2026-11-24
+
+The Preview-only routing correction for `/quote-response.html` was deployed successfully via [Run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541). Deployed commit `55585c4fa3f6927df14776eac508c2eed6efd290`; Worker version `8f6489b1-7ef9-4423-a01a-6bdf63a48755`. Deployment source/CMS/MFA checks passed. Final HTTP smoke confirmation of the no-store, no-referrer and noindex headers remains pending.
