@@ -116,3 +116,8 @@ Added read-only browser assertions for visible Admin login controls, required em
 ### Admin MFA entry-state smoke diagnosis — 2026-11-24
 
 Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45321214679) failed only two new MFA copy assertions. All HTTP/security checks, eight responsive page/viewport checks and the development validation workflow passed. The test incorrectly searched visible body text for copy inside panels intentionally hidden before authentication. Corrected the browser test to inspect the enrollment and recovery panels' DOM text directly, including English and Bangla wording. Correction commit: 72d5c51a2b038445943a5b32ea442ed0d1eb4eaa. Guarded Preview smoke rerun is pending. This was a test-only change; no application deployment, D1 mutation, or main-branch change occurred.
+
+
+### Admin unauthenticated/MFA entry-state smoke accepted — 2026-11-24
+
+Preview runtime smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322065022) passed. HTTP/security checks and all eight responsive page/viewport checks succeeded. Admin assertions verified the visible login panel and email/password fields, hidden dashboard/enrollment/verification/recovery panels before authentication, and English/Bangla MFA enrollment and recovery wording in the hidden-panel DOM. The prior Run #44 failure was a test assertion visibility mistake and has been corrected. This does not establish authenticated MFA, recovery-code lifecycle, replay prevention or RBAC acceptance. No credentials, Worker deployment, D1 mutation or main-branch change was involved.
