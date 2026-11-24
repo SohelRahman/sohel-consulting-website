@@ -144,3 +144,8 @@ The Preview Worker deployment is confirmed by Actions Run #16. A new guarded HTT
 ## 2026-11-24 — Initial runtime smoke result
 
 Preview runtime smoke [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320166771) confirmed the four static-page HTTP 200 responses, unauthenticated Admin API HTTP 401, and HTTP 404 protection for Worker source, migration SQL and Wrangler configuration paths. The run stopped at the quotation-response privacy-header assertion. The smoke workflow now parses the final response header block and emits only the relevant privacy-header names/values to aid diagnosis. No application data was changed by the smoke test. The privacy-header check remains unaccepted pending a passing rerun.
+
+
+## 2026-11-24 — Quotation-response privacy routing fix
+
+The second runtime smoke execution showed that `/quote-response.html` was served directly by the static-assets layer, bypassing the Worker wrapper that sets `Cache-Control: no-store`, `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow, noarchive`. The Preview `run_worker_first` asset route list did not include this exact path. `wrangler.preview.toml` now includes `/quote-response.html` in `run_worker_first`, ensuring the Worker applies the intended privacy headers before returning the asset. This Preview-only routing change requires deployment and a passing HTTP smoke rerun; it is not yet accepted.
