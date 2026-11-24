@@ -477,3 +477,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Pinned the Playwright/Chromium Preview smoke job to `ubuntu-24.04` because the latest Ubuntu runner image is not supported by the pinned Playwright release.
 - Updated Preview deployment, QA and master status documentation.
 - Triggering the responsive Preview smoke suite only; no deployment or D1 mutation.
+
+
+## 2026-11-24 — Preview browser smoke checkout fix
+
+- Added repository checkout to the Preview runtime smoke job so its Playwright test script is available on the runner.
+- Kept the smoke runner pinned to Ubuntu 24.04 for Playwright compatibility.
+- Updated Preview deployment, QA and master status documentation.
+- Triggering the Preview smoke workflow only; no Worker deployment or D1 mutation.
