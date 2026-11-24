@@ -4,7 +4,7 @@
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
 **Latest source checkout for migration run:** `791d90a7446bcd71908730bf2204441aa9ad6b8b`  
-**Latest verified CI:** [Run #45150713850](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150713850) passed for the latest development commit.
+**Latest verified source CI:** [Run #45150713850](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45150713850) passed for the previously validated source commit. CI for the latest documentation-only commits is not yet confirmed.
 
 ## Active priority — Preview CMS concurrency acceptance
 
@@ -35,7 +35,7 @@
 6. Run MFA enrollment, TOTP login, replay rejection, recovery-code and reset acceptance.
 7. Record direct browser/API/D1 evidence. CI and migration-ledger success are not runtime acceptance.
 
-Run #5 was read-only. No migration, Preview deployment, D1 write, secret/configuration change, Production action or `main` modification was performed.
+Run #5 was read-only. The later authorized Run #11 applied migrations 0018 and 0019 to Preview D1. No Preview Worker deployment, Production action or `main` modification was performed.
 
 ## Completed source priority — Bulk CMS initialization recovery
 - Admin preflight blocks more than 400 eligible items before network submission.
@@ -44,7 +44,7 @@ Run #5 was read-only. No migration, Preview deployment, D1 write, secret/configu
 - Previous development CI run [#45149919998](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149919998) passed.
 
 ## Completed source priority — Admin MFA
-MFA source implementation and automated checks passed in [CI run #45149126646](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149126646). Preview-only `MFA_ENCRYPTION_KEY`, migration `0019_admin_mfa.sql`, Preview deployment and browser acceptance remain pending and require explicit approval.
+MFA source implementation and automated checks passed in [CI run #45149126646](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45149126646). Migration `0019_admin_mfa.sql` is applied to Preview D1 by Run #11. Preview-only `MFA_ENCRYPTION_KEY`, Preview deployment and browser acceptance remain pending.
 
 ## Mandatory operating gates
 - Work only on `current-focus-development`; do not modify, merge, rebase or reconcile `main`.
