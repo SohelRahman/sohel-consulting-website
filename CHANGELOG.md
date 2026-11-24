@@ -501,3 +501,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Updated Playwright checks to inspect hidden enrollment/recovery panel DOM text directly and validate English/Bangla copy.
 - Recorded diagnosis and pending rerun in QA, Preview deployment and master status documentation.
 - Test-only change; no Worker deployment, D1 mutation, authenticated Admin action or main-branch change.
+
+
+## 2026-11-24 — Admin MFA entry-state smoke accepted
+
+- Corrected hidden-panel DOM text assertions after Run #44 exposed a Playwright visible-text assumption.
+- Preview smoke Run #45 passed HTTP/security checks and all eight page/viewport checks (four pages at 390px and 1440px).
+- Verified unauthenticated Admin login visibility, email/password fields, hidden dashboard/MFA panels and bilingual enrollment/recovery copy in the DOM.
+- No authenticated Admin action, Worker deployment, D1 mutation or main-branch change.
