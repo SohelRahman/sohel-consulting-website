@@ -186,3 +186,8 @@ The browser script now adds unauthenticated Admin UI assertions: login panel vis
 ## 2026-11-24 — Admin MFA browser assertion correction
 
 Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45321214679) confirmed HTTP/API/path/privacy checks and all responsive page-load/layout checks, but the new bilingual MFA-copy assertions failed at both viewports. The failure was in test visibility semantics: MFA enrollment and recovery panels are hidden before authentication, so their text is absent from visible body text despite being present in the DOM. Updated the browser test to read the hidden panels' DOM text directly and check English/Bangla copy. Test-only correction committed as 72d5c51a2b038445943a5b32ea442ed0d1eb4eaa; smoke rerun pending. No Preview deployment or D1 mutation was performed.
+
+
+## 2026-11-24 — Admin unauthenticated/MFA browser smoke passed
+
+Preview runtime smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322065022) passed after correcting the hidden-panel text assertion. HTTP/API/path/privacy checks passed. Chromium passed the English homepage, Bangla homepage, Admin page and quotation-response page at 390px and 1440px. Admin entry-state checks confirmed visible login controls, hidden unauthenticated dashboard/MFA panels and bilingual enrollment/recovery copy in the DOM. No credentials were submitted, no authenticated workflow was exercised, and no Worker deployment or D1 mutation occurred.
