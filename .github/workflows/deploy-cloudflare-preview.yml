@@ -70,10 +70,22 @@ jobs:
             headers: { Authorization: `Bearer ${token}` }
           });
           const payload = await response.json().catch(() => ({}));
+          const actualId = payload.result?.uuid ?? payload.result?.id ?? payload.result?.database_id ?? null;
           if (!response.ok || payload.success !== true ||
               payload.result?.name !== "consulting-preview-db" ||
-              (payload.result?.uuid !== expectedPreviewId && payload.result?.id !== expectedPreviewId)) {
-            throw new Error("Cloudflare API did not confirm the exact Preview D1 database; refusing deployment.");
+              actualId !== expectedPreviewId) {
+            const apiErrors = Array.isArray(payload.errors)
+              ? payload.errors.map(error => ({ code: error.code, message: error.message }))
+              : [];
+            console.error(JSON.stringify({
+              httpStatus: response.status,
+              apiSuccess: payload.success === true,
+              apiErrors,
+              returnedName: payload.result?.name ?? null,
+              returnedId: actualId,
+              resultKeys: payload.result && typeof payload.result === "object" ? Object.keys(payload.result).sort() : []
+            }));
+            throw new Error("Cloudflare API did not confirm the exact Preview D1 database; refusing deployment. Review the sanitized response details above.");
           }
           console.log("Verified active Cloudflare token and exact Preview D1 database. No secrets were printed.");
           NODE
