@@ -710,3 +710,8 @@ A guarded workflow `.github/workflows/preview-runtime-smoke.yml` was added. It r
 ### Runtime smoke execution record — 2026-11-24
 
 Initial smoke workflow [Run #5](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320166771) confirmed HTTP 200 for `/`, `/admin.html`, `/bn/index.html` and `/quote-response.html`; HTTP 401 for unauthenticated `/api/admin/summary`; and HTTP 404 for `/src/worker.js`, `/migrations/0019_admin_mfa.sql` and `/wrangler.toml`. The run failed at the quotation-response privacy-header assertion. The assertion was revised to parse the final HTTP header block and print only the three relevant response headers for diagnosis. Privacy-header acceptance remains pending until a subsequent run passes.
+
+
+### Quotation-response routing diagnosis — 2026-11-24
+
+The second smoke run confirmed that the quotation-response HTML was being served directly by the static-assets layer: it returned generic cache/referrer headers and omitted the Worker-enforced `no-store`, `no-referrer` and `X-Robots-Tag` policies. The Preview asset configuration's `run_worker_first` list covered the homepage, APIs, Admin and protected source paths, but omitted `/quote-response.html`. The Preview configuration now routes that exact path through the Worker so its dedicated privacy-header wrapper executes. Redeployment and a passing smoke rerun are required before acceptance.
