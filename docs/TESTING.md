@@ -736,3 +736,8 @@ This accepts the listed HTTP smoke checks only. It does not establish browser in
 ## Responsive Chromium smoke coverage — 2026-11-24
 
 The guarded Preview runtime workflow now also installs Playwright/Chromium and runs `scripts/test-preview-browser.py` against the deployed Preview origin. It loads the English homepage, Bangla homepage, Admin page and quotation-response page at 390px mobile and 1440px desktop viewports. It checks HTTP 200, non-empty document titles/body content, uncaught browser page errors and horizontal overflow. This is automated browser smoke coverage, not a substitute for visual review, keyboard/screen-reader testing, cross-browser testing or exercising authenticated workflows. Results remain pending until the next `[preview-smoke]` run completes.
+
+
+### Playwright runner compatibility adjustment — 2026-11-24
+
+The first responsive-browser smoke attempt completed all HTTP checks, then failed before Chromium installation because the GitHub `ubuntu-latest` image had moved to Ubuntu 26.04, which the pinned Playwright 1.55.0 release does not support. The smoke job is now pinned to `ubuntu-24.04` for a supported browser-install environment. The responsive browser assertions have not yet passed; rerun evidence is pending.
