@@ -420,3 +420,5 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 
 
 - Corrected Preview D1 preflight to use the D1-read credential while retaining the dedicated Worker deployment credential. Retrying the authorized isolated Preview deployment.
+
+- Corrected first-time Preview provisioning order: run validations, bootstrap the isolated Worker, provision the Preview-only MFA key without rotation, then deploy the final Worker bundle.
