@@ -82,3 +82,8 @@ The Preview smoke run found that `/quote-response.html` bypassed Worker middlewa
 ### Preview privacy routing deployment — 2026-11-24
 
 The Preview-only routing correction for `/quote-response.html` was deployed successfully via [Run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541). Deployed commit `55585c4fa3f6927df14776eac508c2eed6efd290`; Worker version `8f6489b1-7ef9-4423-a01a-6bdf63a48755`. Deployment source/CMS/MFA checks passed. Final HTTP smoke confirmation of the no-store, no-referrer and noindex headers remains pending.
+
+
+### Preview HTTP smoke acceptance — 2026-11-24
+
+Guarded Preview runtime smoke [Run #20](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320457740) passed. It confirmed public English/Bangla homepage, Admin and quotation page HTTP delivery; unauthenticated Admin summary rejection (401); direct source/migration/config path denial (404); and quotation-response no-store, no-referrer and noindex headers. The Preview-only Worker-first route correction for `/quote-response.html` was deployed in Run #34. This closes the listed HTTP smoke gate only. Browser interaction, responsive/accessibility QA, authenticated Admin/MFA, CMS concurrency, Page Builder, Cloudinary/media and business workflow acceptance remain open.
