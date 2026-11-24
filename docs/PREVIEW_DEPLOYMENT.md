@@ -169,3 +169,8 @@ The guarded Preview runtime smoke workflow now runs `scripts/test-preview-browse
 ## 2026-11-24 — Browser smoke runner compatibility
 
 The first Playwright browser-smoke attempt passed the HTTP checks but failed during browser installation because the default `ubuntu-latest` runner resolved to Ubuntu 26.04, unsupported by pinned Playwright 1.55.0. The smoke job is now pinned to `ubuntu-24.04`. No Preview application or database change was made for this runner-only correction. Responsive browser test results remain pending.
+
+
+## 2026-11-24 — Browser smoke checkout correction
+
+Chromium installation succeeded on the Ubuntu 24.04 runner, but the browser test script could not be opened because the smoke workflow lacked a repository checkout step. Added `actions/checkout@v4` before test execution. No application deployment or D1 mutation was involved. Responsive browser acceptance remains pending.
