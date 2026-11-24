@@ -164,3 +164,8 @@ Guarded runtime smoke [Run #20](https://github.com/SohelRahman/sohel-consulting-
 ## 2026-11-24 — Responsive Chromium smoke added
 
 The guarded Preview runtime smoke workflow now runs `scripts/test-preview-browser.py` with Playwright/Chromium at 390px and 1440px widths for the English homepage, Bangla homepage, Admin page and quotation-response page. It checks page load status, title/body presence, uncaught browser exceptions and horizontal overflow. It does not authenticate to Admin or mutate application data. Browser smoke results are pending the next `[preview-smoke]` workflow execution.
+
+
+## 2026-11-24 — Browser smoke runner compatibility
+
+The first Playwright browser-smoke attempt passed the HTTP checks but failed during browser installation because the default `ubuntu-latest` runner resolved to Ubuntu 26.04, unsupported by pinned Playwright 1.55.0. The smoke job is now pinned to `ubuntu-24.04`. No Preview application or database change was made for this runner-only correction. Responsive browser test results remain pending.
