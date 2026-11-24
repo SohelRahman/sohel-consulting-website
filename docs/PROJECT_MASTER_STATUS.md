@@ -87,3 +87,8 @@ The Preview-only routing correction for `/quote-response.html` was deployed succ
 ### Preview HTTP smoke acceptance — 2026-11-24
 
 Guarded Preview runtime smoke [Run #20](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320457740) passed. It confirmed public English/Bangla homepage, Admin and quotation page HTTP delivery; unauthenticated Admin summary rejection (401); direct source/migration/config path denial (404); and quotation-response no-store, no-referrer and noindex headers. The Preview-only Worker-first route correction for `/quote-response.html` was deployed in Run #34. This closes the listed HTTP smoke gate only. Browser interaction, responsive/accessibility QA, authenticated Admin/MFA, CMS concurrency, Page Builder, Cloudinary/media and business workflow acceptance remain open.
+
+
+### Responsive browser smoke expansion — 2026-11-24
+
+Expanded the guarded Preview runtime smoke workflow with Playwright/Chromium checks at 390px and 1440px for the English homepage, Bangla homepage, Admin and quotation-response pages. Checks cover successful load, title/body presence, uncaught page errors and horizontal overflow. This provides automated browser smoke evidence but not full manual visual/accessibility or authenticated functional acceptance. The expanded workflow is pending execution.
