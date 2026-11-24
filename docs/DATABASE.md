@@ -1,6 +1,6 @@
 # Database migration inventory and verification status — 2026-11-22
 
-The development branch contains migration files 0001–0018. File presence is not proof that a migration has been applied to a remote database.
+The development branch contains migration files 0001–0019. File presence is not proof that a migration has been applied to a remote database.
 
 | Migration | File |
 |---|---|
@@ -161,3 +161,10 @@ The read-only GitHub Actions audit [Run #5](https://github.com/SohelRahman/sohel
 The workflow's target-verification step is designed to verify Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2` and exclude the known Production ID. The supplied Run #5 screenshot shows the successful migration-list step and both pending filenames. Neither migration was applied by this read-only audit.
 
 Migration 0018 adds `cms_content.revision` as a positive, non-null integer defaulting to 1. Migration 0019 creates Admin MFA credential and recovery-code tables and indexes. Review SQL and recovery plans and obtain explicit approval before applying either migration. Apply and verify 0018 before deploying Worker code that depends on the revision column. Configure the Preview-only MFA encryption secret through the approved secret process before enabling MFA functionality. Preview deployment is a separate approval gate. Production remains out of scope.
+
+
+## 2026-11-24 — Preview D1 migrations applied and verified
+
+The authorized Preview migration workflow [Run #11](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/4516057616) completed successfully. Job `migrate-preview` verified the dedicated remote Preview D1 ID `e0317397-77cb-4f36-9d19-2594ff75b0c2` before migration activity. The pre-apply migration list contained `0018_cms_content_revision.sql` and `0019_admin_mfa.sql`. Wrangler reported both migrations with successful status after execution. The final remote migration-list step returned **No migrations to apply!** The job steps `Apply pending migrations to Preview D1 only` and `Verify Preview migration state` both completed successfully.
+
+This is direct GitHub Actions execution evidence for the Preview D1 migration ledger. It confirms the two migrations were applied to the dedicated Preview database. It does not establish that a Worker containing the corresponding source code has been deployed or that runtime/browser acceptance has passed. Production and `main` were not targeted by this workflow.
