@@ -411,3 +411,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Explicit user authorization received to deploy `current-focus-development` to the isolated Cloudflare Preview Worker.
 - Scope: Worker `current-focus-development`, Preview D1 `consulting-preview-db` (`e0317397-77cb-4f36-9d19-2594ff75b0c2`), Preview-only MFA key provisioning if absent.
 - Production and `main` are excluded. Deployment workflow performs token/target checks and source/CMS/MFA preflight before deploy.
+
+
+## 2026-11-24 — Preview deployment retry authorization
+
+- Recorded the Run #7 fail-closed Preview D1 preflight result and added sanitized API-response diagnostics to the Preview deployment workflow.
+- Retrying the isolated Preview deployment from `current-focus-development` only; Production and `main` remain excluded.
