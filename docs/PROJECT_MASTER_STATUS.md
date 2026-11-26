@@ -1,5 +1,13 @@
 
 
+## 2026-11-27 — Argon2id telemetry reporter correction; TinyFish ground rule
+
+- Corrected the isolated Argon2id runtime workflow's jq field access quoting for the Cloudflare invocation report. Commit: `6a776de5e9f6cd58462d0dd086d1845aebfcd99e`.
+- This is a reporting-only source correction. A fresh workflow run is required before claiming the parser is fixed or telemetry correlation is validated; the previous run remains failed.
+- TinyFish operating rule: use it when it materially improves engineering execution, browser testing, Preview inspection or research; avoid unnecessary calls and avoidable charges. Never perform unauthorized data mutations, authenticated actions, Production changes or configuration changes. Record meaningful evidence in project docs.
+- Existing boundaries remain: work on `current-focus-development`; do not merge PR #1 or update `main`; no Production, D1 write/migration, existing Preview deployment or secret changes without explicit approval.
+
+
 ## 2026-11-27 — Third Argon2id telemetry run; correlation improvement queued
 
 - Isolated runtime [#45878008941](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45878008941) passed on current-focus-development at commit 69a68d0af39f705dcb722bb408e2657ae2383893.
