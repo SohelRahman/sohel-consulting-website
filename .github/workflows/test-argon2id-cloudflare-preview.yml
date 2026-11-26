@@ -123,6 +123,7 @@ jobs:
           : "${URL:?Could not identify isolated Preview Worker URL}"
           export ARGON2ID_TEST_URL="$URL" ARGON2ID_TEST_TOKEN="$TOKEN"
           node --input-type=module <<'NODE'
+          # Exercise bounded retries for transient edge HTML responses observed in the previous isolated run.
           const headers = { authorization: `Bearer ${process.env.ARGON2ID_TEST_TOKEN}` };
           const base = process.env.ARGON2ID_TEST_URL;
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
