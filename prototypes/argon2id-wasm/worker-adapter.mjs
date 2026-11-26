@@ -1,4 +1,4 @@
-import { initSync, wasm_hash_phc, wasm_verify_phc } from "./pkg/sohel_argon2id_prototype.js";
+import { initSync, wasm_hash_phc, wasm_verify_phc, wasm_memory_pages } from "./pkg/sohel_argon2id_prototype.js";
 import wasmModule from "./pkg/sohel_argon2id_prototype_bg.wasm";
 import { createArgon2idAdapter } from "./adapter.mjs";
 
@@ -17,3 +17,5 @@ function getAdapter() {
 
 export const hashPassword = password => getAdapter().hashPassword(password);
 export const verifyPassword = (password, phc) => getAdapter().verifyPassword(password, phc);
+
+export const wasmMemoryPages = () => { getAdapter(); return wasm_memory_pages(); };
