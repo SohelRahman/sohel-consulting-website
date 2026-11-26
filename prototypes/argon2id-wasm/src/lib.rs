@@ -1,6 +1,6 @@
 //! Isolated Argon2id prototype. Not connected to application authentication.
 use argon2::{Algorithm, Argon2, Block, Params, Version};
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 pub const MEMORY_KIB: u32 = 19_456;
 pub const ITERATIONS: u32 = 2;
@@ -170,7 +170,7 @@ fn b64_decode(input: &str, expected_len: usize) -> Result<Vec<u8>, &'static str>
 
 /// Create a PHC-compatible string; caller must supply a CSPRNG-generated salt.
 pub fn hash_phc(password: &[u8], salt: &[u8]) -> Result<String, &'static str> {
-    let mut tag = derive(password, salt)?;
+    let tag = Zeroizing::new(derive(password, salt)?);
     let encoded = format!(
         "$argon2id$v=19$m={},t={},p={}${}${}",
         MEMORY_KIB,
@@ -179,7 +179,6 @@ pub fn hash_phc(password: &[u8], salt: &[u8]) -> Result<String, &'static str> {
         b64_encode(salt),
         b64_encode(&tag)
     );
-    tag.zeroize();
     Ok(encoded)
 }
 
@@ -198,13 +197,12 @@ pub fn verify_phc(password: &[u8], encoded: &str) -> Result<bool, &'static str> 
         return Err("unsupported PHC algorithm, version or parameters");
     }
     let salt = b64_decode(fields[4], SALT_LEN)?;
-    let expected = b64_decode(fields[5], OUTPUT_LEN)?;
-    let mut actual = derive(password, &salt)?;
+    let expected = Zeroizing::new(b64_decode(fields[5], OUTPUT_LEN)?);
+    let actual = Zeroizing::new(derive(password, &salt)?);
     let mut difference = 0u8;
     for (left, right) in actual.iter().zip(expected.iter()) {
         difference |= left ^ right;
     }
-    actual.zeroize();
     Ok(difference == 0)
 }
 
