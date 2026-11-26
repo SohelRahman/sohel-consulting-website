@@ -367,3 +367,12 @@ Next: verify the exact registry artifact and provenance, inspect the source and 
 The unverified `@hallaxius/argon2w` candidate remains rejected pending exact npm artifact, signature/provenance and source-to-build verification. As a fallback, inspected the official PHC reference Argon2 C source: it supports Argon2id, provides PHC encoded hash handling and known-answer tests, includes memory-clearing code, and offers a `NO_THREADS=1` build option. Its licence permits use under CC0 1.0 or Apache 2.0. This was source inspection only; the upstream branch has not yet been pinned to an immutable commit and no Emscripten build or Workers benchmark has been run.
 
 **Next build gate:** pin the upstream commit and source manifest; create a minimal single-thread hash/verify wrapper; compile a standalone prebuilt Wasm module; verify upstream vectors, PHC compatibility, malformed input and memory handling; then test Wrangler import and the isolated Free-plan OWASP-baseline benchmark. Do not modify application authentication or stored hashes before all gates pass. No application, Preview or Production resources were changed.
+
+
+## 2026-11-26 — Preferred Argon2id prototype candidate updated
+
+The PHC reference C repository remains useful as a reference and known-answer source, but its latest published release is shown as 2019-07-02 and the inspected master commit is dated 2021-06-25. Its maintenance gap is a concern for a new security-critical integration.
+
+Preferred isolated prototype candidate is RustCrypto Argon2 0.6.0 pinned to signed commit `dc7e0c25cda9a8421d2604debf548d663886b431` (2026-11-05). Source review confirms pure Rust/no_std, Argon2id, PHC interfaces, single-thread default, optional zeroize support and MIT OR Apache-2.0 licensing. Its documented default matches OWASP's m=19,456 KiB, t=2, p=1 baseline. **Important:** the inspected allocated block-buffer Drop deallocates without wiping the full matrix; a wrapper must explicitly zeroize its owned matrix on all exit paths. Do not assume enabling the optional zeroize feature solves that issue.
+
+Next: build a bounded single-thread `wasm32-unknown-unknown` prototype with fixed Argon2id v=19 parameters, PHC-compatible input/output, pre-allocation PHC parameter limits, RAII full-matrix wiping and KAT/interop/ABI tests. Then import the precompiled module in the isolated Workers Free benchmark and measure CPU/memory. This is candidate selection only: no dependency or application code was changed; Production remains blocked.
