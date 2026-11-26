@@ -1,3 +1,10 @@
+## 2026-11-26 — Argon2id WASM adapter integration CI passed
+
+- CI Run #45818799624 passed Rust formatting, host tests, Clippy, release WebAssembly compilation, wasm-bindgen web/Node binding generation, JavaScript adapter integration and explicit memory-growth tests.
+- Uploaded the precompiled WebAssembly package as a CI artifact (seven-day retention).
+- Updated prototype documentation to separate verified source/CI evidence from pending Wrangler and Cloudflare Workers runtime acceptance.
+- No application authentication, D1, existing Preview, Production or `main` changes.
+
 ## 2026-11-26 — Follow-up Argon2id ABI formatting correction
 
 - A second dedicated CI run found one remaining rustfmt line-wrap difference in the PHC export. Corrected it; tests and compilation remain pending a successful run.
