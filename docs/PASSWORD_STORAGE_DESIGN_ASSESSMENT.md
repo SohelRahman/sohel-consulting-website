@@ -98,3 +98,27 @@ The upstream `Makefile` has a `NO_THREADS=1` build option that defines `ARGON2_N
 - Do not change application authentication or stored hashes until the artifact, tests and runtime benchmark pass. Do not lower parameters to fit the Free CPU limit.
 
 Primary source reviewed: https://github.com/P-H-C/phc-winner-argon2 (README, LICENSE, Makefile, `src/argon2.c`, `src/core.c`, `src/ref.c`, `src/thread.c`, `src/encoding.c`, `src/test.c`).
+
+
+## Updated Argon2id implementation selection — 2026-11-26
+
+The official PHC reference C repository was source-reviewed, but its latest GitHub release is documented as 2019-07-02 and the current `master` commit inspected is `f57e61e19229e23c4445b85494dbf7c07de721cb`, dated 2021-06-25. That long gap is a maintenance concern for a new security-critical integration. Do not treat it as the preferred new implementation solely because it is the reference C source.
+
+A stronger current candidate is RustCrypto's pure-Rust Argon2 crate, version 0.6.0, at repository commit `dc7e0c25cda9a8421d2604debf548d663886b431` (2026-11-05). The commit has a valid GitHub signature. Its 0.6.0 changelog is dated 2026-08-27. The crate is `no_std`, supports Argon2id by default, uses single-thread processing unless its optional `parallel` feature is enabled, exposes PHC password-hash interfaces, and offers an optional `zeroize` feature. It is dual-licensed MIT OR Apache-2.0. Its documented default parameters are m=19,456 KiB, t=2, p=1.
+
+Important memory-handling caveat found during source review: enabling the crate's `zeroize` feature wipes selected intermediate values and provides `Zeroize` for `Block`, but the inspected `Blocks::drop` implementation only deallocates its buffer; it does not itself wipe the allocated Argon2 memory matrix. A production wrapper must therefore own the memory buffer and explicitly zeroize every block on all success and error paths (prefer an RAII zeroizing buffer), or establish equivalent verified cleanup. This must be tested; do not assume the feature alone clears the full working matrix.
+
+### Selected candidate and next gate
+
+- Preferred candidate for an isolated prototype: RustCrypto Argon2 0.6.0 pinned to commit `dc7e0c25cda9a8421d2604debf548d663886b431`.
+- Build target: `wasm32-unknown-unknown`, single-thread (do not enable `parallel`), precompiled `.wasm` imported as `WebAssembly.Module` by Wrangler.
+- Wrapper design: expose only bounded hash/verify functions; enforce fixed Argon2id v=19 parameters and OWASP baseline; accept a 16-byte random salt supplied by the JS host; emit/parse standard PHC strings; reject malformed or excessive PHC parameters before allocating memory; use an RAII buffer that zeroizes all Argon2 blocks before deallocation, including error/panic-safe handling; do not expose raw memory or secret values.
+- Test gates: RustCrypto KATs including Argon2id v=19; PHC cross-implementation fixtures; wrong-password and malformed-input cases; memory zeroization tests; WASM ABI bounds tests; repeat and concurrent Worker tests; then measure CPU and peak memory on the isolated Workers Free environment.
+- This is a candidate selection only. No Rust/WASM source or dependency has been added to the application. The prototype and benchmark remain pending.
+
+Sources:
+- RustCrypto Argon2 crate: https://github.com/RustCrypto/password-hashes/tree/dc7e0c25cda9a8421d2604debf548d663886b431/argon2
+- Pinned signed commit: https://github.com/RustCrypto/password-hashes/commit/dc7e0c25cda9a8421d2604debf548d663886b431
+- PHC reference releases: https://github.com/P-H-C/phc-winner-argon2/releases
+- Cloudflare Wrangler Wasm imports: https://developers.cloudflare.com/workers/wrangler/bundling/
+- OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
