@@ -1,3 +1,12 @@
+## Latest verification update — 2026-11-26 (run #45856609844)
+
+- Prototype CI #45856402852 passed the full test/build pipeline and the locked RustSec audit. The audit scanned 34 locked dependencies against 1,568 loaded advisories and exited successfully. Provenance artifact ID: `15134694932`.
+- Isolated Cloudflare runtime #45856609844 passed Worker deployment, health, PHC generation/verification, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion; HTTP 404 absence verification).
+- Memory grew from 17 to 323 Wasm pages and remained stable through the request exercise. Two concurrent hash requests took 160.404 ms combined wall-clock. Per-operation timers returned 0 ms; no CPU-time inference is valid.
+- The telemetry query did not expose CPU/wall-time keys. Runtime workflow corrected in commit `8ee6e9e` to enumerate keys and filter by `$metadata.service`; rerun pending.
+- Build emitted a future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; dependency paths need review. License expressions still require manual review.
+- Decision remains **not approved for application integration or production release**. Signed provenance, independent rebuild, CPU-time samples, repeatable performance characterization and external security assessment remain open.
+
 ## Latest verification update — 2026-11-26
 
 - Prototype CI [#45838494936](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838494936) passed the expanded deterministic PHC corpus, formatting, host tests, Clippy, WASM build, binding generation and JavaScript integration/memory-growth tests.
