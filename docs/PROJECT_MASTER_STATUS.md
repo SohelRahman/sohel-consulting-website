@@ -254,3 +254,11 @@ The change is committed to `current-focus-development`. It is not yet evidence o
 The Preview Admin diagnostic exposed the exact failure: Cloudflare Workers production Web Crypto rejects PBKDF2 iteration counts above 100,000, while the application requested 600,000. The password-hash module now uses 100,000 iterations, and its parser rejects unsupported stored iteration counts. The updated password-hash tests pass in development CI [Run #45758627145](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45758627145).
 
 **Security qualification:** 100,000 PBKDF2-SHA-256 iterations are below OWASP's current 600,000 recommendation. This is a Workers runtime compatibility workaround, not the final preferred password-storage posture. A stronger production design requires a Worker-compatible memory-hard KDF or a dedicated authentication service. Preview deployment and live login acceptance remain pending; no Production changes have been made.
+
+
+## 2026-11-26 — PBKDF2 compatibility fix deployed to Preview
+
+- Preview deployment workflow Run [#45758679816](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45758679816) completed successfully for commit `df6b7a311c1d92e3091a6b3c80f0aa142afd43be`.
+- The Worker now has the Workers-compatible 100,000-iteration PBKDF2 implementation. Development validation passed on the tested code commit `90a47a50f3d052eceda82d97a67d6095ec1bb2d6`; subsequent changes were documentation only.
+- The existing Preview smoke workflow was skipped because its explicit `[preview-smoke]` commit-message gate was not met. A docs-only commit will trigger that smoke workflow without redeploying the Worker.
+- Admin sign-in has not yet been retested after this deployment. The 100,000-iteration PBKDF2 setting remains a documented security compromise requiring a stronger future KDF design.
