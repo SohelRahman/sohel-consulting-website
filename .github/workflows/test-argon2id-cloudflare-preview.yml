@@ -1,0 +1,91 @@
+name: Isolated Argon2id Cloudflare Preview runtime test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - current-focus-development
+    paths:
+      - 'prototypes/argon2id-wasm/**'
+      - '.github/workflows/test-argon2id-cloudflare-preview.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: argon2id-cloudflare-preview-runtime
+  cancel-in-progress: false
+
+jobs:
+  runtime:
+    if: github.ref == 'refs/heads/current-focus-development' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[argon2-preview]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: current-focus-development
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build precompiled WASM and Worker bindings
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build --release --target wasm32-unknown-unknown
+          VERSION="$(cargo tree --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
+          : "${VERSION:?Could not resolve wasm-bindgen version}"
+          cargo install wasm-bindgen-cli --version "$VERSION" --locked
+          wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
+          test -s pkg/sohel_argon2id_prototype_bg.wasm
+      - name: Deploy isolated Worker, verify runtime and remove it
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : "${CLOUDFLARE_API_TOKEN:?Missing Cloudflare Workers API token}"
+          : "${CLOUDFLARE_ACCOUNT_ID:?Missing Cloudflare account ID}"
+          WORKER='sohel-argon2id-prototype-preview'
+          CONFIG='prototypes/argon2id-wasm/wrangler.toml'
+          TOKEN="$(node --input-type=module -e 'import { randomBytes } from "node:crypto"; process.stdout.write(randomBytes(32).toString("base64url"))')"
+          DEPLOYED=0
+          cleanup() {
+            status=$?
+            trap - EXIT
+            if [[ "$DEPLOYED" == '1' ]]; then
+              if npx --yes wrangler@4.160.1 delete --name "$WORKER" --force --config "$CONFIG"; then
+                echo 'Temporary Argon2id Preview Worker deletion confirmed.'
+              else
+                echo '::error::Temporary Worker deletion failed; manual cleanup is required.'
+                status=1
+              fi
+            fi
+            unset TOKEN
+            exit "$status"
+          }
+          trap cleanup EXIT
+          npx --yes wrangler@4.160.1 deploy --config "$CONFIG" 2>&1 | tee /tmp/argon2id-preview-deploy.log
+          DEPLOYED=1
+          printf '%s' "$TOKEN" | npx --yes wrangler@4.160.1 secret put TEST_TOKEN --name "$WORKER" --config "$CONFIG"
+          URL="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/argon2id-preview-deploy.log | tail -n 1)"
+          : "${URL:?Could not identify isolated Preview Worker URL}"
+          export ARGON2ID_TEST_URL="$URL" ARGON2ID_TEST_TOKEN="$TOKEN"
+          node --input-type=module <<'NODE'
+          const headers = { authorization: `Bearer ${process.env.ARGON2ID_TEST_TOKEN}` };
+          const base = process.env.ARGON2ID_TEST_URL;
+          const health = await fetch(`${base}/health`, { headers });
+          if (!health.ok) throw new Error(`Worker health check failed: HTTP ${health.status}`);
+          const healthBody = await health.json();
+          if (healthBody.runtime !== "cloudflare-workers" || healthBody.ok !== true) throw new Error("Unexpected Worker health response.");
+          const response = await fetch(`${base}/self-test`, { method: "POST", headers });
+          const result = await response.json();
+          console.log(JSON.stringify(result, null, 2));
+          if (!response.ok || result.passed !== true) throw new Error("Cloudflare Workers Argon2id runtime test failed.");
+          NODE
+          unset ARGON2ID_TEST_TOKEN TOKEN
