@@ -1,3 +1,9 @@
+## 2026-11-26 — CPU-time logging deployment queued
+
+- Native invocation logging configuration and measurement procedure are committed.
+- Logging-enabled isolated runtime workflow [#45841415366](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45841415366) is in progress at the precompiled-WASM build stage.
+- No CPU-time values have been collected yet. Next step after deployment is to inspect the temporary Worker invocation records in Cloudflare Workers Observability and record separate hash/verify CPU-time samples.
+
 ## 2026-11-26 — PHC corpus CI and failure-path cleanup verified
 
 - Prototype CI [#45838494936](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838494936) passed formatting, host tests including the deterministic PHC corpus, Clippy, release WASM compilation, wasm-bindgen bindings, Node adapter/memory-growth tests and artifact upload.
