@@ -1,3 +1,9 @@
+## 2026-11-26 — Node.js toolchain patch pin
+
+- Pinned Node.js `22.23.5` across the Argon2id prototype CI, isolated Cloudflare runtime workflow and password-KDF benchmark workflow.
+- Pinned the benchmark workflow's setup-node action to immutable v4.4.0 commit `49933ea5288caeca8642d1e84afbd3f7d6820020`.
+- Prototype CI #45860260434 is running the audit/test pipeline; isolated runtime rerun #45860426221 is queued. Exact-patch CI verification remains pending.
+
 ## 2026-11-26 — Argon2id runtime transient response handling
 
 - Unfiltered diagnostic run #45859485701 deployed the Worker but a `/verify` request returned HTML instead of JSON. The exact HTTP status/content type was not captured by the previous client. The run failed before telemetry query; no invocation samples were captured.
