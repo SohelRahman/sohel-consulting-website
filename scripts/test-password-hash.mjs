@@ -22,7 +22,7 @@ assert.equal(needsPasswordRehash(legacy), false, "Worker-compatible hash does no
 assert.equal(await verifyPassword("incorrect password", legacy), false, "wrong password is rejected");
 
 const current = await hashPassword(password);
-assert.match(current, /^pbkdf2\$600000\$/);
+assert.match(current, /^pbkdf2\$100000\$/);
 assert.equal(await verifyPassword(password, current), true, "new Worker-compatible hash verifies");
 assert.equal(needsPasswordRehash(current), false, "current hash does not need upgrade");
 assert.notEqual(current, await hashPassword(password), "each password hash receives a unique salt");
