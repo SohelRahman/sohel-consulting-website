@@ -1,3 +1,5 @@
+The controlled cleanup-failure workflow change is committed, but its first marked run (#45838191990) was canceled before execution when a newer push superseded it. The latest normal runtime run is queued at #45838254764; it does not enable failure injection. The failure-path test therefore remains **unverified** and needs a dedicated marker commit after the current prototype CI run completes.
+
 ## Parser robustness work
 
 Added `tests/phc_input_corpus.rs` with structural PHC mutations, canonical Base64 edge cases and 4,096 deterministic arbitrary bounded inputs. The first CI attempt caught two rustfmt-only differences; those were corrected. Host tests, including the new corpus, and Clippy now pass in the latest run, while WASM binding generation and integration checks are still running. See [prototype CI #45837980772](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45837980772).
