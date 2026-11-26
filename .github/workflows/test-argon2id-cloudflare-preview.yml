@@ -54,13 +54,27 @@ jobs:
           WORKER="sohel-argon2id-preview-${GITHUB_RUN_ID}"
           CONFIG='prototypes/argon2id-wasm/wrangler.toml'
           TOKEN="$(node --input-type=module -e 'import { randomBytes } from "node:crypto"; process.stdout.write(randomBytes(32).toString("base64url"))')"
+          delete_worker_api() {
+            local name="$1" label="$2" code
+            code="$(curl --silent --show-error --output /tmp/argon2id-delete-response.json --write-out '%{http_code}' \
+              --request DELETE \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$name")"
+            case "$code" in
+              200|204) echo "$label: deletion confirmed (HTTP $code)." ;;
+              404) echo "$label: Worker was already absent (HTTP 404)." ;;
+              *) echo "::error::$label deletion failed (HTTP $code)."; return 1 ;;
+            esac
+          }
+          # Remove the exact orphaned test Worker from the preceding run before creating another.
+          delete_worker_api 'sohel-argon2id-preview-45826985507' 'Previous temporary Worker'
           DEPLOY_ATTEMPTED=0
           cleanup() {
             status=$?
             trap - EXIT
             if [[ "$DEPLOY_ATTEMPTED" == '1' ]]; then
-              if npx --yes wrangler@4.160.1 delete --name "$WORKER" --force --config "$CONFIG"; then
-                echo 'Temporary Argon2id Preview Worker deletion confirmed.'
+              if delete_worker_api "$WORKER" 'Current temporary Worker'; then
+                :
               else
                 echo '::error::Temporary Worker deletion failed; manual cleanup is required.'
                 status=1
@@ -79,8 +93,13 @@ jobs:
           node --input-type=module <<'NODE'
           const headers = { authorization: `Bearer ${process.env.ARGON2ID_TEST_TOKEN}` };
           const base = process.env.ARGON2ID_TEST_URL;
-          const health = await fetch(`${base}/health`, { headers });
-          if (!health.ok) throw new Error(`Worker health check failed: HTTP ${health.status}`);
+          let health;
+          for (let attempt = 0; attempt < 10; attempt += 1) {
+            health = await fetch(`${base}/health`, { headers });
+            if (health.ok) break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          if (!health?.ok) throw new Error(`Worker health check failed after propagation retries: HTTP ${health?.status ?? "no response"}`);
           const healthBody = await health.json();
           if (healthBody.runtime !== "cloudflare-workers" || healthBody.ok !== true) throw new Error("Unexpected Worker health response.");
           const hashResponse = await fetch(`${base}/hash`, { method: "POST", headers });
