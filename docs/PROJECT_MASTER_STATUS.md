@@ -532,3 +532,17 @@ The isolated Rust Argon2id prototype now includes bounded PHC-style generation a
 - The Cloudflare runtime workflow was also updated to use the committed lockfile with `--locked`. Its next run [#45852694342](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45852694342) is queued. It includes a bounded 150-second post-test hold so Cloudflare invocation telemetry can be inspected before the existing EXIT cleanup removes the temporary Worker.
 
 The Argon2 source remains pinned to immutable revision `dc7e0c25cda9a8421d2604debf548d663886b431`. Dependency version pinning is now implemented; full reproducibility remains pending until the post-commit CI completes all steps, and provenance review must still record the Rust toolchain, wasm-bindgen CLI version and artifact checksums. This does not constitute an external security audit or approval for application integration.
+
+
+## 2026-11-26 — Argon2id build provenance and dependency audit
+
+- Added `docs/ARGON2ID_BUILD_PROVENANCE.md` documenting build inputs, artifact evidence and remaining supply-chain risks.
+- Pinned Rust to 1.100.0 in the prototype and isolated runtime workflows. Prior CI logs confirm rustc 1.100.0 (commit `0ef1bc386`, dated 2026-11-09).
+- The Argon2 implementation remains pinned to immutable revision `dc7e0c25cda9a8421d2604debf548d663886b431`; Cargo.lock is committed and builds use `--locked`.
+- Added pinned `cargo-audit 0.23.0` to CI, together with a license/source inventory, build tool versions and SHA-256 artifact checksums.
+- Prototype CI [#45855759095](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45855759095) is still running. Vulnerability findings, license review and provenance artifact are not yet verified.
+- Remaining supply-chain hardening: immutable GitHub Action SHAs, exact Node.js patch pinning and signed provenance/independent rebuild.
+- Cloudflare invocation CPU-time evidence remains open; the latest telemetry-enabled runtime attempt is still in progress.
+- No application authentication, D1 or Production changes.
+
+**Decision:** isolated prototype only; no application integration or Production approval.
