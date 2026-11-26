@@ -1,3 +1,11 @@
+## 2026-11-26 — Argon2id runtime health probe isolation
+
+- Runtime workflow #45860426221 successfully built and deployed the isolated Worker, but the health probe returned HTTP 404 after ten seconds of retries. The Worker had placed `/health` behind the test-token guard, so the response did not distinguish propagation from token configuration.
+- Moved the non-sensitive `/health` response before the prototype-only test-token guard. Hash and verify endpoints remain protected by the temporary `TEST_TOKEN`.
+- Development commit: `4d513470159e48e3a7f18790974fa56c8c110dcc`.
+- Website validation passed in run #45875591292. Prototype CI #45875591553 and isolated runtime #45875591303 were running at the time of this entry; no runtime pass or CPU-time result is claimed.
+- No application authentication, D1, existing Preview, Production or `main` changes.
+
 ## 2026-11-26 — Node.js exact patch pin
 
 - Pinned Node.js `22.23.5` across Argon2id prototype, runtime and password-KDF benchmark workflows.
