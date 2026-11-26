@@ -247,3 +247,10 @@ Complete authenticated Preview Admin/MFA acceptance using an authorized test acc
 The Preview deployment workflow now checks the Worker secret-name list for `SESSION_SECRET`. If absent, it generates a cryptographically random 32-byte base64url signing secret and stores it only on the Preview Worker. Existing values are preserved and never printed. This complements the existing non-rotating `MFA_ENCRYPTION_KEY` provisioning.
 
 The change is committed to `current-focus-development`. It is not yet evidence of a successful Preview deployment or a working Admin login. The next guarded Preview deployment must complete, then the login endpoint must be rechecked. If login proceeds to MFA enrollment, the bootstrap Admin account still requires valid Preview bootstrap credentials or an existing active account. No credentials are included in source or documentation. Production and `main` remain untouched.
+
+
+## 2026-11-26 — Preview sign-in PBKDF2 failure diagnosed
+
+The Preview Admin diagnostic exposed the exact failure: Cloudflare Workers production Web Crypto rejects PBKDF2 iteration counts above 100,000, while the application requested 600,000. The password-hash module now uses 100,000 iterations, and its parser rejects unsupported stored iteration counts. The updated password-hash tests pass in development CI [Run #45758627145](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45758627145).
+
+**Security qualification:** 100,000 PBKDF2-SHA-256 iterations are below OWASP's current 600,000 recommendation. This is a Workers runtime compatibility workaround, not the final preferred password-storage posture. A stronger production design requires a Worker-compatible memory-hard KDF or a dedicated authentication service. Preview deployment and live login acceptance remain pending; no Production changes have been made.
