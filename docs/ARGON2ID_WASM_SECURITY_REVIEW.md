@@ -1,3 +1,10 @@
+## 2026-11-27 — First Cloudflare CPU-time telemetry sample
+
+- Runtime #45876662415 passed the isolated Cloudflare test and cleanup. The corrected Observability query returned one invocation event whose `$workers.scriptName` matched the exact disposable Worker.
+- Cloudflare-reported values: `$workers.cpuTimeMs` **58 ms** and `$workers.wallTimeMs` **60 ms**.
+- This is a genuine platform telemetry sample, unlike JavaScript `performance.now()` values. One event is insufficient to attribute the sample to a specific endpoint, characterize a distribution, or establish CPU-limit compliance. Repeat across independent runs and retain raw event correlation before making a security/performance decision.
+- Two-request concurrent hash batch wall-clock was 126.997 ms; WASM memory grew from 17 to 323 pages and remained stable. These are separate observations.
+- Run: https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662415
 ## 2026-11-27 — Runtime success and telemetry-query correction
 
 - Runtime run #45875891768 passed the isolated Cloudflare Worker test suite and verified automatic cleanup. Two concurrent hash requests completed in 683.469 ms combined wall-clock; WASM memory increased from 17 to 323 pages and remained stable. These observations do not establish CPU time or CPU-limit compliance.
