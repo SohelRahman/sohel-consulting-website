@@ -1,3 +1,10 @@
+## 2026-11-26 — Argon2id WASM source-level security review
+
+- Added `docs/ARGON2ID_WASM_SECURITY_REVIEW.md` covering the Rust implementation, JavaScript adapter, temporary Worker harness and CI workflows.
+- Positive controls include fixed Argon2id costs, bounded inputs, Web Crypto salt generation, owned working-memory wiping, mutable-buffer cleanup and full-tag comparison.
+- Release blockers remain: Cloudflare runtime acceptance, actual invocation CPU-time evidence, concurrency/memory testing and broader interoperability/fuzz coverage.
+- The review is source-level only, not an external audit. The prototype remains isolated; no application authentication, stored hashes, D1, existing Preview or Production resources changed.
+
 ## 2026-11-26 — Argon2id WASM binding and adapter CI passed
 
 - Development head at this checkpoint: `2c7ceaf635b737694c826b77865c6b2816b0d1d0` on `current-focus-development`.
