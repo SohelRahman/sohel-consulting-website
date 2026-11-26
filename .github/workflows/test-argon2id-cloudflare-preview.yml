@@ -126,9 +126,12 @@ jobs:
           const headers = { authorization: `Bearer ${process.env.ARGON2ID_TEST_TOKEN}` };
           const base = process.env.ARGON2ID_TEST_URL;
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          const requestTimeline = [];
           const fetchJson = async (url, options = {}, label = "Worker request") => {
             let lastError;
             for (let attempt = 0; attempt < 5; attempt += 1) {
+              const startedAtEpochMs = Date.now();
+              const startedAtMonotonicMs = performance.now();
               try {
                 const response = await fetch(url, options);
                 const contentType = response.headers.get("content-type") || "";
@@ -144,7 +147,15 @@ jobs:
                   }
                   throw lastError;
                 }
-                if (response.ok) return { response, data };
+                if (response.ok) {
+                  requestTimeline.push({
+                    label, method: options.method || "GET", path: new URL(url).pathname,
+                    startedAtEpochMs, endedAtEpochMs: Date.now(),
+                    elapsedWallMs: Number((performance.now() - startedAtMonotonicMs).toFixed(3)),
+                    attempt: attempt + 1
+                  });
+                  return { response, data };
+                }
                 lastError = new Error(`${label}: HTTP ${response.status}`);
                 if (attempt < 4 && (response.status >= 500 || response.status === 429)) {
                   await sleep(500 * (attempt + 1));
@@ -161,7 +172,15 @@ jobs:
           };
           let health;
           for (let attempt = 0; attempt < 10; attempt += 1) {
+            const healthStartedAtEpochMs = Date.now();
+            const healthStartedAtMonotonicMs = performance.now();
             health = await fetch(`${base}/health`, { headers });
+            requestTimeline.push({
+              label: "Worker health", method: "GET", path: "/health",
+              startedAtEpochMs: healthStartedAtEpochMs, endedAtEpochMs: Date.now(),
+              elapsedWallMs: Number((performance.now() - healthStartedAtMonotonicMs).toFixed(3)),
+              attempt: attempt + 1, status: health.status
+            });
             if (health.ok) break;
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
@@ -212,7 +231,8 @@ jobs:
             memoryGrowthObserved: hashResult.memoryGrowthObserved,
             correctPasswordAccepted: valid.valid,
             wrongPasswordRejected: invalid.valid === false,
-            timingNote: "performance.now() wall-clock duration, not Cloudflare CPU time"
+            requestTimeline,
+            timingNote: "Client-side elapsed wall time and epoch timestamps; not Cloudflare CPU time"
           };
           console.log(JSON.stringify(result, null, 2));
           if (valid.valid !== true || invalid.valid !== false) throw new Error("Cloudflare Workers Argon2id PHC verification test failed.");
@@ -258,7 +278,7 @@ jobs:
               done
               if [[ "$QUERY_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-query.json >/dev/null; then
                 echo 'Cloudflare invocation telemetry query completed. CPU and wall-time values below come from platform invocation records, not JavaScript timers.'
-                jq -c '{success,errors,messages,run_status:.result.run.status,result_keys:(.result|keys),statistics:.result.statistics,invocation_groups:((.result.invocations // {})|to_entries|map({request_id:.key,events:[.value[]|{scriptName:.["$workers"].scriptName,cpuTimeMs:.["$workers"].cpuTimeMs,wallTimeMs:.["$workers"].wallTimeMs,eventKeys:(keys),requestMetadata:(with_entries(select(.key|test("request|path|method|url";"i"))))}]}))}' /tmp/argon2id-telemetry-query.json
+                jq -c '{success,errors,messages,run_status:.result.run.status,result_keys:(.result|keys),statistics:.result.statistics,invocation_groups:((.result.invocations // {})|to_entries|map({request_id:.key,events:[.value[]|{timestamp,source,dataset,scriptName:.[\"$workers\"].scriptName,cpuTimeMs:.[\"$workers\"].cpuTimeMs,wallTimeMs:.[\"$workers\"].wallTimeMs,eventKeys:(keys),metadataKeys:(.[\"$metadata\"]|if type==\"object\" then keys else [] end),workersKeys:(.[\"$workers\"]|if type==\"object\" then keys else [] end)}]}))}' /tmp/argon2id-telemetry-query.json
                 echo "Invocation event count returned by Cloudflare: $EVENT_COUNT"
                 METRICLESS_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[] | select((.["$workers"].cpuTimeMs | type) != "number" or (.["$workers"].wallTimeMs | type) != "number")] | length' /tmp/argon2id-telemetry-query.json)"
                 if [[ "$METRICLESS_COUNT" -gt 0 ]]; then
