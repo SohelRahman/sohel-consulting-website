@@ -1,3 +1,12 @@
+## Latest execution checkpoint — 2026-11-26
+
+- Prototype CI [#45856402852](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856402852) passed all checks, including `cargo audit` across 34 locked dependencies, formatting, host tests, Clippy, WASM build/bindings, Node adapter/memory-growth tests and provenance artifact upload. Artifact ID: `15134694932`.
+- Isolated Cloudflare runtime [#45856609844](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856609844) passed deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion, HTTP 404 absence check).
+- WASM memory grew from 17 to 323 pages and remained at 323 pages after sequential/concurrent tests. Two concurrent hash requests took 160.404 ms combined wall-clock. Per-operation `performance.now()` samples were 0 ms and are not useful timing evidence.
+- CPU-time telemetry remains unverified. The key-discovery response exposed only `$metadata.service`; the runtime query was corrected in commit `8ee6e9e` to request the complete key set and filter invocations using the documented `$metadata.service` field. A new runtime run is required.
+- RustSec audit completed successfully after loading 1,568 advisories and scanning 34 locked dependencies. Build emitted a future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; review their dependency paths before integration.
+- Prototype remains experimental and isolated. No application authentication, D1 or Production deployment is approved.
+
 Logging-enabled runtime deployment [#45841415366](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45841415366) is in progress. It must deploy the updated Wrangler observability settings before invocation CPU-time samples can be collected. No CPU-time value is currently verified.
 
 ## Latest verification — 2026-11-26
