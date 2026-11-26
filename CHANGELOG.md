@@ -1,3 +1,10 @@
+## 2026-11-26 — Argon2id PHC and cleanup gates passed
+
+- Prototype CI #45838494936 passed the expanded PHC parser corpus, Rust/Clippy/WASM checks, bindings and JS integration/memory-growth tests.
+- Controlled failure-path runtime #45840895843 passed. The injected failure ran after runtime checks; temporary Worker deletion returned HTTP 200 and the follow-up API GET returned HTTP 404.
+- Concurrent two-hash batch: 201.874 ms wall-clock; per-operation timer samples 0 ms; memory grew from 17 to 323 pages and remained stable. These are not CPU-time measurements.
+- Enabled native invocation logging and added `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`. Actual CPU-time values remain pending deployment and log inspection.
+
 ## 2026-11-26 — Argon2id CPU-time observability instrumentation
 
 - Enabled native Workers invocation logs at 100% head sampling for the isolated Argon2id prototype.
