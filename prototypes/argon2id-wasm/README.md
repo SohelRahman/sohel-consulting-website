@@ -1,3 +1,10 @@
+## Latest verification — 2026-11-26
+
+- PHC corpus prototype CI [#45838494936](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838494936) passed formatting, host tests, Clippy, WASM build, wasm-bindgen generation, Node adapter/memory-growth tests and artifact upload.
+- Controlled failure-path runtime test [#45840895843](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45840895843) passed. The workflow deliberately exited after successful runtime checks; its EXIT cleanup deleted the temporary Worker (HTTP 200), and a follow-up Cloudflare API GET confirmed absence (HTTP 404).
+- In that run, the two-request concurrent batch was 201.874 ms wall-clock; per-operation hash and verify timers again reported 0 ms. Memory grew 17 to 323 pages and remained stable. This is not CPU-time evidence.
+- Native invocation logging is now enabled in Wrangler configuration. A new runtime run is required to deploy that configuration before CPU-time records can be inspected.
+
 ## Cloudflare CPU-time observability — 2026-11-26
 
 The isolated Wrangler config now enables native Workers invocation logs at 100% head sampling. This is intended to expose Cloudflare's invocation CPU-time and wall-time fields for the temporary benchmark Worker. A measurement procedure is documented in `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`. Workers Logs is included on the Free plan according to current Cloudflare documentation; no Logpush job or paid external destination is configured.
