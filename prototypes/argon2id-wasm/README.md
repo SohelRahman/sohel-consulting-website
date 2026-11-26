@@ -96,3 +96,16 @@ This prototype remains separate from the website's authentication path until run
 - The Cloudflare runtime workflow was also updated to use the committed lockfile with `--locked`. Its next run [#45852694342](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45852694342) is queued. It includes a bounded 150-second post-test hold so Cloudflare invocation telemetry can be inspected before the existing EXIT cleanup removes the temporary Worker.
 
 The Argon2 source remains pinned to immutable revision `dc7e0c25cda9a8421d2604debf548d663886b431`. Dependency version pinning is now implemented; full reproducibility remains pending until the post-commit CI completes all steps, and provenance review must still record the Rust toolchain, wasm-bindgen CLI version and artifact checksums. This does not constitute an external security audit or approval for application integration.
+
+
+
+## Build provenance checkpoint — 2026-11-26
+
+- Added `docs/ARGON2ID_BUILD_PROVENANCE.md` with the pinned build inputs, audit boundaries and remaining supply-chain controls.
+- Pinned the Rust toolchain to 1.100.0 in both prototype CI and the isolated runtime workflow. Earlier successful CI logs confirmed rustc 1.100.0 (commit `0ef1bc386`, 2026-11-09).
+- Locked `wasm-bindgen` CLI resolution to the crate version in Cargo.lock (0.2.130); Wrangler is pinned to 4.160.1.
+- Added RustSec `cargo-audit 0.23.0` to prototype CI, plus a package license/source inventory, compiler/tool versions and SHA-256 checksums for generated artifacts.
+- The new audit/provenance CI run [#45855759095](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45855759095) is still running. No vulnerability-scan or artifact-checksum result is claimed until it completes.
+- GitHub Actions references remain major-version tags and Node.js remains pinned to major 22; immutable action SHAs and an exact Node patch are still supply-chain hardening items.
+
+**Current status:** dependency provenance work is implemented but not yet CI-verified. Application integration and production remain blocked. Actual Cloudflare invocation CPU-time telemetry and an independent security assessment are also outstanding.
