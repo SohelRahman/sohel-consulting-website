@@ -230,11 +230,14 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/observability/telemetry/keys")"
           if [[ "$KEYS_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-keys.json >/dev/null; then
             echo 'Cloudflare telemetry key discovery succeeded.'
-            jq -r '.result[]?.key' /tmp/argon2id-telemetry-keys.json | grep -Ei 'cpuTimeMs|wallTimeMs|metadata.service' || true
+            jq -r '.result[]?.key' /tmp/argon2id-telemetry-keys.json | grep -Ei 'cpuTimeMs|wallTimeMs|scriptName' || true
             CPU_KEY="$(jq -r '.result[]? | select(.key | test("cpuTimeMs"; "i")) | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
             WALL_KEY="$(jq -r '.result[]? | select(.key | test("wallTimeMs"; "i")) | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
-            if [[ -n "$CPU_KEY" && -n "$WALL_KEY" ]]; then
-              QUERY_BODY="$(jq -n --argjson from "$RUNTIME_START_MS" --argjson to "$(date +%s%3N)" '{queryId:"argon2id-runtime-telemetry",timeframe:{from:$from,to:$to},parameters:{datasets:["cloudflare-workers"],view:"invocations"},limit:200}')"
+            SCRIPT_KEY="$(jq -r '.result[]? | select(.key == "$workers.scriptName") | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
+            if [[ -n "$CPU_KEY" && -n "$WALL_KEY" && -n "$SCRIPT_KEY" ]]; then
+              # The Observability API's view is a top-level query field, not a member of parameters.
+              # Filter to this run's disposable Worker so unrelated account invocations cannot pollute the measurements.
+              QUERY_BODY="$(jq -n --argjson from "$RUNTIME_START_MS" --argjson to "$(date +%s%3N)" --arg worker "$WORKER" '{queryId:"argon2id-runtime-telemetry",timeframe:{from:$from,to:$to},view:"invocations",parameters:{datasets:["cloudflare-workers"],filterCombination:"and",filters:[{key:"$workers.scriptName",operation:"eq",type:"string",value:$worker}]},limit:200}')"
               QUERY_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-query.json --write-out '%{http_code}' \
                 --request POST \
                 --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -251,7 +254,7 @@ jobs:
                 jq -c '{success,errors,messages}' /tmp/argon2id-telemetry-query.json || true
               fi
             else
-              echo 'Telemetry key discovery did not expose both CPU and wall-time fields; refusing to guess field names.'
+              echo 'Telemetry key discovery did not expose CPU time, wall time and script name fields; refusing to guess field names.'
             fi
           elif [[ "$KEYS_CODE" == '401' || "$KEYS_CODE" == '403' ]]; then
             echo "Cloudflare telemetry API access unavailable (HTTP $KEYS_CODE). Existing token lacks required Observability permission or is unauthorized; no permissions were changed."
