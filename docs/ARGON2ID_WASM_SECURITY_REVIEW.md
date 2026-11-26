@@ -127,3 +127,14 @@ The earlier findings table above is historical and several rows are now supersed
 - The Cloudflare runtime workflow was also updated to use the committed lockfile with `--locked`. Its next run [#45852694342](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45852694342) is queued. It includes a bounded 150-second post-test hold so Cloudflare invocation telemetry can be inspected before the existing EXIT cleanup removes the temporary Worker.
 
 The Argon2 source remains pinned to immutable revision `dc7e0c25cda9a8421d2604debf548d663886b431`. Dependency version pinning is now implemented; full reproducibility remains pending until the post-commit CI completes all steps, and provenance review must still record the Rust toolchain, wasm-bindgen CLI version and artifact checksums. This does not constitute an external security audit or approval for application integration.
+
+
+## Build provenance and dependency audit update — 2026-11-26
+
+- Rust toolchain is now pinned to 1.100.0 in both prototype CI and isolated runtime workflow.
+- Added a provenance artifact containing compiler/tool versions, locked dependency tree, license/source inventory and SHA-256 checksums for the generated WASM and bindings.
+- Added RustSec `cargo-audit 0.23.0` against the committed Cargo.lock. The CI run [#45855759095](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45855759095) is still running; no clean audit result is claimed yet.
+- Build provenance design and residual risks are documented in `docs/ARGON2ID_BUILD_PROVENANCE.md`.
+- Remaining supply-chain items include immutable GitHub Action SHAs, exact Node.js patch pinning, license compatibility review, signed provenance and an independent clean rebuild.
+
+These controls improve traceability but do not replace an independent security audit. CPU-time evidence, repeatable performance characterization and application security review remain separate release blockers.
