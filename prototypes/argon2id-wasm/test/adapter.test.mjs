@@ -18,7 +18,7 @@ test("uses Web Crypto salt generation and verifies generated PHC", () => {
   };
   const adapter = createArgon2idAdapter({ wasm, cryptoProvider });
   const encoded = adapter.hashPassword("adapter integration password");
-  assert.match(encoded, /^\\$argon2id\\$v=19\\$m=19456,t=2,p=1\\$/);
+  assert.match(encoded, /^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
   assert.equal(adapter.verifyPassword("adapter integration password", encoded), true);
   assert.equal(adapter.verifyPassword("wrong password", encoded), false);
   assert.equal(calls, 1);
