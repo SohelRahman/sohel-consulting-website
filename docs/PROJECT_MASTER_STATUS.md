@@ -1,5 +1,14 @@
 
 
+## 2026-11-27 — Third Argon2id telemetry run; correlation improvement queued
+
+- Isolated runtime [#45878008941](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45878008941) passed on current-focus-development at commit 69a68d0af39f705dcb722bb408e2657ae2383893.
+- Cloudflare returned two invocation records for the exact disposable Worker: **59 ms CPU / 59 ms wall** and **96 ms CPU / 99 ms wall**. Event keys were $metadata, $workers, dataset, source and timestamp; no request path/method appeared in the inspected fields. Endpoint attribution remains unproven.
+- Two concurrent hashes took 123.828 ms combined client wall time. WASM memory stabilized at 323 pages after growth from 17. Cleanup was verified (DELETE 200, GET 404).
+- Runtime workflow commit 065c0e16cc99d621508ab8a2b35dbb3bc56dc243 adds a client request timeline and exposes invocation timestamp/source/dataset plus nested field names to test timestamp-based correlation. Runtime validation is pending.
+- These remain invocation-level samples only. No per-operation CPU claim, CPU-limit compliance claim, application authentication integration, Production deployment, D1 operation, main update or PR merge.
+
+
 ## 2026-11-27 — Second isolated Cloudflare telemetry run
 
 - Runtime [#45877435363](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45877435363) passed on `current-focus-development` at commit `db0b46bec19cda5c78080d86963ea9060aeb00fd`.
