@@ -1,3 +1,9 @@
+## 2026-11-26 — Preview Admin PBKDF2 runtime fix
+- The deployed Preview diagnostic identified a Cloudflare Workers production PBKDF2 ceiling of 100,000 iterations; the previous 600,000-iteration setting caused the sign-in HTTP 500.
+- Updated password hashing and compatibility tests to use the Workers-supported 100,000-iteration value. Development validation passed on commit `90a47a50f3d052eceda82d97a67d6095ec1bb2d6`.
+- Security qualification: this runtime-compatible PBKDF2 setting is below OWASP's current 600,000 PBKDF2-SHA-256 recommendation. A stronger production design remains a separate security priority.
+- Trigger the guarded Preview deployment for runtime verification. No Production resources or `main` changes are included.
+
 ## 2026-11-26 — Fix Preview Admin PBKDF2 runtime incompatibility
 - Production Preview diagnostics identified Cloudflare Workers rejecting the password-hash implementation's 600,000 PBKDF2 iterations; the runtime ceiling is 100,000.
 - Updated password hashing to use the maximum iteration count accepted by the Workers runtime and updated tests to reject unsupported stored iteration counts.
