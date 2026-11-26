@@ -46,6 +46,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ARGON2ID_INJECT_FAILURE_AFTER_RUNTIME: ${{ contains(github.event.head_commit.message, '[argon2-cleanup-failure-test]') && '1' || '0' }}
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -66,21 +67,39 @@ jobs:
               *) echo "::error::$label deletion failed (HTTP $code)."; return 1 ;;
             esac
           }
+          verify_worker_absent_api() {
+            local name="$1" code
+            code="$(curl --silent --show-error --output /tmp/argon2id-absence-response.json --write-out '%{http_code}' \
+              --request GET \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$name")"
+            if [[ "$code" == '404' ]]; then
+              echo "Temporary Worker absence verified (HTTP 404)."
+            else
+              echo "::error::Temporary Worker still exists or absence could not be verified (HTTP $code)."
+              return 1
+            fi
+          }
           # Remove the exact orphaned test Worker from the preceding run before creating another.
           delete_worker_api 'sohel-argon2id-preview-45826985507' 'Previous temporary Worker'
           DEPLOY_ATTEMPTED=0
+          CLEANUP_VERIFIED=0
           cleanup() {
             status=$?
             trap - EXIT
             if [[ "$DEPLOY_ATTEMPTED" == '1' ]]; then
-              if delete_worker_api "$WORKER" 'Current temporary Worker'; then
-                :
+              if delete_worker_api "$WORKER" 'Current temporary Worker' && verify_worker_absent_api "$WORKER"; then
+                CLEANUP_VERIFIED=1
               else
-                echo '::error::Temporary Worker deletion failed; manual cleanup is required.'
+                echo '::error::Temporary Worker cleanup could not be verified; manual cleanup is required.'
                 status=1
               fi
             fi
             unset TOKEN
+            if [[ "$ARGON2ID_INJECT_FAILURE_AFTER_RUNTIME" == '1' && "$status" == '73' && "$CLEANUP_VERIFIED" == '1' ]]; then
+              echo 'Expected post-deployment failure was injected and cleanup was verified.'
+              status=0
+            fi
             exit "$status"
           }
           trap cleanup EXIT
@@ -156,4 +175,8 @@ jobs:
           console.log(JSON.stringify(result, null, 2));
           if (valid.valid !== true || invalid.valid !== false) throw new Error("Cloudflare Workers Argon2id PHC verification test failed.");
           NODE
+          if [[ "$ARGON2ID_INJECT_FAILURE_AFTER_RUNTIME" == '1' ]]; then
+            echo 'Injecting controlled failure after successful runtime checks to exercise EXIT cleanup.'
+            exit 73
+          fi
           unset ARGON2ID_TEST_TOKEN TOKEN
