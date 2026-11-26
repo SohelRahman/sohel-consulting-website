@@ -9,6 +9,7 @@ globs = ["**/*.wasm"]
 fallthrough = true
 
 # Enable native Workers invocation logs for CPUTimeMs/WallTimeMs measurement.
+# This marked commit triggers a fresh isolated deployment with observability enabled.
 # Workers Logs is included on Workers Free; no Logpush destination is configured.
 [observability]
 enabled = true
