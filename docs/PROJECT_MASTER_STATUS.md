@@ -1,3 +1,10 @@
+## 2026-11-26 — PHC corpus and failure-path cleanup tests added
+
+- Added deterministic PHC structural/canonical-Base64 mutations and 4,096 arbitrary bounded ASCII parser inputs in `prototypes/argon2id-wasm/tests/phc_input_corpus.rs`.
+- Prototype CI #45837980772 passed formatting, host tests (including the corpus) and Clippy; WASM binding generation and Node integration tests were still in progress at this checkpoint.
+- Added opt-in post-deployment failure injection to the isolated Cloudflare runtime workflow. Its EXIT trap deletes the temporary Worker and verifies a follow-up Cloudflare API GET returns 404. Runtime CI #45838191990 is pending.
+- No Production or application authentication changes.
+
 ## 2026-11-26 — Argon2id runtime benchmark completed; next gates opened
 
 - Dedicated prototype CI [Run #45836658113](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836658113) passed formatting, host tests, Clippy, release WASM build, wasm-bindgen web/Node binding generation, adapter/memory-growth tests and artifact upload.
