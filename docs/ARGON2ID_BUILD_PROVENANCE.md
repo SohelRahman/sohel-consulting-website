@@ -59,3 +59,8 @@ This work improves traceability but does not approve application integration or 
 ## 2026-11-26 CI provenance checkpoint
 
 Prototype CI #45856402852 completed successfully. `cargo audit --file Cargo.lock` loaded 1,568 RustSec advisories, scanned all 34 locked crate dependencies and exited successfully. The same run generated and uploaded `build-provenance.txt` and the WASM/binding package as artifact ID `15134694932`. The artifact ZIP SHA-256 is `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`. This is CI evidence for the run, not a signed attestation. The build emitted a Rust future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; these are noted for dependency-tree review. Node remains major-version pinned only.
+
+
+## 2026-11-26 — Node.js and action pinning
+
+The observed runtime was Node.js `v22.23.5`. Pinned this exact patch in `.github/workflows/test-argon2id-cloudflare-preview.yml`, `.github/workflows/test-argon2id-prototype.yml` and `.github/workflows/benchmark-password-kdf.yml`. The benchmark workflow's setup-node reference was also changed from the moving `v4` tag to immutable commit `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0). Prototype CI #45860260434 and runtime rerun #45860426221 are expected to verify the pinned setup; both were not yet complete at documentation time.
