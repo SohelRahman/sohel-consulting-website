@@ -1,3 +1,9 @@
+## 2026-11-26 — Cleanup failure-injection run status correction
+
+- The first opt-in failure-injection runtime run #45838191990 was canceled before execution when a newer push superseded it. No failure-path cleanup result is claimed.
+- The latest ordinary runtime run #45838254764 is queued; it does not activate the failure injection.
+- The cleanup trap implementation is committed, but failure-path behavior remains unverified until a dedicated marker run completes.
+
 ## 2026-11-26 — PHC corpus and failure-path cleanup tests added
 
 - Added deterministic PHC structural/canonical-Base64 mutations and 4,096 arbitrary bounded ASCII parser inputs in `prototypes/argon2id-wasm/tests/phc_input_corpus.rs`.
