@@ -204,7 +204,7 @@ jobs:
           const result = {
             hashWallMsSamples: hashSamples.map(sample => sample.hashMs),
             verifyWallMsSamples: verifySamples.map(sample => sample.verifyMs),
-            concurrentHashRequests: concurrent.length,
+            concurrentHashRequests: concurrentBodies.length,
             concurrentHashBatchWallMs: concurrentWallMs,
             memoryPagesBefore: hashResult.memoryPagesBefore,
             memoryPagesAfterFirstHash: hashResult.memoryPagesAfter,
