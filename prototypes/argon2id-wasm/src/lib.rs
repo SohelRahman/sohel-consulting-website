@@ -50,7 +50,7 @@ pub fn derive(password: &[u8], salt: &[u8]) -> Result<[u8; OUTPUT_LEN], &'static
 }
 
 fn b64_encode(input: &[u8]) -> String {
-    let mut out = String::with_capacity((input.len() * 4 + 2) / 3);
+    let mut out = String::with_capacity((input.len() * 4).div_ceil(3));
     for chunk in input.chunks(3) {
         let a = chunk[0] as usize;
         let b = chunk.get(1).copied().unwrap_or(0) as usize;
