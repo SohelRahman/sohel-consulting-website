@@ -346,3 +346,10 @@ The isolated benchmark Worker deployed successfully on Workers Free, and the eph
 Added a bounded, non-secret error reason to the isolated benchmark response so the next run can distinguish initialization/parameter errors from runtime resource failures. This diagnostic exists only in the temporary benchmark Worker source; no Admin password hashes or application authentication behavior were changed.
 
 Retry trigger for the isolated Argon2id benchmark with sanitized runtime diagnostics.
+## 2026-11-26 — Argon2id benchmark compatibility finding
+
+The isolated benchmark ran on the Cloudflare Workers Free plan. The selected `hash-wasm` implementation failed before hashing with `WebAssembly.compile(): Wasm code generation disallowed by embedder`. Cloudflare's current Workers documentation states that Worker code must instantiate precompiled WebAssembly modules; Wrangler can import `.wasm` assets as `WebAssembly.Module` values. Therefore this result identifies a library packaging/runtime incompatibility, not proof that Argon2id cannot run on Workers.
+
+Next candidate: inspect a maintained Argon2id implementation that ships a precompiled `.wasm` module and imports it through Wrangler's compiled-Wasm module mechanism. Review source, license, release provenance, API, PHC format and test coverage before benchmarking it. Do not integrate a package into Admin authentication solely because its README claims Workers compatibility.
+
+The benchmark workflow cleanup now reports success/failure for deletion rather than silently ignoring delete errors. The prior benchmark run's cleanup attempt was not independently verified because its delete output was suppressed. No application authentication code or existing password hashes were changed.
