@@ -595,3 +595,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Made the Production deployment job depend on successful validation and added a Wrangler deployment dry-run before the deploy command.
 - Kept Production deployment restricted to `main` and the GitHub `production` environment.
 - Workflow execution, remote D1 migration/backup preflight, secret presence, and environment protection remain unverified. No Production resource was changed.
+## 2026-11-26 — Password-storage design assessment
+
+- Added `docs/PASSWORD_STORAGE_DESIGN_ASSESSMENT.md` with current OWASP and Cloudflare Workers constraints, an Argon2id/WebAssembly candidate assessment, and a controlled Preview benchmark acceptance list.
+- Confirmed that the current 100,000-iteration PBKDF2-HMAC-SHA-256 setting is below OWASP's recommended 600,000 iterations.
+- Recorded that a pepper is supplementary and cannot replace a suitable password KDF.
+- No hash implementation, Preview Worker, database, secret or Production resource was changed.
