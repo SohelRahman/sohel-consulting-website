@@ -133,6 +133,23 @@ jobs:
             echo "An MFA encryption key already exists; it was not rotated."
           fi
 
+      - name: Ensure Preview session signing secret exists without rotating an existing secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.1 secret list --name current-focus-development --config wrangler.preview.toml > /tmp/preview-worker-secrets.json
+          if ! node --input-type=module -e 'import fs from "node:fs"; const x=JSON.parse(fs.readFileSync("/tmp/preview-worker-secrets.json","utf8")); const rows=Array.isArray(x)?x:(x.result||[]); process.exit(rows.some(v=>v.name==="SESSION_SECRET")?0:1);'; then
+            KEY="$(node --input-type=module -e 'import { randomBytes } from "node:crypto"; process.stdout.write(randomBytes(32).toString("base64url"));')"
+            printf '%s' "$KEY" | npx --yes wrangler@4.160.1 secret put SESSION_SECRET --name current-focus-development --config wrangler.preview.toml
+            unset KEY
+            echo "A new Preview-only session signing secret was generated and stored; its value was not displayed."
+          else
+            echo "A Preview session signing secret already exists; it was not rotated."
+          fi
+
       - name: Deploy Preview Worker and static assets only
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
