@@ -103,3 +103,16 @@ The current source has useful defensive controls and its dedicated CI suite pass
 - Cloudflare Workers real-time logs (official): https://developers.cloudflare.com/workers/observability/logs/real-time-logs/
 - OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 - RFC 9106 — Argon2: https://www.rfc-editor.org/rfc/rfc9106
+
+
+## Verification correction — 2026-11-26 (latest)
+
+The earlier findings table above is historical and several rows are now superseded by verified work:
+
+- Independent PHC fixture coverage now includes both argon2-cffi and libsodium; both tests passed in prototype CI [#45843299302](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299302).
+- Deterministic malformed-PHC parser coverage now includes 4,096 bounded arbitrary ASCII inputs; host tests passed in the same run.
+- The controlled post-runtime failure cleanup test passed in [#45840895843](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45840895843): expected failure injected, temporary Worker deletion returned HTTP 200, and follow-up API check returned HTTP 404.
+- JavaScript adapter tests passed buffer cleanup checks for adapter-owned mutable buffers on successful operations and controlled WASM errors. This remains best effort and does not prove full erasure.
+- The latest runtime run [#45843299379](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299379) passed basic Worker execution and cleanup. A subsequent Cloudflare Workers Logs query for that script over the last 24 hours returned zero records, so actual CPUTimeMs/WallTimeMs evidence remains unavailable.
+
+**Updated release blockers:** capture invocation CPU-time telemetry while the temporary Worker is still available; add repeatable load/latency and memory characterization; review a committed dependency lockfile and generated WASM/binding provenance; complete security assessment before application integration. This remains a source-level review, not an external audit. No production release approval is implied.
