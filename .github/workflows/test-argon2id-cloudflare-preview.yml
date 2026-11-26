@@ -119,15 +119,39 @@ jobs:
           };
           const valid = await verify("isolated Cloudflare Workers Argon2id runtime test");
           const invalid = await verify("incorrect test password");
+          const hashSamples = [hashResult];
+          const verifySamples = [valid];
+          for (let i = 0; i < 3; i += 1) {
+            const response = await fetch(`${base}/hash`, { method: "POST", headers });
+            const sample = await response.json();
+            if (!response.ok || typeof sample.phc !== "string") throw new Error(`Sequential hash benchmark failed at sample ${i + 1}`);
+            hashSamples.push(sample);
+            const checked = await verify("isolated Cloudflare Workers Argon2id runtime test");
+            if (checked.valid !== true) throw new Error(`Sequential verify benchmark failed at sample ${i + 1}`);
+            verifySamples.push(checked);
+          }
+          const concurrentStart = performance.now();
+          const concurrent = await Promise.all([
+            fetch(`${base}/hash`, { method: "POST", headers }),
+            fetch(`${base}/hash`, { method: "POST", headers })
+          ]);
+          const concurrentBodies = await Promise.all(concurrent.map(response => response.json()));
+          const concurrentWallMs = Number((performance.now() - concurrentStart).toFixed(3));
+          if (concurrent.some(response => !response.ok) || concurrentBodies.some(body => typeof body.phc !== "string")) {
+            throw new Error("Concurrent hash benchmark failed.");
+          }
           const result = {
-            hashMs: hashResult.hashMs,
-            validPasswordVerifyMs: valid.verifyMs,
-            wrongPasswordVerifyMs: invalid.verifyMs,
+            hashWallMsSamples: hashSamples.map(sample => sample.hashMs),
+            verifyWallMsSamples: verifySamples.map(sample => sample.verifyMs),
+            concurrentHashRequests: concurrent.length,
+            concurrentHashBatchWallMs: concurrentWallMs,
             memoryPagesBefore: hashResult.memoryPagesBefore,
-            memoryPagesAfter: hashResult.memoryPagesAfter,
+            memoryPagesAfterFirstHash: hashResult.memoryPagesAfter,
+            memoryPagesAfterSequentialAndConcurrent: concurrentBodies.at(-1).memoryPagesAfter,
             memoryGrowthObserved: hashResult.memoryGrowthObserved,
             correctPasswordAccepted: valid.valid,
-            wrongPasswordRejected: invalid.valid === false
+            wrongPasswordRejected: invalid.valid === false,
+            timingNote: "performance.now() wall-clock duration, not Cloudflare CPU time"
           };
           console.log(JSON.stringify(result, null, 2));
           if (valid.valid !== true || invalid.valid !== false) throw new Error("Cloudflare Workers Argon2id PHC verification test failed.");
