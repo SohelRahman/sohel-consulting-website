@@ -760,3 +760,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - CI Run [#9](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45781931534) passed formatting, five host tests, Clippy with warnings denied, and release compilation for `wasm32-unknown-unknown`.
 - Updated the prototype README and password-storage assessment to distinguish implemented functionality from remaining independent interoperability, ABI, memory-wipe verification and Worker runtime gates.
 - No application authentication, stored hashes, Preview Worker, D1 database, secret or Production resource was changed. No deployment was performed.
+
+## 2026-11-26 — Argon2id dependency lockfile and locked CI
+
+- Retrieved the generated Cargo lockfile from the successful CI artifact and committed it to `prototypes/argon2id-wasm/Cargo.lock`.
+- Updated prototype CI to enforce `--locked` for Rust tests, Clippy, WebAssembly builds and wasm-bindgen dependency resolution.
+- Updated the isolated Cloudflare runtime workflow to build from the committed lockfile and hold the temporary Worker for a bounded telemetry inspection window before automatic cleanup.
+- Post-commit locked CI is still running; full dependency reproducibility is not yet declared complete.
+- No application authentication, password hashes, D1 data or Production resources were modified.
