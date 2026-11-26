@@ -1,3 +1,11 @@
+## 2026-11-26 — Argon2id locked audit and runtime verification update
+
+- Prototype CI #45856402852 passed all build/test steps, including RustSec audit (34 locked dependencies scanned against 1,568 advisories) and provenance artifact upload (ID `15134694932`).
+- Isolated Cloudflare runtime #45856609844 passed health, hash/verify, correct/wrong password checks, sequential/concurrent requests and temporary Worker cleanup (HTTP 200 deletion; HTTP 404 absence verification).
+- Memory grew from 17 to 323 Wasm pages and remained stable. Two concurrent hashes took 160.404 ms combined wall-clock; per-operation timers were 0 ms. No CPU-time result was captured.
+- Corrected telemetry key discovery and service filter in commit `8ee6e9e`; a fresh runtime run is required to obtain CPU-time evidence.
+- Not approved for application authentication or Production integration.
+
 ## 2026-11-26 — Argon2id PHC and cleanup gates passed
 
 - Prototype CI #45838494936 passed the expanded PHC parser corpus, Rust/Clippy/WASM checks, bindings and JS integration/memory-growth tests.
