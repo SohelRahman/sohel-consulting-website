@@ -1,3 +1,8 @@
+## 2026-11-26 — Follow-up rustfmt correction for Argon2id ABI
+
+- The first formatting correction did not cover the second `wasm_hash_phc` export; dedicated CI Run [#14](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45815086593) still failed only at `cargo fmt --all -- --check` for that remaining line wrap. Host tests, Clippy and WASM compilation were skipped.
+- Corrected the remaining formatter difference. The next dedicated run must pass before the ABI source is considered verified.
+
 ## 2026-11-26 — Argon2id ABI CI formatting failure corrected
 
 - Inspected dedicated prototype CI Run [#13](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45812972475) and its job log. The failure was exclusively `cargo fmt --all -- --check`; host tests, Clippy and WASM compilation were skipped, not failed.

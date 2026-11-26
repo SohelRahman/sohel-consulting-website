@@ -71,8 +71,7 @@ mod wasm_api {
     /// Return the fixed-profile PHC string. The host must supply a CSPRNG salt.
     #[wasm_bindgen]
     pub fn wasm_hash_phc(password: &Uint8Array, salt: &Uint8Array) -> Result<String, JsValue> {
-        validate_wasm_input_lengths(password.length(), salt.length())
-            .map_err(JsValue::from_str)?;
+        validate_wasm_input_lengths(password.length(), salt.length()).map_err(JsValue::from_str)?;
         let password = Zeroizing::new(password.to_vec());
         let salt = salt.to_vec();
         hash_phc(&password, &salt).map_err(JsValue::from_str)

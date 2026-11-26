@@ -1,3 +1,7 @@
+## 2026-11-26 — Follow-up Argon2id ABI formatting correction
+
+- A second dedicated CI run found one remaining rustfmt line-wrap difference in the PHC export. Corrected it; tests and compilation remain pending a successful run.
+
 ## 2026-11-26 — Argon2id ABI CI formatting correction
 
 - Corrected Rust formatting after dedicated prototype CI Run #13 failed at the formatting check. The log showed no compilation or test failure because later steps were skipped.
