@@ -1,5 +1,7 @@
+// Cloudflare Workers production Web Crypto rejects PBKDF2 counts above 100,000.
+// Keep this limit explicit so local Node tests cannot silently exceed the edge runtime ceiling.
 const LEGACY_ITERATIONS = 100000;
-const CURRENT_ITERATIONS = 600000;
+const CURRENT_ITERATIONS = 100000;
 
 function encodeBase64Url(bytes) {
   return btoa(String.fromCharCode(...new Uint8Array(bytes)))
@@ -18,7 +20,7 @@ function parsePasswordHash(stored) {
   const parts = String(stored || "").split("$");
   if (parts.length !== 4 || parts[0] !== "pbkdf2") return null;
   const iterations = Number(parts[1]);
-  if (![LEGACY_ITERATIONS, CURRENT_ITERATIONS].includes(iterations)) return null;
+  if (iterations !== LEGACY_ITERATIONS && iterations !== CURRENT_ITERATIONS) return null;
   try {
     const salt = decodeBase64Url(parts[2]);
     const expected = decodeBase64Url(parts[3]);
