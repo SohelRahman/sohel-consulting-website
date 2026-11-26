@@ -521,3 +521,10 @@ The isolated Rust Argon2id prototype now includes bounded PHC-style generation a
 - Runtime test [#45843299379](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299379) passed hash/verify and cleanup. Cloudflare Logs query for that Worker over the last 24 hours returned zero records; CPUTimeMs and WallTimeMs remain unmeasured.
 
 **Current gate:** the prototype remains isolated and not approved for application integration or Production. Remaining work: obtain invocation CPU-time evidence while the Worker is live; perform repeatable load/latency and memory characterization; review dependency lockfile and generated artifact provenance; complete security review. No application password hashes, authentication routes, D1 data or Production resources have been changed.
+
+
+## Dependency reproducibility finding — 2026-11-26
+
+The repository does not contain `prototypes/argon2id-wasm/Cargo.lock` (checked on `current-focus-development`; GitHub contents API returned 404). The latest successful CI log shows Cargo resolving and locking 33 packages to the highest versions compatible with the runner's Rust toolchain, rather than consuming a committed lockfile. The Argon2 source itself is pinned to immutable Git revision `dc7e0c25cda9a8421d2604debf548d663886b431`, but the full transitive dependency graph is not yet reproducibly pinned. CI passing does not close this provenance gap.
+
+**Required action before application integration:** generate and review the crate lockfile from a clean checkout, commit it alongside the prototype, change CI build/test commands to `--locked`, and verify the lockfile is honored for both host and `wasm32-unknown-unknown` targets. Record the Rust toolchain, wasm-bindgen CLI version, source revision and artifact checksums. Do not claim dependency provenance is complete until a clean locked build passes.
