@@ -334,3 +334,6 @@ The first isolated benchmark deployment was rejected by Cloudflare with API erro
 Removed the explicit CPU limit from the isolated benchmark config so the Worker uses the Free plan's default 10 ms request CPU limit. The benchmark remains isolated, authenticated with an ephemeral token, has no D1 binding, and is configured for automatic deletion. Its next tagged run will determine whether the Argon2id baseline fits the Free runtime. No application Worker or database was changed.
 
 The isolated benchmark is now configured to use the default Workers Free CPU budget. A tagged development commit triggers the corrected run; the temporary benchmark Worker will be removed automatically after execution.
+## 2026-11-26 — Isolated benchmark deployment path verified; request retry added
+
+The corrected benchmark deployment successfully uploaded the isolated Worker and its temporary bearer secret. The first authenticated request returned HTTP 401 immediately after secret creation, consistent with a deployment/secret propagation delay; the benchmark did not run. The workflow's exit cleanup ran. Added bounded retries for HTTP 401 to allow the new Worker version and secret to propagate. The next tagged run will verify this. No existing Worker, Admin credential, D1 database or Production resource was changed.
