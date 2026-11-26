@@ -34,28 +34,37 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
           components: rustfmt, clippy
+      - name: Generate and inspect prototype dependency lockfile
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f Cargo.lock ]]; then cargo generate-lockfile; fi
+          echo 'BEGIN_ARGON2ID_CARGO_LOCK'
+          cat Cargo.lock
+          echo 'END_ARGON2ID_CARGO_LOCK'
       - name: Check formatting
         working-directory: prototypes/argon2id-wasm
         run: cargo fmt --all -- --check
       - name: Run host tests
         working-directory: prototypes/argon2id-wasm
-        run: cargo test
+        run: cargo test --locked
       - name: Lint host target
         working-directory: prototypes/argon2id-wasm
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets -- -D warnings
       - name: Compile WebAssembly target
         working-directory: prototypes/argon2id-wasm
-        run: cargo build --release --target wasm32-unknown-unknown
+        run: cargo build --locked --release --target wasm32-unknown-unknown
       - name: Generate wasm-bindgen JavaScript bindings
         working-directory: prototypes/argon2id-wasm
         shell: bash
         run: |
           set -euo pipefail
-          WASM_BINDGEN_VERSION="$(cargo tree --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
+          WASM_BINDGEN_VERSION="$(cargo tree --locked --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
           : "${WASM_BINDGEN_VERSION:?Could not resolve wasm-bindgen crate version}"
           cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
           wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
-          cargo build --release --target wasm32-unknown-unknown --features test-hooks
+          cargo build --locked --release --target wasm32-unknown-unknown --features test-hooks
           wasm-bindgen --target nodejs --out-dir node-pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
           test -s pkg/sohel_argon2id_prototype.js
           test -s pkg/sohel_argon2id_prototype_bg.wasm
@@ -74,5 +83,6 @@ jobs:
           name: argon2id-wasm-${{ github.sha }}
           path: |
             prototypes/argon2id-wasm/pkg/
+            prototypes/argon2id-wasm/Cargo.lock
           if-no-files-found: error
           retention-days: 7
