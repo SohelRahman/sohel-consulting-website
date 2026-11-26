@@ -122,3 +122,14 @@ Sources:
 - PHC reference releases: https://github.com/P-H-C/phc-winner-argon2/releases
 - Cloudflare Wrangler Wasm imports: https://developers.cloudflare.com/workers/wrangler/bundling/
 - OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+
+## Isolated RustCrypto prototype — source stage — 2026-11-26
+
+Created `prototypes/argon2id-wasm` as an isolated Rust crate pinned to RustCrypto Argon2 0.6.0 commit `dc7e0c25cda9a8421d2604debf548d663886b431`. The wrapper fixes Argon2id v=19 at 19,456 KiB, two passes, one lane and a 32-byte tag; bounds passwords to 1,024 bytes and requires a 16-byte caller-supplied salt. It owns the working matrix and explicitly zeroizes each block in `Drop`.
+
+Added an upstream Argon2id v=19 known-answer test using the upstream test vector's secret and associated data, plus deterministic output, password/salt differentiation and input-bound tests. Added CI for formatting, host tests, Clippy and `wasm32-unknown-unknown` compilation.
+
+**Current gate:** source files and CI workflow are committed to the development branch, but CI has not yet been observed passing. No C/WASM ABI, JavaScript adapter, PHC verification, Cloudflare Worker integration or runtime benchmark exists yet. The prototype is not connected to application authentication and is not deployable as a Worker at this stage. No Preview or Production resource, D1 data, stored password hash or application authentication code changed.
+
+**Next:** inspect CI results, fix any compile/test failures, add the bounded ABI and PHC compatibility layer, then benchmark only in the isolated Worker. A Preview app integration or Production release requires separate passing gates and approval.
