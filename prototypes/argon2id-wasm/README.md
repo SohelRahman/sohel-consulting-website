@@ -1,5 +1,13 @@
 ## Latest execution checkpoint — 2026-11-26
 
+- Prototype CI #45856402852 passed all checks, including locked RustSec audit across 34 dependencies, host tests, Clippy, WASM build/bindings, JS integration/memory-growth tests and provenance artifact upload (ID `15134694932`).
+- Runtime #45857773930 passed deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion; HTTP 404 absence check). Concurrent hash batch: 124.138 ms wall-clock; memory 17 to 323 pages, stable thereafter.
+- Cloudflare keys API returned `$workers.cpuTimeMs` and `$workers.wallTimeMs`. The invocation query returned zero groups, so no CPU-time samples were captured. The unverified `$metadata.service` filter was removed.
+- Unfiltered diagnostic runtime #45859485701 is in progress. It will inspect sanitized invocation metadata to identify a valid script filter and capture actual CPU/wall-time samples if available.
+- Prototype remains experimental and isolated; not approved for application authentication or Production.
+
+## Latest execution checkpoint — 2026-11-26
+
 - Prototype CI [#45856402852](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856402852) passed all checks, including `cargo audit` across 34 locked dependencies, formatting, host tests, Clippy, WASM build/bindings, Node adapter/memory-growth tests and provenance artifact upload. Artifact ID: `15134694932`.
 - Isolated Cloudflare runtime [#45856609844](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856609844) passed deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion, HTTP 404 absence check).
 - WASM memory grew from 17 to 323 pages and remained at 323 pages after sequential/concurrent tests. Two concurrent hash requests took 160.404 ms combined wall-clock. Per-operation `performance.now()` samples were 0 ms and are not useful timing evidence.
