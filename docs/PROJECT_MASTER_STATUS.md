@@ -577,3 +577,8 @@ The Argon2 source remains pinned to immutable revision `dc7e0c25cda9a8421d2604de
 - No application authentication, D1 or Production changes.
 
 **Decision:** isolated prototype only; no application integration or Production approval.
+
+
+## Toolchain warning classification — 2026-11-26
+
+The future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0` was emitted while compiling the separately installed `wasm-bindgen-cli` build tool, not while compiling the Argon2id crate. A direct check of the committed application `Cargo.lock` confirms neither package is present in its 34-package dependency graph. Keep this as a tooling dependency warning for follow-up; do not misclassify it as an application runtime dependency or a RustSec advisory. The pinned `wasm-bindgen-cli` version remains 0.2.130.
