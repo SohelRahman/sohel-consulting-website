@@ -1,3 +1,9 @@
+## Cloudflare CPU-time observability — 2026-11-26
+
+The isolated Wrangler config now enables native Workers invocation logs at 100% head sampling. This is intended to expose Cloudflare's invocation CPU-time and wall-time fields for the temporary benchmark Worker. A measurement procedure is documented in `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`. Workers Logs is included on the Free plan according to current Cloudflare documentation; no Logpush job or paid external destination is configured.
+
+**Important:** enabling logs is not the same as collecting or validating CPU-time results. The actual hash/verify invocation CPU samples remain outstanding. Use the dashboard Query Builder or supported Observability API after the next runtime deployment. The current Cloudflare cleanup failure-injection workflow must also complete before that gate can be marked passed.
+
 The controlled cleanup-failure workflow change is committed, but its first marked run (#45838191990) was canceled before execution when a newer push superseded it. The latest normal runtime run is queued at #45838254764; it does not enable failure injection. The failure-path test therefore remains **unverified** and needs a dedicated marker commit after the current prototype CI run completes.
 
 ## Parser robustness work
