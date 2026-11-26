@@ -161,3 +161,8 @@ The Argon2 source remains pinned to immutable revision `dc7e0c25cda9a8421d2604de
 - Remaining supply-chain items include immutable GitHub Action SHAs, exact Node.js patch pinning, license compatibility review, signed provenance and an independent clean rebuild.
 
 These controls improve traceability but do not replace an independent security audit. CPU-time evidence, repeatable performance characterization and application security review remain separate release blockers.
+
+
+## Toolchain warning classification — 2026-11-26
+
+The future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0` was emitted while compiling the separately installed `wasm-bindgen-cli` build tool, not while compiling the Argon2id crate. A direct check of the committed application `Cargo.lock` confirms neither package is present in its 34-package dependency graph. Keep this as a tooling dependency warning for follow-up; do not misclassify it as an application runtime dependency or a RustSec advisory. The pinned `wasm-bindgen-cli` version remains 0.2.130.
