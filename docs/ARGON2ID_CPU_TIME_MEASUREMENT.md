@@ -68,3 +68,9 @@ Configuration has been added to the isolated Wrangler file. Actual invocation CP
 - Workers Trace Events fields: https://developers.cloudflare.com/logs/logpush/logpush-job/datasets/account/workers_trace_events/
 - Workers limits: https://developers.cloudflare.com/workers/platform/limits/
 - Workers Observability telemetry API: https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/
+
+## 2026-11-26 execution update
+
+The isolated runtime workflow now uses the committed prototype lockfile with `cargo build --locked` and `cargo tree --locked`. After successful hash/verify and concurrency checks, it waits for 150 seconds before the existing EXIT trap deletes the temporary Worker. This creates a bounded window for Cloudflare Dashboard → Workers & Pages → Observability → Logs inspection while the script still exists. The wait is automatic and cleanup remains enabled even if a preceding step fails.
+
+The first run with this hold is queued as [#45852694342](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45852694342). Query the script named `sohel-argon2id-preview-45852694342` during that hold, filter to invocation logs, and capture `CPUTimeMs` and `WallTimeMs` separately for `/hash` and `/verify`. If the log records are absent, record that result and do not infer CPU time from JavaScript `performance.now()`. Temporary Worker cleanup must still complete and be verified with the Cloudflare API.
