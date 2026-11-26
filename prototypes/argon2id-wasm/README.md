@@ -29,3 +29,7 @@ Latest successful isolated CI: [Run #9](https://github.com/SohelRahman/sohel-con
 - No application authentication changes or legacy PBKDF2 migration.
 
 The prototype must pass independent PHC interoperability tests, ABI boundary review, memory-wipe verification and isolated Cloudflare Free-plan runtime tests before any Preview application integration is considered.
+
+## Independent PHC interoperability fixture
+
+Added a fixed Argon2id PHC fixture generated independently with Python `argon2-cffi 25.1.0` using Argon2id v=19, m=19,456 KiB, t=2, p=1, a 16-byte salt containing bytes 0 through 15, and a 32-byte tag. The Rust test verifies the independent encoded string, rejects a wrong password, and checks that Rust-generated PHC output exactly matches the fixture. This establishes cross-implementation interoperability for this vector; it does not replace a broader fuzz/property test suite or runtime Worker validation.

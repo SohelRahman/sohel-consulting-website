@@ -1,3 +1,9 @@
+## 2026-11-26 — Independent Argon2id PHC interoperability fixture
+- Generated a fixed Argon2id v=19 / m=19,456 KiB / t=2 / p=1 PHC fixture using Python argon2-cffi 25.1.0, independent of the RustCrypto implementation.
+- Added a cross-implementation test for fixture verification, wrong-password rejection and exact Rust-generated PHC output.
+- CI verification is pending. Remaining: bounded WASM ABI, precompiled Worker module, JS adapter, boundary/memory-growth tests, explicit matrix-wipe tests, isolated Worker benchmarks, security review and release gates.
+- No application authentication, stored hashes, Preview or Production resources changed.
+
 ## 2026-11-26 — Argon2id prototype validation passed
 - Dedicated CI run [#45777843556](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777843556) passed formatting, three host tests including the Argon2id v=19 KAT, Clippy with warnings denied, and optimized wasm32 compilation.
 - Initial formatting and Clippy failures were fixed before the passing run.

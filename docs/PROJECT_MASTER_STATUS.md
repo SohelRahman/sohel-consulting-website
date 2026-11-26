@@ -1,3 +1,10 @@
+## 2026-11-26 — Independent Argon2id PHC fixture added
+
+- Generated a fixed Argon2id PHC string independently using Python `argon2-cffi 25.1.0`, with the prototype's exact v=19 / m=19,456 KiB / t=2 / p=1 profile.
+- Added a Rust test that verifies the independent fixture, rejects a wrong password, and requires Rust-generated PHC output to match the independent encoding exactly.
+- This is one cross-implementation fixture; CI must pass before it is considered verified. It does not establish WASM ABI safety, memory-wipe correctness, Cloudflare runtime compatibility or performance.
+- No application authentication, stored password hashes, Preview Worker, D1 database, secrets or Production resources were changed.
+
 ## 2026-11-26 — Argon2id prototype source validation passed
 
 Dedicated CI [#45777843556](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777843556) passed formatting, three host tests including the Argon2id v=19 KAT, Clippy with warnings denied and optimized wasm32 compilation. Broader development validation [#45777849748](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777849748) passed. Preview deployment and runtime benchmark were skipped. No Worker or application authentication was deployed or changed. PHC compatibility, ABI, independent interop, memory-wipe test coverage and Worker runtime benchmarks remain pending.

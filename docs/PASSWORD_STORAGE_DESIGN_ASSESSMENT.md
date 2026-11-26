@@ -157,3 +157,8 @@ CI Run [#9](https://github.com/SohelRahman/sohel-consulting-website/actions/runs
 ### Next gate
 
 Implement a bounded WASM ABI and JavaScript adapter only after reviewing pointer/length safety and memory-growth behavior. Add independent PHC fixtures and explicit memory-wipe verification. Then test the precompiled module in an isolated Worker before considering any application integration. Do not change stored hashes or `src/password-hash.js` at this stage.
+
+
+## Independent PHC fixture checkpoint — 2026-11-26
+
+A fixed Argon2id PHC fixture was generated independently with Python `argon2-cffi 25.1.0` using the selected profile (v=19, m=19,456 KiB, t=2, p=1, 16-byte salt, 32-byte tag). The Rust prototype now has a test to verify that fixture, reject a wrong password, and match its exact PHC encoding. This is a single-vector cross-implementation check, not broad interoperability certification. The test is committed for CI validation; no Worker or application authentication change is implied.

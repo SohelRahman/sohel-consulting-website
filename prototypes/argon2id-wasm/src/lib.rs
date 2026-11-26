@@ -202,4 +202,18 @@ mod tests {
         assert!(verify_phc(b"password", &"x".repeat(MAX_PHC_LEN + 1)).is_err());
         assert!(verify_phc(b"password", "$argon2id$v=19$m=19456,t=2,p=1$%%%$AA").is_err());
     }
+
+    #[test]
+    fn matches_independent_argon2_cffi_phc_fixture() {
+        // Generated independently with argon2-cffi 25.1.0:
+        // Type.ID, version=19, m=19456, t=2, p=1, hash_len=32.
+        let encoded = "$argon2id$v=19$m=19456,t=2,p=1$AAECAwQFBgcICQoLDA0ODw$HgadzgMogaKvjm4sbwElL0wO9HGwNWhl6ya2mcTteT8";
+        let password = b"independent PHC interoperability fixture";
+        assert!(verify_phc(password, encoded).unwrap());
+        assert!(!verify_phc(b"wrong password", encoded).unwrap());
+        assert_eq!(
+            hash_phc(password, &(0u8..16).collect::<Vec<_>>()).unwrap(),
+            encoded
+        );
+    }
 }
