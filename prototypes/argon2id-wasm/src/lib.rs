@@ -72,7 +72,7 @@ mod wasm_api {
         validate_wasm_input_lengths(password.length(), salt.length()).map_err(JsValue::from_str)?;
         let password = Zeroizing::new(password.to_vec());
         let salt = salt.to_vec();
-        let tag = derive(&password, &salt).map_err(JsValue::from_str)?;
+        let tag = Zeroizing::new(derive(&password, &salt).map_err(JsValue::from_str)?);
         Ok(tag.to_vec().into_boxed_slice())
     }
 
@@ -112,11 +112,11 @@ pub fn derive(password: &[u8], salt: &[u8]) -> Result<[u8; OUTPUT_LEN], &'static
         .map_err(|_| "invalid fixed Argon2 parameters")?;
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
     let mut memory = WipingMemory::new(MEMORY_KIB as usize);
-    let mut output = [0u8; OUTPUT_LEN];
+    let mut output = Zeroizing::new([0u8; OUTPUT_LEN]);
     argon2
-        .hash_password_into_with_memory(password, salt, &mut output, memory.as_mut_slice())
+        .hash_password_into_with_memory(password, salt, &mut output[..], memory.as_mut_slice())
         .map_err(|_| "Argon2id derivation failed")?;
-    Ok(output)
+    Ok(*output)
 }
 
 fn b64_encode(input: &[u8]) -> String {
