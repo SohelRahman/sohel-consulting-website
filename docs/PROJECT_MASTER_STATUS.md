@@ -318,3 +318,10 @@ Added `docs/PASSWORD_STORAGE_DESIGN_ASSESSMENT.md` after reviewing current OWASP
 Decision: do not alter the current hash format yet, do not treat a pepper as a replacement for a suitable KDF, and do not release the 100,000-iteration workaround as the final Production design. A controlled Preview benchmark and architecture decision remain required. No Preview Worker, database, secret or Production resource was changed.
 
 Validation workflow commit `9bc1fb47b5156cd155ae46e355858e77f1155162` also adds a YAML parse step for the Production deployment workflow; its run result is pending.
+## 2026-11-26 — Isolated Argon2id benchmark harness prepared
+
+Added a separate, short-lived Cloudflare Worker benchmark using pinned `hash-wasm` 4.12.0 and OWASP's Argon2id baseline (19,456 KiB, 2 passes, parallelism 1). The harness performs a single hash/verify and a two-operation concurrent test. It has no D1 binding, no Admin routes, and requires a random ephemeral bearer token. The workflow deletes the benchmark Worker on exit, including failure paths.
+
+The benchmark Worker explicitly sets a 10 ms CPU budget to test the Cloudflare Workers Free constraint; this is not the production Worker and cannot modify the production application. The response reports wall-clock durations only; these are not represented as CPU-time or memory measurements. If the request exceeds the runtime limit, the workflow will report the failure and remove the Worker.
+
+The benchmark workflow is tagged to run only on a development commit containing `[kdf-benchmark]` or by manual dispatch. Workflow YAML validation was added to development CI. No password hash implementation or existing Admin credential was changed.
