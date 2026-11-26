@@ -1,3 +1,11 @@
+## 2026-11-26 — PHC reference Argon2 fallback source review
+- Inspected the official PHC reference C implementation and its dual CC0 1.0 / Apache-2.0 licence.
+- Confirmed source-level support for Argon2id, PHC encoded hash handling, reference block-filling code, memory clearing, known-answer tests and a `NO_THREADS=1` build option.
+- This is source inspection only. The upstream branch was not pinned to an immutable commit and no Emscripten/Wasm build or Cloudflare runtime test was performed.
+- Rejected the unverified `@hallaxius/argon2w` candidate pending exact tarball, registry signature/provenance and source-to-artifact verification.
+- Next: pin upstream commit and source manifest, create a minimal single-thread C ABI wrapper, compile a prebuilt Wasm module, run upstream vectors and PHC interoperability tests, then benchmark on the isolated Workers Free environment.
+- No package was added; no app authentication, password hashes, database, Preview or Production resources changed.
+
 ## 2026-11-26 — Precompiled-Wasm Argon2id candidate review
 - Evaluated the public claims for `@hallaxius/argon2w`: it documents a standalone SIMD Wasm asset, a Cloudflare Workers compiled-module import and PHC-compatible Argon2id output.
 - The package remains unapproved: source, exact published artifact, npm provenance, release-to-commit correspondence, maintainer identity and tests could not be independently verified through the available GitHub connection. A third-party health listing reports version 0.0.1, Apache-2.0, zero dependencies, zero weekly downloads and an incomplete health report; treat this as a weak adoption signal, not a security verdict.
