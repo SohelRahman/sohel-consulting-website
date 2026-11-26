@@ -177,3 +177,30 @@ Preview runtime smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-
 - **Current development head:** `45fed5af355be5b4bf7a52f539ac5c1b44f361f7` (documentation/test-only changes since deployment).
 - **Live Worker state:** pending independent current-origin verification.
 - **Next priority:** perform an approved Preview deployment only if a fresh live deployment is required; otherwise continue with non-mutating automated acceptance work and authenticated test-plan preparation.
+
+
+## 2026-11-26 — Production release authorization and preflight
+
+The project owner authorized the Production release, including the required merge to `main`, Production D1 migrations and Worker deployment, provided release safeguards are met. This authorization does not waive review, database backup/identity checks, migration verification, authenticated acceptance or release gates.
+
+### Current GitHub release state
+- PR #1 remains open and marked draft; GitHub reports it is not mergeable. No approvals or review threads are recorded.
+- Development head: `9a3548b86bf9a94ed5c7c860767f974eb4f38b1e`.
+- Main head at audit: `cae9a07bb20b509459231ee43be9f0601770c664`.
+- Branch comparison reports development 833 commits ahead and 14 commits behind; six workflow files changed on both branches. The overlapping workflow contents are not identical in all cases. Do not merge until the branch divergence and conflicts are reconciled and the final diff is reviewed.
+- The Production deployment workflow `.github/workflows/deploy-cloudflare.yml` exists on the development branch but is absent from `main`. Production Worker configuration and application files are likewise not present at the checked paths on `main`; the current PR is the first proposed introduction of this application to the production branch.
+- The development-branch Production workflow only invokes `wrangler deploy`; it does not itself run application validation, verify the Production D1 migration ledger, or apply migrations.
+- No PR review approvals or commit status checks were returned for the current head through the connected GitHub integration. Cloudflare's latest PR comment reports Preview build/deployment success for commit `9a3548b`; this is Preview deployment evidence, not Production release acceptance.
+
+### Production release blockers
+- Production D1 database identity, backup/restore readiness and remote migration ledger have not been independently verified.
+- Production runtime secret presence and the protected GitHub `production` environment/reviewer configuration are not verified.
+- Authenticated Admin/MFA, RBAC, CMS concurrency and full business workflows remain unaccepted on Preview.
+- Business content, course fees and policy copy still require owner approval as recorded in the launch checklist.
+
+### Actions taken
+- Read-only inspection of repository metadata, PR #1, branch comparison, release workflow and Wrangler configuration.
+- No PR merge, branch rewrite, Production D1 operation, secret change or Production deployment was performed.
+
+### Next release action
+Reconcile the 14-commit branch divergence and six overlapping workflow files without force-pushing; then rerun required validation and complete the Production D1/secret/environment preflight before merge and deployment.
