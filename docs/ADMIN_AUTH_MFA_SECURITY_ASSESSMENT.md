@@ -1,5 +1,7 @@
 # Administrator Authentication and MFA Security Assessment
 
+> **Historical snapshot notice (2026-11-26):** The assessment below was written against commit `f4cadf992879052d9ee8fd76cf143613c4361610` on 2026-11-23, before MFA implementation. Its statements that MFA is missing and its proposed implementation steps are historical, not the current source state. The development branch now contains TOTP MFA, encrypted credential storage, restricted challenge sessions, recovery codes, replay prevention, and automated source/cryptographic tests. See the current status and acceptance record at the end of this document. Authenticated Preview acceptance remains outstanding.
+
 **Assessment date:** 2026-11-23  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Branch reviewed:** `current-focus-development`  
@@ -110,3 +112,21 @@ This assessment is documentation-only. No application source, migration, secret,
 ## Next implementation step
 
 Implement the MFA database design, Worker authentication state machine, Admin enrollment/challenge UI, recovery-code lifecycle and automated tests together as a separately reviewable development change. First review the exact migration numbering and CI test conventions, then implement only on `current-focus-development`.
+
+
+## 2026-11-26 — Implementation status superseding this historical assessment
+
+### Source and automated evidence
+- MFA implementation is present in `src/admin-mfa.js`, `src/worker.js`, `admin.html` and `migrations/0019_admin_mfa.sql`.
+- `scripts/test-admin-mfa.mjs` verifies RFC-compatible TOTP test vectors, invalid/expired-window behavior, encrypted seed round-trip and user binding, recovery-code generation and hashing, password-login challenge restrictions, challenge cookie properties, replay/recovery SQL guards, and bilingual UI copy.
+- Development validation Run #1076 passed with the Admin MFA cryptographic/source-contract test step.
+- Project history records migration 0019 applied to the dedicated Preview D1 database in Preview migration Run #11. The live remote migration ledger has not been re-read for this checkpoint.
+
+### Still unverified
+- Successful authenticated Preview enrollment and login with a real test Admin account.
+- Wrong/expired/purpose-mismatched challenge behavior in the deployed Worker.
+- Actual TOTP replay rejection and one-time recovery-code consumption against Preview D1.
+- MFA disable/reset, session revocation, rate-limit behavior and role-specific API access in the deployed environment.
+- Production MFA secret availability and Production migration state.
+
+Automated source/cryptographic tests are not a substitute for deployed authenticated acceptance or a formal OWASP ASVS Level 2 assessment.
