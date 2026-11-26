@@ -1,3 +1,8 @@
+## 2026-11-26 — Bounded wasm-bindgen ABI source
+
+- Added wasm32-only typed-array exports for derivation and PHC operations with pre-copy length guards and zeroizing password copies.
+- Added host boundary tests; CI pending. No deployment or app auth changes.
+
 ## 2026-11-26 — Argon2id working-memory zeroization test
 
 - Added an explicit matrix-wipe method and a unit test that verifies every 64-bit word in a multi-block matrix is zero after wiping.

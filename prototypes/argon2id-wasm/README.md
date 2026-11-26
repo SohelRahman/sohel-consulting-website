@@ -9,6 +9,8 @@ The working matrix is allocated by the wrapper and each 1 KiB block is explicitl
 ## Implemented and CI-verified
 
 - Bounded password and salt inputs.
+- `wasm-bindgen` exports accept JavaScript `Uint8Array` objects; length checks happen before copying inputs into Wasm memory.
+- Exported operations are limited to raw fixed-length tag derivation, fixed-profile PHC generation and fixed-profile PHC verification. Password copies inside Wasm are held in `Zeroizing<Vec<u8>>`.
 - Fixed Argon2id parameters; no user-controlled PHC cost values.
 - PHC-style string generation and verification, restricted to the exact fixed profile.
 - Strict encoded-length, algorithm, version, parameter, base64 and decoded-field-length checks.
@@ -23,7 +25,8 @@ Latest successful host-test/validation CI: [Run #45804064689](https://github.com
 
 ## Not yet implemented or approved
 
-- No C/WASM ABI or JavaScript adapter.
+- No generated `wasm-bindgen` JavaScript package or Worker adapter yet; the Rust ABI exports are source-implemented and compile validation is pending.
+- No runtime test yet proving JS typed-array behavior, memory growth or Worker module instantiation.
 - No broad independent PHC interoperability/fuzz suite; the current fixture is a single cross-implementation vector.
 - The explicit wipe test verifies the wrapper routine; it does not prove resistance to all compiler, allocator, crash or process-termination behaviors.
 - No Cloudflare Worker integration or runtime benchmark.

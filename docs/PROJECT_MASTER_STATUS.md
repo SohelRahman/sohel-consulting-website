@@ -1,3 +1,10 @@
+## 2026-11-26 — Bounded wasm-bindgen ABI source added (CI pending)
+
+- Added wasm32-only `wasm-bindgen` exports for fixed-output tag derivation, PHC generation and PHC verification.
+- Exports accept `Uint8Array`; password/salt/PHC lengths are checked before copying into Wasm memory. Password copies use `Zeroizing<Vec<u8>>`.
+- Added host tests for accepted/rejected ABI lengths. Actual generated JS glue, JS memory-growth tests and Cloudflare Worker module instantiation remain pending.
+- No deployment or application authentication change.
+
 ## 2026-11-26 — Working-memory zeroization test added (CI pending)
 
 - Refactored the owned matrix wipe into one explicit method used by `Drop`.

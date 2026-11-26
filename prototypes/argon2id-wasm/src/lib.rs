@@ -33,6 +33,68 @@ impl Drop for WipingMemory {
     }
 }
 
+
+/// Validate JS typed-array lengths before copying any caller-controlled bytes into Wasm memory.
+fn validate_wasm_input_lengths(password_len: u32, salt_len: u32) -> Result<(), &'static str> {
+    if password_len == 0 || password_len as usize > MAX_PASSWORD_LEN {
+        return Err("password length out of bounds");
+    }
+    if salt_len as usize != SALT_LEN {
+        return Err("salt length must be exactly 16 bytes");
+    }
+    Ok(())
+}
+
+fn validate_wasm_phc_length(encoded_len: u32) -> Result<(), &'static str> {
+    if encoded_len == 0 || encoded_len as usize > MAX_PHC_LEN {
+        return Err("PHC string length out of bounds");
+    }
+    Ok(())
+}
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_api {
+    use super::*;
+    use js_sys::Uint8Array;
+    use wasm_bindgen::prelude::*;
+    use zeroize::Zeroizing;
+
+    /// Hash bounded JS byte arrays. Lengths are checked before either array is copied.
+    #[wasm_bindgen]
+    pub fn wasm_hash(password: &Uint8Array, salt: &Uint8Array) -> Result<Box<[u8]>, JsValue> {
+        validate_wasm_input_lengths(password.length(), salt.length())
+            .map_err(JsValue::from_str)?;
+        let password = Zeroizing::new(password.to_vec());
+        let salt = salt.to_vec();
+        let tag = derive(&password, &salt).map_err(JsValue::from_str)?;
+        Ok(tag.to_vec().into_boxed_slice())
+    }
+
+    /// Return the fixed-profile PHC string. The host must supply a CSPRNG salt.
+    #[wasm_bindgen]
+    pub fn wasm_hash_phc(password: &Uint8Array, salt: &Uint8Array) -> Result<String, JsValue> {
+        validate_wasm_input_lengths(password.length(), salt.length())
+            .map_err(JsValue::from_str)?;
+        let password = Zeroizing::new(password.to_vec());
+        let salt = salt.to_vec();
+        hash_phc(&password, &salt).map_err(JsValue::from_str)
+    }
+
+    /// Verify bounded PHC bytes. UTF-8 validation happens after the length check and copy.
+    #[wasm_bindgen]
+    pub fn wasm_verify_phc(password: &Uint8Array, encoded: &Uint8Array) -> Result<bool, JsValue> {
+        validate_wasm_phc_length(encoded.length()).map_err(JsValue::from_str)?;
+        if password.length() == 0 || password.length() as usize > MAX_PASSWORD_LEN {
+            return Err(JsValue::from_str("password length out of bounds"));
+        }
+        let password = Zeroizing::new(password.to_vec());
+        let encoded = encoded.to_vec();
+        let encoded = core::str::from_utf8(&encoded)
+            .map_err(|_| JsValue::from_str("PHC string must be UTF-8"))?;
+        verify_phc(&password, encoded).map_err(JsValue::from_str)
+    }
+}
+
 /// Derive a 32-byte Argon2id v=19 tag with fixed parameters.
 pub fn derive(password: &[u8], salt: &[u8]) -> Result<[u8; OUTPUT_LEN], &'static str> {
     if password.is_empty() || password.len() > MAX_PASSWORD_LEN {
@@ -146,6 +208,20 @@ mod tests {
     use super::*;
     use argon2::{AssociatedData, ParamsBuilder};
     use hex_literal::hex;
+
+    #[test]
+    fn wasm_length_guards_reject_before_copy() {
+        assert!(validate_wasm_input_lengths(1, SALT_LEN as u32).is_ok());
+        assert!(validate_wasm_input_lengths(MAX_PASSWORD_LEN as u32, SALT_LEN as u32).is_ok());
+        assert!(validate_wasm_input_lengths(0, SALT_LEN as u32).is_err());
+        assert!(validate_wasm_input_lengths((MAX_PASSWORD_LEN + 1) as u32, SALT_LEN as u32).is_err());
+        assert!(validate_wasm_input_lengths(1, (SALT_LEN - 1) as u32).is_err());
+        assert!(validate_wasm_input_lengths(1, (SALT_LEN + 1) as u32).is_err());
+        assert!(validate_wasm_phc_length(1).is_ok());
+        assert!(validate_wasm_phc_length(MAX_PHC_LEN as u32).is_ok());
+        assert!(validate_wasm_phc_length(0).is_err());
+        assert!(validate_wasm_phc_length((MAX_PHC_LEN + 1) as u32).is_err());
+    }
 
     #[test]
     fn rejects_out_of_bounds_inputs() {

@@ -166,3 +166,8 @@ The prototype now exposes its matrix wipe routine internally as a single method 
 ## Independent PHC fixture checkpoint — 2026-11-26
 
 A fixed Argon2id PHC fixture was generated independently with Python `argon2-cffi 25.1.0` using the selected profile (v=19, m=19,456 KiB, t=2, p=1, 16-byte salt, 32-byte tag). The Rust prototype now has a test to verify that fixture, reject a wrong password, and match its exact PHC encoding. This is a single-vector cross-implementation check, not broad interoperability certification. The test is committed for CI validation; no Worker or application authentication change is implied.
+
+
+## Bounded WASM ABI checkpoint — 2026-11-26
+
+The prototype now defines wasm32-only `wasm-bindgen` exports for tag derivation, PHC generation and PHC verification. Inputs are JavaScript `Uint8Array` values; their lengths are checked before conversion to Rust-owned buffers. The password copy is wrapped in `Zeroizing<Vec<u8>>`. Host tests exercise accepted and rejected lengths, but do not execute generated JavaScript glue or simulate Worker memory growth. Cloudflare Workers requires a `WebAssembly.Module` import and manual `wasm-bindgen` glue patching when not using `workers-rs`; that integration is a separate gate. Source implementation is not yet CI-verified.
