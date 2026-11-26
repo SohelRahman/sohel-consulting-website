@@ -297,3 +297,10 @@ The user explicitly confirmed that the Preview Admin dashboard opens with manage
 6. Obtain required PR review and approvals before merge; then deploy Production and run live smoke tests.
 
 No Production resource was changed.
+## 2026-11-26 — RBAC acceptance record clarified
+
+`docs/TESTING.md` now records the user's confirmation of authenticated Preview Admin dashboard access separately from the still-pending live permission-limited User acceptance. The Worker source review confirms that Admin API requests reload the active account/session version, require MFA enrollment, apply route-to-permission mapping, and deny unauthorized non-Admin requests with HTTP 403. Unknown Admin API routes fail closed for limited Users; account-management routes are handled separately.
+
+These are source-review findings backed by existing static contract tests, not live limited-User API acceptance. No Preview account or D1 data was changed. A live limited-User account and direct read/write denial tests remain required before RBAC acceptance can be marked complete.
+
+Latest documentation commit: `3db5302519ceeb8e3dcfdc87f793451a452fb5b9` (`docs/TESTING.md`). Production and `main` remain unchanged.
