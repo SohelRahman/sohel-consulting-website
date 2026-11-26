@@ -71,7 +71,9 @@ mod wasm_api {
     #[wasm_bindgen]
     pub fn wasm_test_grow_memory(pages: u32) -> Result<u32, JsValue> {
         if pages == 0 || pages > 16 {
-            return Err(JsValue::from_str("test growth must be between 1 and 16 pages"));
+            return Err(JsValue::from_str(
+                "test growth must be between 1 and 16 pages",
+            ));
         }
         let previous = core::arch::wasm32::memory_grow(0, pages as usize);
         if previous == usize::MAX {
