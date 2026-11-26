@@ -1,3 +1,9 @@
+## 2026-11-26 — Fix Preview Admin PBKDF2 runtime incompatibility
+- Production Preview diagnostics identified Cloudflare Workers rejecting the password-hash implementation's 600,000 PBKDF2 iterations; the runtime ceiling is 100,000.
+- Updated password hashing to use the maximum iteration count accepted by the Workers runtime and updated tests to reject unsupported stored iteration counts.
+- This is a platform compatibility compromise: 100,000 PBKDF2-SHA-256 iterations are below OWASP's current 600,000 recommendation. A stronger production-grade password hashing design needs a runtime-supported memory-hard KDF or a dedicated authentication service. Do not describe this as meeting the OWASP recommendation.
+- Automated validation and Preview deployment are required before sign-in can be retested. No Production change was made.
+
 ## 2026-11-26 — Preview Admin API diagnostic visibility
 - The Admin API client now displays the Worker-provided `diagnostic` field when Preview returns an internal error; Production responses do not include this field.
 - This is a temporary Preview troubleshooting aid. It does not reveal credentials or change authentication behavior.
