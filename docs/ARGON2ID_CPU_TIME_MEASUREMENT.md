@@ -1,3 +1,7 @@
+## Deployment checkpoint — 2026-11-26
+
+The observability configuration is committed on `current-focus-development` (commit `a73e1de`, subsequently retained in the branch head). A marked runtime deployment was triggered as [workflow #45841415366](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45841415366). Its build stage is in progress; deployment and invocation-log collection have not yet completed. This workflow run is expected to deploy the observability-enabled temporary Worker. Do not mark the CPU-time gate complete until the actual invocation records have been inspected.
+
 # Argon2id Cloudflare CPU-Time Measurement
 
 **Scope:** isolated prototype Worker only. No application Worker, D1 database, Production environment or external log destination is configured by this procedure.
