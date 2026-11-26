@@ -51,14 +51,14 @@ jobs:
           set -Eeuo pipefail
           : "${CLOUDFLARE_API_TOKEN:?Missing Cloudflare Workers API token}"
           : "${CLOUDFLARE_ACCOUNT_ID:?Missing Cloudflare account ID}"
-          WORKER='sohel-argon2id-prototype-preview'
+          WORKER="sohel-argon2id-preview-${GITHUB_RUN_ID}"
           CONFIG='prototypes/argon2id-wasm/wrangler.toml'
           TOKEN="$(node --input-type=module -e 'import { randomBytes } from "node:crypto"; process.stdout.write(randomBytes(32).toString("base64url"))')"
-          DEPLOYED=0
+          DEPLOY_ATTEMPTED=0
           cleanup() {
             status=$?
             trap - EXIT
-            if [[ "$DEPLOYED" == '1' ]]; then
+            if [[ "$DEPLOY_ATTEMPTED" == '1' ]]; then
               if npx --yes wrangler@4.160.1 delete --name "$WORKER" --force --config "$CONFIG"; then
                 echo 'Temporary Argon2id Preview Worker deletion confirmed.'
               else
@@ -70,8 +70,8 @@ jobs:
             exit "$status"
           }
           trap cleanup EXIT
-          npx --yes wrangler@4.160.1 deploy --config "$CONFIG" 2>&1 | tee /tmp/argon2id-preview-deploy.log
-          DEPLOYED=1
+          DEPLOY_ATTEMPTED=1
+          npx --yes wrangler@4.160.1 deploy --name "$WORKER" --config "$CONFIG" 2>&1 | tee /tmp/argon2id-preview-deploy.log
           printf '%s' "$TOKEN" | npx --yes wrangler@4.160.1 secret put TEST_TOKEN --name "$WORKER" --config "$CONFIG"
           URL="$(grep -Eo 'https://[^[:space:]]+\.workers\.dev' /tmp/argon2id-preview-deploy.log | tail -n 1)"
           : "${URL:?Could not identify isolated Preview Worker URL}"
