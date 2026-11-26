@@ -1,3 +1,7 @@
+## 2026-11-26 — Cleanup failure-injection status
+
+- The first marked failure-injection runtime run #45838191990 was canceled before execution; it did not verify failure-path cleanup.
+- The cleanup trap now includes post-delete API absence verification, but the controlled failure test remains pending a dedicated run.
 ## 2026-11-26 — Argon2id parser and cleanup test coverage expanded
 
 - Added deterministic PHC structural and canonical-Base64 mutation tests plus a 4,096-case bounded arbitrary-input corpus.
