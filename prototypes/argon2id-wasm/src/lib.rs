@@ -70,7 +70,7 @@ fn b64_decode(input: &str, expected_len: usize) -> Result<Vec<u8>, &'static str>
 pub fn hash_phc(password: &[u8], salt: &[u8]) -> Result<String, &'static str> {
     let mut tag = derive(password, salt)?;
     let encoded = format!(
-        "$argon2id$v=19$m={},t={},p={}$${}${}",
+        "$argon2id$v=19$m={},t={},p={}${}${}",
         MEMORY_KIB, ITERATIONS, PARALLELISM, b64_encode(salt), b64_encode(&tag)
     );
     tag.zeroize();
