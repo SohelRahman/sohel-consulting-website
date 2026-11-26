@@ -190,7 +190,7 @@ jobs:
           NODE
           echo 'Waiting briefly for Workers invocation telemetry ingestion before querying the API.'
           sleep 20
-          jq -n --arg worker "$WORKER" '{datasets:["cloudflare-workers"],filters:[{key:"$metadata.service",operation:"eq",type:"string",value:$worker}]}' > /tmp/argon2id-telemetry-keys-request.json
+          jq -n --arg worker "$WORKER" '{datasets:["cloudflare-workers"],filters:[{key:"$workers.scriptName",operation:"eq",type:"string",value:$worker}]}' > /tmp/argon2id-telemetry-keys-request.json
           KEYS_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-keys.json --write-out '%{http_code}' \
             --request POST \
             --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -203,7 +203,7 @@ jobs:
             CPU_KEY="$(jq -r '.result[]? | select(.key | test("cpuTimeMs"; "i")) | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
             WALL_KEY="$(jq -r '.result[]? | select(.key | test("wallTimeMs"; "i")) | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
             if [[ -n "$CPU_KEY" && -n "$WALL_KEY" ]]; then
-              QUERY_BODY="$(jq -n --arg worker "$WORKER" --argjson from "$RUNTIME_START_MS" --argjson to "$(date +%s%3N)" '{queryId:"argon2id-runtime-telemetry",timeframe:{from:$from,to:$to},parameters:{datasets:["cloudflare-workers"],filterCombination:"and",filters:[{key:"$metadata.service",operation:"eq",type:"string",value:$worker}],view:"invocations"},limit:100}')"
+              QUERY_BODY="$(jq -n --arg worker "$WORKER" --argjson from "$RUNTIME_START_MS" --argjson to "$(date +%s%3N)" '{queryId:"argon2id-runtime-telemetry",timeframe:{from:$from,to:$to},parameters:{datasets:["cloudflare-workers"],filterCombination:"and",filters:[{key:"$workers.scriptName",operation:"eq",type:"string",value:$worker}],view:"invocations"},limit:100}')"
               QUERY_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-query.json --write-out '%{http_code}' \
                 --request POST \
                 --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
@@ -212,7 +212,9 @@ jobs:
                 "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/observability/telemetry/query")"
               if [[ "$QUERY_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-query.json >/dev/null; then
                 echo 'Cloudflare invocation telemetry query succeeded. CPU and wall-time samples follow; no JavaScript timers are used for these values.'
-                jq -c '[.result.invocations // {} | to_entries[] | .value[] | {trigger, timestamp, cpuTimeMs: .["$workers"].cpuTimeMs, wallTimeMs: .["$workers"].wallTimeMs} | select(.cpuTimeMs != null or .wallTimeMs != null)]' /tmp/argon2id-telemetry-query.json
+                jq -c '{success,errors,messages,run_status:.result.run.status,result_keys:(.result|keys),invocation_groups:((.result.invocations // {})|to_entries|map({request_id:.key,events:[.value[]|{trigger,timestamp,cpuTimeMs:.[$workers].cpuTimeMs,wallTimeMs:.[$workers].wallTimeMs,scriptName:.[$workers].scriptName}]}))}' /tmp/argon2id-telemetry-query.json
+                EVENT_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[]] | length' /tmp/argon2id-telemetry-query.json)
+                echo "Invocation event count returned by Cloudflare: $EVENT_COUNT"
               else
                 echo "Cloudflare telemetry query did not return data (HTTP $QUERY_CODE); response is retained only in this ephemeral runner."
                 jq -c '{success,errors,messages}' /tmp/argon2id-telemetry-query.json || true
