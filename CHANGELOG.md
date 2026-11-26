@@ -1,3 +1,9 @@
+## 2026-11-26 — Preview Admin session-secret remediation
+- Updated the guarded Preview deployment workflow to verify whether `SESSION_SECRET` exists on the Preview Worker.
+- If absent, it generates and stores a cryptographically random 32-byte base64url value; an existing secret is preserved and never displayed.
+- This addresses the Worker login endpoint's explicit missing-session-secret configuration failure, alongside the existing `MFA_ENCRYPTION_KEY` provisioning.
+- The workflow change is committed, but deployment and login verification are pending. No credentials, Production resources or `main` changes are included.
+
 ## 2026-11-24 — Add gated Preview deployment trigger
 - Added a push trigger restricted to `current-focus-development`.
 - Deployment job runs only for explicit `[deploy-preview]` commit messages or manual workflow dispatch; ordinary branch pushes skip deployment.
