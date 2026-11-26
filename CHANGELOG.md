@@ -768,3 +768,13 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Updated the isolated Cloudflare runtime workflow to build from the committed lockfile and hold the temporary Worker for a bounded telemetry inspection window before automatic cleanup.
 - Post-commit locked CI is still running; full dependency reproducibility is not yet declared complete.
 - No application authentication, password hashes, D1 data or Production resources were modified.
+
+
+## 2026-11-26 — Argon2id build provenance and dependency audit controls
+
+- Added `docs/ARGON2ID_BUILD_PROVENANCE.md`.
+- Pinned Rust toolchain 1.100.0 in the prototype and isolated Cloudflare runtime workflows.
+- Added a pinned RustSec cargo-audit 0.23.0 scan of the committed Cargo.lock.
+- Added CI capture of compiler/tool versions, dependency/license inventory and SHA-256 checksums for generated WASM/binding artifacts.
+- Audit and provenance CI is running; no clean audit result or artifact evidence is claimed yet.
+- No application authentication, D1 or Production resources changed.
