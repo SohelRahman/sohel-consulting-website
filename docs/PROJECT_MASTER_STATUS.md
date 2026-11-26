@@ -1,3 +1,12 @@
+## 2026-11-26 — Cloudflare Workers runtime compatibility passed
+
+- Isolated runtime CI [Run #45827375696](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45827375696) passed compiled-Wasm import, Worker startup/health, hash generation, correct-password acceptance, wrong-password rejection, memory growth (17 to 323 pages), and temporary Worker cleanup.
+- The first attempt failed because the health request raced Worker propagation and Wrangler cleanup hit an authentication API error. The retry added propagation retries and direct Cloudflare API deletion. It confirmed the previous Worker name was already absent and deleted the current Worker with HTTP 200.
+- The runtime harness now reports higher-precision `performance.now()` wall-clock durations and tests repeated sequential hash/verify requests plus a two-request concurrent hash batch. These timings are wall-clock measurements, not Cloudflare CPU time.
+- A new benchmark/runtime workflow is running at [Run #45836666885](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836666885). Do not record performance results until the job completes and logs are inspected.
+- Cloudflare's Workers Trace Events dataset exposes `CPUTimeMs`; obtaining that metric requires the relevant observability/log access. No CPU-time figure has been verified yet.
+- The prototype remains isolated. No application authentication, D1, existing Preview or Production changes.
+
 ## 2026-11-26 — Argon2id WASM source-level security review
 
 - Added `docs/ARGON2ID_WASM_SECURITY_REVIEW.md` covering the Rust implementation, JavaScript adapter, temporary Worker harness and CI workflows.
