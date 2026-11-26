@@ -7,6 +7,9 @@ publish = false
 [lib]
 crate-type = ["rlib", "cdylib"]
 
+[features]
+test-hooks = []
+
 [dependencies]
 argon2 = { git = "https://github.com/RustCrypto/password-hashes", rev = "dc7e0c25cda9a8421d2604debf548d663886b431", package = "argon2", default-features = false, features = ["alloc", "password-hash", "zeroize"] }
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
