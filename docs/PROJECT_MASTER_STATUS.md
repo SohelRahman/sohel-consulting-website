@@ -1,9 +1,17 @@
+## 2026-11-26 — Argon2id isolated prototype source stage
+
+- Added `prototypes/argon2id-wasm`, pinned to RustCrypto Argon2 0.6.0 immutable commit `dc7e0c25cda9a8421d2604debf548d663886b431`.
+- Source implements fixed Argon2id v=19 baseline parameters, bounded password/salt inputs and explicit working-matrix block zeroization on Drop.
+- Added upstream KAT, deterministic/differentiation/input-bound tests and dedicated CI for host tests, formatting, Clippy and wasm32 compilation.
+- **CI is pending.** No ABI, PHC compatibility, Cloudflare Worker benchmark or app integration is complete. No Preview/Production resources or app auth code changed.
+- Release decision: keep this as an isolated source-only prototype until CI, interoperability, memory cleanup and Worker runtime gates pass. Deploy only when the relevant stage is verified and safe.
+
 # Project Master Status
 
 **Latest handover update:** 2026-11-26  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Latest development head:** `3c6cb93ba65425fe8de10bfb5f3903c9b0c6f572`  
+**Latest development head:** `6ff8053a97d77d89bb41a52928e96a3cea1c7a8f` (prototype CI workflow; documentation commits follow).  
 **Latest verified source CI:** [Run #1076](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45756744386) passed on application-equivalent merge commit `4aed95bba0af650f3e8c913405852d62dc88e5a0`.
 
 ## Active priority — Authenticated Preview acceptance and Production readiness
