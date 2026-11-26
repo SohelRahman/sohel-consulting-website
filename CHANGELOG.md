@@ -1,5 +1,8 @@
 ## 2026-11-27
 
+- Captured the first actual Cloudflare Workers Observability invocation sample for the isolated Argon2id prototype: 58 ms CPU time and 60 ms wall time. One event is not sufficient for endpoint attribution or performance/CPU-limit conclusions; repeatability testing remains open.
+## 2026-11-27
+
 - Fixed Argon2id isolated runtime harness result reporting (`concurrentBodies.length`); runtime verification then passed, including automatic disposable Worker cleanup.
 - Corrected Cloudflare Workers Observability query shape by moving `view: "invocations"` to the top level and filtering by the exact disposable Worker script name. CPU-time measurement rerun is pending; no CPU-time result is claimed.
 
