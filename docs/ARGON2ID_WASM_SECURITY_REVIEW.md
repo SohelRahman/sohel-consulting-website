@@ -1,3 +1,9 @@
+## Runtime retry checkpoint — 2026-11-26
+
+- Runtime #45859485701 failed when `/verify` returned HTML instead of JSON. The prior harness parsed JSON without recording HTTP status/content type. Cleanup nevertheless passed (HTTP 200 deletion, HTTP 404 absence check).
+- Added bounded retries and diagnostics for transient non-JSON, 5xx and 429 responses. Rerun #45859898860 is queued.
+- No CPU-time evidence was captured. The prototype remains not approved for integration or production.
+
 ## Latest verification update — 2026-11-26
 
 - Runtime #45857773930 passed isolated Worker deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion; HTTP 404 absence verification).
