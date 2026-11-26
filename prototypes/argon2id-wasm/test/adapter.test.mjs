@@ -1,13 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { pathToFileURL } from "node:url";
-import { resolve } from "node:path";
 import { createArgon2idAdapter } from "../adapter.mjs";
 
 const require = createRequire(import.meta.url);
 const wasm = require("../node-pkg/sohel_argon2id_prototype.js");
-const wasmPath = resolve("node-pkg/sohel_argon2id_prototype.js");
 const { wasm_memory_pages } = wasm;
 
 test("uses Web Crypto salt generation and verifies generated PHC", () => {
