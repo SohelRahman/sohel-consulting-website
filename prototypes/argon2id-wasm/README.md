@@ -74,3 +74,14 @@ The explicit zeroization test verifies the wrapper's wipe routine. It does not p
 Add a deterministic malformed-PHC/property corpus that exercises parser boundaries and canonical base64 handling without repeatedly invoking the expensive KDF. Then add controlled failure-path Worker cleanup verification. Keep CPU-time evidence as a separate release blocker; do not infer it from wall-clock timing or lower the KDF parameters to fit a runtime limit.
 
 This prototype remains separate from the website's authentication path until runtime compatibility, security review and release assessment are complete.
+
+
+## Verification checkpoint — 2026-11-26 (latest)
+
+- Prototype CI [#45843299302](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299302) passed formatting, host tests, Clippy, WASM compilation, wasm-bindgen generation, JavaScript adapter/memory-growth tests and artifact upload.
+- The host-test log confirms both independent PHC fixtures passed: argon2-cffi and libsodium. The deterministic malformed-PHC corpus also passed (including 4,096 bounded arbitrary ASCII inputs).
+- Adapter tests passed Web Crypto salt generation, input-boundary rejection, memory-growth handling and best-effort cleanup of adapter-owned buffers on success and controlled WASM failures.
+- Controlled runtime cleanup test [#45840895843](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45840895843) passed: injected post-runtime failure, Worker deletion HTTP 200, and API absence verification HTTP 404.
+- Runtime test [#45843299379](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299379) passed, including Worker deployment, hash/verify and cleanup. Cloudflare Logs was subsequently queried for that Worker over the last 24 hours and returned zero matching records. No CPUTimeMs or WallTimeMs values were available.
+
+**Current status:** experimental and isolated; not approved for application integration or production. Actual Cloudflare invocation CPU-time evidence, repeatable performance characterization, dependency lockfile/provenance review and an external security assessment remain open. Do not infer CPU time from performance.now() wall-clock samples. Zeroization tests do not prove complete erasure.
