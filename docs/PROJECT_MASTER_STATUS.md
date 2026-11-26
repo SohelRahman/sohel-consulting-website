@@ -8,7 +8,7 @@
 
 ## Active priority — Authenticated Preview acceptance and Production readiness
 
-**Status:** Development validation and Preview HTTP/responsive browser smoke checks have passed. The PBKDF2 runtime compatibility fix is deployed to Preview. The user reports that the Preview Admin page opens; authenticated dashboard access, MFA activation, recovery-code use and RBAC have not yet been independently confirmed. Production D1, secrets, environment protections and backup readiness remain unverified. PR #1 remains draft with no recorded reviews.
+**Status:** Development validation and Preview HTTP/responsive browser smoke checks have passed. The PBKDF2 runtime compatibility fix is deployed to Preview. The user explicitly confirmed access to the authenticated Admin dashboard with management navigation on 2026-11-26. This is user-confirmed authenticated access; MFA enrollment and recovery-code consumption have not been independently verified from server-side evidence. RBAC and management workflows remain to be tested. Production D1, secrets, environment protections and backup readiness remain unverified. PR #1 remains draft with no recorded reviews.
 
 ### Deployment evidence
 - Preview URL: https://current-focus-development.sohelrahman118.workers.dev
@@ -282,3 +282,18 @@ The Preview Admin diagnostic exposed the exact failure: Cloudflare Workers produ
 
 ### Next engineering priority
 Complete authenticated Preview Admin/MFA acceptance, then harden the Production deployment workflow with validation and read-only target/migration preflight. Do not merge or deploy while PR review, Production database/backup and secret/environment gates remain open.
+
+
+## 2026-11-26 — User-confirmed authenticated Admin dashboard access
+
+The user explicitly confirmed that the Preview Admin dashboard opens with management navigation after the MFA setup and sign-in troubleshooting. Record this as user-confirmed successful authenticated dashboard access. Do not overstate it as independent server-side evidence of every MFA, recovery-code or RBAC control. Those controls and role-specific authorization still require explicit acceptance tests.
+
+### Next engineering priority
+1. Verify Admin and limited-User permission boundaries at the Worker API layer, including direct API requests and denied mutations.
+2. Test the Admin dashboard's read/write management workflows on Preview using authorized test data.
+3. Resolve the password-hashing security limitation: Preview currently uses 100,000 PBKDF2-SHA-256 iterations for Cloudflare Workers compatibility, below OWASP's 600,000 iteration recommendation. Do not release this compromise as final Production password storage without an approved stronger Worker-compatible design.
+4. Harden Production deployment workflow with source validation, exact Production D1 identity verification, read-only migration-ledger inspection, and explicit backup/restore readiness checks.
+5. Verify Production secrets by name/presence only and inspect the GitHub `production` environment protection/reviewer configuration.
+6. Obtain required PR review and approvals before merge; then deploy Production and run live smoke tests.
+
+No Production resource was changed.
