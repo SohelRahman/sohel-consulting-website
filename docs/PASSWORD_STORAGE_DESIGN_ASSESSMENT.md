@@ -16,7 +16,7 @@
 - Cloudflare Workers Web Crypto documents the supported cryptographic operations and algorithms; it does not list Argon2id as a Web Crypto deriveBits algorithm.
 - Cloudflare Workers supports precompiled WebAssembly modules, but does not support threading.
 - Cloudflare documents a 128 MB memory limit per isolate. WebAssembly allocations count toward this limit, and multiple requests can be served by one isolate.
-- Cloudflare documents a 10 ms CPU-time limit per HTTP request on Workers Free. The actual account plan and configured CPU limit for this Worker have not been independently verified.
+- Cloudflare documents a 10 ms CPU-time limit per HTTP request on Workers Free. Cloudflare API error 100328 during the isolated benchmark deployment confirmed that the linked account is on Workers Free; the benchmark uses the Free plan's default 10 ms CPU limit. The application Worker's configured CPU limit remains unverified.
 
 ## Candidate design
 
