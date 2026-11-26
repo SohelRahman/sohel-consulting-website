@@ -1,3 +1,13 @@
+## 2026-11-27 — Argon2id runtime passed; Observability query corrected
+
+- Isolated runtime run [#45875891768](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45875891768) passed precompiled WASM build, temporary Worker deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (delete HTTP 200; absence HTTP 404).
+- Runtime observations: two concurrent hash requests; 683.469 ms combined wall-clock; WASM memory 17 → 323 pages and stable after subsequent requests. JS `performance.now()` samples rounded to 0 ms and are not CPU-time measurements.
+- Cloudflare Observability keys discovery exposed CPU and wall-time fields, but the query returned zero invocation groups. Review against current Cloudflare API documentation identified a query-shape error: `view` belongs at the top level of the query request, not inside `parameters`. The query also lacked a script-name filter.
+- Corrected `.github/workflows/test-argon2id-cloudflare-preview.yml` to use top-level `view: "invocations"`, dataset parameters and a `$workers.scriptName` equality filter for the exact disposable Worker. Commit `09e84882e5eac8099dddbf3cc15dd5bf1f6ee090`.
+- Runtime rerun [#45876662415](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662415) and website validation [#45876662428](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662428) were in progress at documentation time. CPU-time evidence remains unverified until actual invocation samples are returned.
+- Reference: https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/methods/query/ .
+- No application authentication integration, existing Preview deployment, D1 operation, Production change, `main` update or PR merge.
+
 ## 2026-11-27 — Runtime harness follow-up correction
 
 - The health-probe correction worked: runtime #45875591303 successfully deployed the isolated Worker, uploaded its temporary test token, passed the health probe and proceeded through hash/verify and sequential/concurrent request checks.
