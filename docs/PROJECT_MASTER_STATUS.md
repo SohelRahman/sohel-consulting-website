@@ -1,3 +1,11 @@
+## 2026-11-26 — Native CPU-time observability enabled for isolated Argon2id Worker
+
+- Added native Workers invocation logging at 100% head sampling to `prototypes/argon2id-wasm/wrangler.toml`.
+- Added `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md` describing dashboard and Observability API steps, sample association and acceptance criteria.
+- Cloudflare documentation confirms invocation CPU time and wall time are separate fields; Workers Logs is included on Workers Free. No Logpush job, external log destination or paid service was configured.
+- Actual hash/verify CPU-time samples have not yet been collected. This is instrumentation setup, not CPU-limit compliance evidence.
+- The failure-injection workflow #45840895843 status must be checked independently; no failure-path cleanup result is recorded by this documentation change.
+
 ## 2026-11-26 — Second Argon2id runtime exercise passed
 
 - Isolated runtime run [#45837980987](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45837980987) passed compiled-WASM build/deploy, Worker health, hash/verify, correct/wrong password checks, sequential and concurrent request checks, and temporary Worker deletion (HTTP 200).
