@@ -191,8 +191,8 @@ jobs:
           echo 'Waiting briefly for Workers invocation telemetry ingestion before querying the API.'
           sleep 20
           # Discover the complete key set first; the keys endpoint supports keyNeedle/limit,
-# while invocation filtering uses the documented indexed service field below.
-jq -n '{datasets:["cloudflare-workers"],limit:1000}' > /tmp/argon2id-telemetry-keys-request.json
+          # while invocation filtering uses the documented indexed service field below.
+          jq -n '{datasets:["cloudflare-workers"],limit:1000}' > /tmp/argon2id-telemetry-keys-request.json
           KEYS_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-keys.json --write-out '%{http_code}' \
             --request POST \
             --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
