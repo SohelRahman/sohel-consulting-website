@@ -1,3 +1,9 @@
+## Parser robustness work
+
+Added `tests/phc_input_corpus.rs` with structural PHC mutations, canonical Base64 edge cases and 4,096 deterministic arbitrary bounded inputs. The first CI attempt caught two rustfmt-only differences; those were corrected. Host tests, including the new corpus, and Clippy now pass in the latest run, while WASM binding generation and integration checks are still running. See [prototype CI #45837980772](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45837980772).
+
+The dedicated Cloudflare runtime workflow now supports a controlled post-deployment failure mode, enabled only by a commit containing `[argon2-cleanup-failure-test]`. Its cleanup trap deletes the temporary Worker and confirms the Cloudflare API returns HTTP 404 before treating the injected failure as a successful cleanup test. Verification is pending in [runtime CI #45838191990](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838191990).
+
 # Isolated Argon2id prototype
 
 **Status: experimental source prototype; not approved for application use or deployment.**
