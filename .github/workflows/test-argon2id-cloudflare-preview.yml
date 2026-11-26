@@ -1,3 +1,4 @@
+# Telemetry jq quoting corrected; this workflow remains isolated to disposable test Workers.
 name: Isolated Argon2id Cloudflare Preview runtime test
 
 on:
