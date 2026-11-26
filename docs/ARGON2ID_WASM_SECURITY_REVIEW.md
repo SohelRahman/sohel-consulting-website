@@ -1,3 +1,11 @@
+## Latest verification update — 2026-11-26
+
+- Runtime #45857773930 passed isolated Worker deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion; HTTP 404 absence verification).
+- Memory grew from 17 to 323 Wasm pages and remained stable. Two concurrent hash requests took 124.138 ms combined wall-clock; this is not CPU-time evidence.
+- Cloudflare telemetry key discovery exposed `$workers.cpuTimeMs` and `$workers.wallTimeMs`, but the invocation query returned zero groups. The unverified `$metadata.service` filter has been removed; unfiltered metadata diagnostic #45859485701 is running.
+- Prototype CI #45856402852 passed RustSec audit, test/build pipeline and provenance artifact upload.
+- Decision remains **not approved for application integration or production release**. Actual CPU-time samples, repeatable performance characterization, signed provenance, independent rebuild, license review and external security assessment remain open.
+
 ## Latest verification update — 2026-11-26 (run #45856609844)
 
 - Prototype CI #45856402852 passed the full test/build pipeline and the locked RustSec audit. The audit scanned 34 locked dependencies against 1,568 loaded advisories and exited successfully. Provenance artifact ID: `15134694932`.
