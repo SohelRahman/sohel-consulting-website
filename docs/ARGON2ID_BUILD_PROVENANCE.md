@@ -10,7 +10,7 @@
 | Argon2 implementation | RustCrypto `argon2 0.6.0` | Immutable Git revision `dc7e0c25cda9a8421d2604debf548d663886b431` in Cargo.toml and Cargo.lock |
 | Cargo dependency graph | Committed Cargo.lock, lock format v4 | All build/test/tree/metadata commands use `--locked` |
 | wasm-bindgen crate and CLI | 0.2.130 | CLI version derived from the locked crate graph and installed with `--locked` |
-| Node.js | Major version 22 | CI uses setup-node 22; exact runtime version is captured in build provenance |
+| Node.js | 22.23.5 | Exact patch pinned in prototype, runtime and KDF benchmark workflows; CI verification pending |
 | Wrangler | 4.160.1 | Exact version in isolated runtime workflow |
 | Cargo dependency vulnerability audit | cargo-audit 0.23.0 | Exact version installed with `--locked`; CI runs `cargo audit --file Cargo.lock` against the RustSec advisory database |
 
@@ -33,7 +33,7 @@ The resulting `build-provenance.txt` is uploaded with the short-retention CI art
 - The license inventory is evidence for manual review. It does not automatically establish license compatibility or satisfy a legal review.
 - The audit tool's own build dependencies are not part of the application's Cargo.lock and are not included in the application's dependency inventory.
 - Prototype CI and runtime workflows pin GitHub Actions to immutable commits: checkout v4.2.2 (`11bd71901bbe5b1630ceea73d27597364c9af683`), setup-node v4.4.0 (`49933ea5288caeca8642d1e84afbd3f7d6820020`), upload-artifact v4.6.2 (`ea165f8d65b6e75b540449e92b4886f43607fa02`), and dtolnay/rust-toolchain stable commit `39008827e6b4319a349e9a42dfc90579dd25f1ca`. The first three SHAs resolve the named upstream release tags; the Rust toolchain action commit was fetched from its stable ref and GitHub reports its signature verified.
-- Node.js is pinned to major version 22, not an exact patch version. Its exact resolved version is recorded in the artifact.
+- Node.js is pinned to exact patch `22.23.5` in the Argon2id prototype, runtime and KDF benchmark workflows; exact-patch CI verification is pending.
 - CI artifact checksums are recorded, but no signed provenance/attestation or reproducible independent rebuild has been completed.
 
 ## Current acceptance status
@@ -47,7 +47,7 @@ The resulting `build-provenance.txt` is uploaded with the short-retention CI art
 - [x] Prototype CI run [#45856402852](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856402852) passed the RustSec audit step and uploaded the build-provenance artifact (artifact ID `15134694932`; ZIP SHA-256 `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`). The audit scanned 34 locked crate dependencies against 1,568 loaded advisories and exited successfully.
 - [ ] Manually review all license expressions in the uploaded provenance artifact. The successful audit exit is not a legal/license review.
 - [x] Pin the GitHub Actions used by the prototype and runtime workflows to immutable commit SHAs.
-- [ ] Pin Node.js to an exact patch release (currently major version 22; exact version is captured in the provenance artifact).
+- [x] Pin Node.js to exact patch `22.23.5` in the Argon2id prototype, runtime and KDF benchmark workflows; exact-patch CI verification is pending.
 - [ ] Generate and retain a signed build provenance attestation or equivalent release evidence.
 - [ ] Perform an independent clean rebuild and compare artifact hashes.
 
@@ -58,7 +58,7 @@ This work improves traceability but does not approve application integration or 
 
 ## 2026-11-26 CI provenance checkpoint
 
-Prototype CI #45856402852 completed successfully. `cargo audit --file Cargo.lock` loaded 1,568 RustSec advisories, scanned all 34 locked crate dependencies and exited successfully. The same run generated and uploaded `build-provenance.txt` and the WASM/binding package as artifact ID `15134694932`. The artifact ZIP SHA-256 is `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`. This is CI evidence for the run, not a signed attestation. The build emitted a Rust future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; these are noted for dependency-tree review. Node remains major-version pinned only.
+Prototype CI #45856402852 completed successfully. `cargo audit --file Cargo.lock` loaded 1,568 RustSec advisories, scanned all 34 locked crate dependencies and exited successfully. The same run generated and uploaded `build-provenance.txt` and the WASM/binding package as artifact ID `15134694932`. The artifact ZIP SHA-256 is `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`. This is CI evidence for the run, not a signed attestation. The build emitted a Rust future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; these are noted for dependency-tree review. Node is now pinned to exact patch `22.23.5`; this newer configuration is being verified in CI.
 
 
 ## 2026-11-26 — Node.js and action pinning
