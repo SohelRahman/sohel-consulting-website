@@ -1,3 +1,9 @@
+## Latest test work — 2026-11-26
+
+- Added a deterministic PHC parser corpus covering structural mutations, canonical Base64 boundaries and 4,096 arbitrary bounded ASCII inputs. Formatting, host tests and Clippy passed in prototype CI #45837980772; WASM binding and adapter checks were still in progress at the time of this update.
+- Added an opt-in controlled failure injection after successful Worker runtime checks. The cleanup trap now verifies both deletion success and subsequent API-level absence (HTTP 404). The test is enabled only by the `[argon2-cleanup-failure-test]` commit marker; runtime CI #45838191990 is pending.
+- These are test additions, not a security approval. The prototype remains isolated.
+
 # Argon2id WASM Prototype — Security Review
 
 **Review date:** 2026-11-26  
