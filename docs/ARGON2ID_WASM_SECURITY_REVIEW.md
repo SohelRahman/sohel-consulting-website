@@ -1,3 +1,10 @@
+## 2026-11-26 — Runtime health probe diagnostic boundary
+
+- The failed runtime run #45860426221 deployed the isolated Worker successfully but received HTTP 404 from the authenticated health route. Because the Worker used the same 404 response for unauthenticated requests and unknown paths, the harness could not distinguish the failure class.
+- The isolated prototype now serves only a static `GET /health` response before checking the temporary `TEST_TOKEN`. It discloses no secret, account data or KDF output. `POST /hash` and `POST /verify` remain token-protected.
+- Change commit: `4d513470159e48e3a7f18790974fa56c8c110dcc`. Website validation passed; prototype and runtime CI were still running at the time of this note.
+- This is a test-harness diagnostic adjustment, not a change to application authentication or a release approval. CPU-time measurement, repeatable performance characterization, provenance, license review and external security assessment remain separate gates.
+
 ## Runtime retry checkpoint — 2026-11-26
 
 - Runtime #45859485701 failed when `/verify` returned HTML instead of JSON. The prior harness parsed JSON without recording HTTP status/content type. Cleanup nevertheless passed (HTTP 200 deletion, HTTP 404 absence check).
