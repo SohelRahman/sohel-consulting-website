@@ -1,3 +1,10 @@
+## Latest verification update — 2026-11-26
+
+- Prototype CI [#45838494936](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838494936) passed the expanded deterministic PHC corpus, formatting, host tests, Clippy, WASM build, binding generation and JavaScript integration/memory-growth tests.
+- Controlled failure-path runtime test [#45840895843](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45840895843) passed. It injected the expected post-runtime failure, deleted the temporary Worker (HTTP 200), then confirmed the Worker was absent through a follow-up API GET (HTTP 404). Failure-path cleanup is now verified for this workflow path.
+- That run's concurrent two-hash batch was 201.874 ms wall-clock; per-operation timers were 0 ms, and memory remained at 323 pages after growth from 17. No CPU-time figure was captured.
+- Native invocation logging has been enabled in the prototype Wrangler config, and a dedicated measurement procedure is documented in `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`. The config has not yet been exercised by a completed runtime run.
+
 ## CPU-time observability implementation — 2026-11-26
 
 - Enabled Cloudflare native Workers invocation logs for the isolated Argon2id Worker at 100% head sampling in its Wrangler configuration.
