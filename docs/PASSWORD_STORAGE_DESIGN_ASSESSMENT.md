@@ -133,3 +133,12 @@ Added an upstream Argon2id v=19 known-answer test using the upstream test vector
 **Current gate:** source files and CI workflow are committed to the development branch, but CI has not yet been observed passing. No C/WASM ABI, JavaScript adapter, PHC verification, Cloudflare Worker integration or runtime benchmark exists yet. The prototype is not connected to application authentication and is not deployable as a Worker at this stage. No Preview or Production resource, D1 data, stored password hash or application authentication code changed.
 
 **Next:** inspect CI results, fix any compile/test failures, add the bounded ABI and PHC compatibility layer, then benchmark only in the isolated Worker. A Preview app integration or Production release requires separate passing gates and approval.
+
+
+## Prototype validation gate — 2026-11-26
+
+Dedicated CI run [#45777843556](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777843556) passed on commit `a04a302f991d2ea77a23b4133d878c27c050a661`: Rust formatting, all three host tests (including the Argon2id v=19 known-answer vector), Clippy with warnings denied, and optimized `wasm32-unknown-unknown` compilation. The first run failed at formatting; after correction, the next run exposed unused imports in Clippy; those were corrected and the final run passed.
+
+The broader development validation [#45777849748](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777849748) also passed. The Preview deployment job was skipped, and the separate KDF benchmark job was skipped by its commit-marker gate. No Worker was deployed, no runtime benchmark was performed, and no application authentication code or stored hashes changed.
+
+**Gate result:** Rust source / host test / Wasm compile stage passes. PHC compatibility, bounded ABI, independent interoperability, full memory-wipe test coverage and Cloudflare Worker runtime/CPU/memory acceptance remain open. This is not a release candidate for Preview or Production.
