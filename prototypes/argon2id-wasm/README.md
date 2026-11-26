@@ -1,3 +1,5 @@
+Logging-enabled runtime deployment [#45841415366](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45841415366) is in progress. It must deploy the updated Wrangler observability settings before invocation CPU-time samples can be collected. No CPU-time value is currently verified.
+
 ## Latest verification — 2026-11-26
 
 - PHC corpus prototype CI [#45838494936](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838494936) passed formatting, host tests, Clippy, WASM build, wasm-bindgen generation, Node adapter/memory-growth tests and artifact upload.
