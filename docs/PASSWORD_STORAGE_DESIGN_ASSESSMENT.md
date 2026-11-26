@@ -81,3 +81,20 @@ Sources reviewed:
 - Cloudflare precompiled WebAssembly requirement: https://developers.cloudflare.com/workers/runtime-apis/webassembly/
 - OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 - PHC Argon2 reference implementation and licensing: https://github.com/P-H-C/phc-winner-argon2
+
+
+## Primary-source fallback review — PHC reference Argon2 implementation — 2026-11-26
+
+The official `P-H-C/phc-winner-argon2` repository was inspected as the fallback if the unverified third-party wrapper is rejected. The upstream README identifies it as the reference C implementation of the Password Hashing Competition winner and documents Argon2id as a supported variant. Its root licence explicitly offers CC0 1.0 or Apache 2.0. The inspected implementation includes Argon2id selection in `src/argon2.c`, memory allocation and wiping in `src/core.c`, the single-thread reference block-filling implementation in `src/ref.c`, PHC-style encoding/verification support in `src/encoding.c`, and known-answer/encoded-hash tests in `src/test.c`.
+
+The upstream `Makefile` has a `NO_THREADS=1` build option that defines `ARGON2_NO_THREADS`; `src/thread.c` excludes pthread wrappers under that define. Its source selection also uses the reference implementation when native architecture optimization detection fails. These are useful starting points for a deterministic single-thread WebAssembly build, but they do not prove an Emscripten build is correct or Workers-compatible. The inspected `master` branch was not pinned to a commit SHA in this review, so no upstream revision is yet approved for vendoring.
+
+### Decision and next build gate
+
+- Reject `@hallaxius/argon2w` for now: exact tarball, registry signature/provenance, source-to-artifact correspondence and upstream CI could not be independently verified.
+- Prefer a reproducible build from the official PHC reference source, pinned to an immutable upstream commit, retaining the dual CC0/Apache-2.0 notices and any file-specific third-party notices.
+- Before building, pin and record the upstream commit and source file manifest. Build a small C ABI wrapper exposing only Argon2id hash/verify, use single-thread reference code (no pthreads), and compile to a standalone precompiled `.wasm` module. Do not use dynamic `WebAssembly.compile()` in the Worker.
+- Validate against upstream known-answer vectors and PHC encoded strings, malformed-input tests, salt generation, version/parameter parsing, memory wiping and allocation failures. Then import the compiled module through Wrangler and run the isolated Workers Free benchmark at the OWASP baseline of 19,456 KiB / 2 passes / p=1.
+- Do not change application authentication or stored hashes until the artifact, tests and runtime benchmark pass. Do not lower parameters to fit the Free CPU limit.
+
+Primary source reviewed: https://github.com/P-H-C/phc-winner-argon2 (README, LICENSE, Makefile, `src/argon2.c`, `src/core.c`, `src/ref.c`, `src/thread.c`, `src/encoding.c`, `src/test.c`).
