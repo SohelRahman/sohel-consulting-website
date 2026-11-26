@@ -22,6 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Parse GitHub Actions workflow YAML
+        run: ruby -e 'require "yaml"; YAML.load_file(".github/workflows/deploy-cloudflare.yml"); puts "Production workflow YAML parsed successfully"'
       - name: Check Worker JavaScript syntax
         run: node --input-type=module --check < src/worker.js
       - name: Check shared website JavaScript syntax
