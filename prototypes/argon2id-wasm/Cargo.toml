@@ -1,0 +1,15 @@
+[package]
+name = "sohel-argon2id-prototype"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+argon2 = { git = "https://github.com/RustCrypto/password-hashes", rev = "dc7e0c25cda9a8421d2604debf548d663886b431", package = "argon2", default-features = false, features = ["alloc", "password-hash", "zeroize"] }
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+hex-literal = "1"
