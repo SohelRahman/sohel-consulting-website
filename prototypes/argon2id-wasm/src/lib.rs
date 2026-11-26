@@ -74,7 +74,10 @@ mod tests {
         assert_eq!(first.len(), OUTPUT_LEN);
         assert_eq!(first, second);
         assert_ne!(first, derive(b"different password", &salt).unwrap());
-        assert_ne!(first, derive(b"prototype test password", &[0x43; SALT_LEN]).unwrap());
+        assert_ne!(
+            first,
+            derive(b"prototype test password", &[0x43; SALT_LEN]).unwrap()
+        );
     }
 
     #[test]
@@ -88,12 +91,11 @@ mod tests {
             .build()
             .unwrap();
         let secret = [0x03; 8];
-        let argon2 = Argon2::new_with_secret(&secret, Algorithm::Argon2id, Version::V0x13, params).unwrap();
+        let argon2 =
+            Argon2::new_with_secret(&secret, Algorithm::Argon2id, Version::V0x13, params).unwrap();
         let password = [0x01; 32];
         let salt = [0x02; 16];
-        let expected = hex!(
-            "0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659"
-        );
+        let expected = hex!("0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659");
         let mut memory = WipingMemory::new(32);
         let mut output = [0u8; 32];
         argon2
