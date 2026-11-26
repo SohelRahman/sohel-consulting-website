@@ -238,17 +238,32 @@ jobs:
               # The Observability API's view is a top-level query field, not a member of parameters.
               # Filter to this run's disposable Worker so unrelated account invocations cannot pollute the measurements.
               QUERY_BODY="$(jq -n --argjson from "$RUNTIME_START_MS" --argjson to "$(date +%s%3N)" --arg worker "$WORKER" '{queryId:"argon2id-runtime-telemetry",timeframe:{from:$from,to:$to},view:"invocations",parameters:{datasets:["cloudflare-workers"],filterCombination:"and",filters:[{key:"$workers.scriptName",operation:"eq",type:"string",value:$worker}]},limit:200}')"
-              QUERY_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-query.json --write-out '%{http_code}' \
-                --request POST \
-                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-                --header 'Content-Type: application/json' \
-                --data "$QUERY_BODY" \
-                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/observability/telemetry/query")"
+              QUERY_CODE=''
+              EVENT_COUNT=0
+              for telemetry_attempt in 1 2 3; do
+                QUERY_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-query.json --write-out '%{http_code}' \
+                  --request POST \
+                  --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                  --header 'Content-Type: application/json' \
+                  --data "$QUERY_BODY" \
+                  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/observability/telemetry/query")"
+                if [[ "$QUERY_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-query.json >/dev/null; then
+                  EVENT_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[]] | length' /tmp/argon2id-telemetry-query.json)"
+                  if [[ "$EVENT_COUNT" -gt 0 ]]; then break; fi
+                fi
+                if [[ "$telemetry_attempt" -lt 3 ]]; then
+                  echo "No invocation event returned yet (attempt $telemetry_attempt/3, HTTP $QUERY_CODE); waiting for ingestion."
+                  sleep 15
+                fi
+              done
               if [[ "$QUERY_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-query.json >/dev/null; then
-                echo 'Cloudflare invocation telemetry query succeeded. CPU and wall-time samples follow; no JavaScript timers are used for these values.'
-                jq -c '{success,errors,messages,run_status:.result.run.status,result_keys:(.result|keys),statistics:.result.statistics,invocation_groups:((.result.invocations // {})|to_entries|map({request_id:.key,events:[.value[]|{event_keys:(keys),metadata_keys:(.["$metadata"]|keys),metadata_service:.["$metadata"].service,metadata_cloudService:.["$metadata"].cloudService,scriptName:.["$workers"].scriptName,trigger:.["$workers"].trigger,timestamp:.["$metadata"].timestamp,cpuTimeMs:.["$workers"].cpuTimeMs,wallTimeMs:.["$workers"].wallTimeMs}]}))}' /tmp/argon2id-telemetry-query.json
-                EVENT_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[]] | length' /tmp/argon2id-telemetry-query.json)"
+                echo 'Cloudflare invocation telemetry query completed. CPU and wall-time values below come from platform invocation records, not JavaScript timers.'
+                jq -c '{success,errors,messages,run_status:.result.run.status,result_keys:(.result|keys),statistics:.result.statistics,invocation_groups:((.result.invocations // {})|to_entries|map({request_id:.key,events:[.value[]|{scriptName:.["$workers"].scriptName,cpuTimeMs:.["$workers"].cpuTimeMs,wallTimeMs:.["$workers"].wallTimeMs}]}))}' /tmp/argon2id-telemetry-query.json
                 echo "Invocation event count returned by Cloudflare: $EVENT_COUNT"
+                METRICLESS_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[] | select((.["$workers"].cpuTimeMs | type) != "number" or (.["$workers"].wallTimeMs | type) != "number")] | length' /tmp/argon2id-telemetry-query.json)"
+                if [[ "$METRICLESS_COUNT" -gt 0 ]]; then
+                  echo "::warning::$METRICLESS_COUNT invocation event(s) lacked numeric CPU or wall-time fields."
+                fi
               else
                 echo "Cloudflare telemetry query did not return data (HTTP $QUERY_CODE); response is retained only in this ephemeral runner."
                 jq -c '{success,errors,messages}' /tmp/argon2id-telemetry-query.json || true
