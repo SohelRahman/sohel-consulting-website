@@ -344,3 +344,5 @@ Retry-enabled isolated Argon2id benchmark execution trigger.
 The isolated benchmark Worker deployed successfully on Workers Free, and the ephemeral authentication secret was accepted after bounded retries. The benchmark request then returned HTTP 500 with a sanitized generic KDF failure; no timing data was produced. The workflow's cleanup trap ran. The failure does not yet establish whether the cause is WebAssembly initialization, Argon2 parameter handling, or a runtime resource limit.
 
 Added a bounded, non-secret error reason to the isolated benchmark response so the next run can distinguish initialization/parameter errors from runtime resource failures. This diagnostic exists only in the temporary benchmark Worker source; no Admin password hashes or application authentication behavior were changed.
+
+Retry trigger for the isolated Argon2id benchmark with sanitized runtime diagnostics.
