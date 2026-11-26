@@ -1,3 +1,9 @@
+## 2026-11-27 — First Cloudflare CPU-time sample captured
+
+- Runtime #45876662415 passed and returned one Cloudflare invocation event filtered to the exact disposable Worker. Platform telemetry: **58 ms CPU time**, **60 ms wall time**. This is the first actual CPU-time sample; it is not derived from JavaScript timers.
+- One invocation event is insufficient for endpoint attribution, stable performance characterization, or CPU-limit compliance claims. Repeat independent runs and collect a distribution.
+- Same run: two concurrent hash requests took 126.997 ms combined client wall-clock; WASM memory grew 17 → 323 pages and remained stable; temporary Worker deletion and absence were verified.
+- Website validation #45876662428 passed. CPU-time characterization remains open.
 ## 2026-11-27 — Argon2id runtime passed; Observability query corrected
 
 - Isolated runtime run [#45875891768](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45875891768) passed precompiled WASM build, temporary Worker deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (delete HTTP 200; absence HTTP 404).
