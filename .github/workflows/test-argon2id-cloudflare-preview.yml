@@ -37,7 +37,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: '22'
+          node-version: '22.23.5'
       - name: Build precompiled WASM and Worker bindings
         working-directory: prototypes/argon2id-wasm
         shell: bash
