@@ -1,3 +1,10 @@
+## 2026-11-27 — Runtime success and telemetry-query correction
+
+- Runtime run #45875891768 passed the isolated Cloudflare Worker test suite and verified automatic cleanup. Two concurrent hash requests completed in 683.469 ms combined wall-clock; WASM memory increased from 17 to 323 pages and remained stable. These observations do not establish CPU time or CPU-limit compliance.
+- The Cloudflare Observability query returned zero invocation groups despite successful key discovery. Source review against Cloudflare's current API reference showed `view` is a top-level query property, not nested in `parameters`; the prior query shape was therefore corrected. Added an exact `$workers.scriptName` filter for the per-run disposable Worker.
+- Fix commit: `09e84882e5eac8099dddbf3cc15dd5bf1f6ee090`. Rerun #45876662415 was pending at the time of this update.
+- Do not claim CPU-time verification until real `$workers.cpuTimeMs` and `$workers.wallTimeMs` samples are present in the returned invocation records.
+
 ## 2026-11-27 — Runtime harness follow-up correction
 
 - The health-probe correction worked: runtime #45875591303 successfully deployed the isolated Worker, uploaded its temporary test token, passed the health probe and proceeded through hash/verify and sequential/concurrent request checks.
