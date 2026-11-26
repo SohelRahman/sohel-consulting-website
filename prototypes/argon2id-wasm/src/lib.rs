@@ -60,6 +60,12 @@ mod wasm_api {
     use wasm_bindgen::prelude::*;
     use zeroize::Zeroizing;
 
+    /// Diagnostic export used by the isolated integration test to prove memory growth.
+    #[wasm_bindgen]
+    pub fn wasm_memory_pages() -> u32 {
+        core::arch::wasm32::memory_size(0) as u32
+    }
+
     /// Hash bounded JS byte arrays. Lengths are checked before either array is copied.
     #[wasm_bindgen]
     pub fn wasm_hash(password: &Uint8Array, salt: &Uint8Array) -> Result<Box<[u8]>, JsValue> {
