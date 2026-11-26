@@ -1,3 +1,12 @@
+## 2026-11-27 — Fresh branch and release-state audit
+
+- Fresh GitHub compare `main...current-focus-development` reports status `ahead`, 1,074 commits ahead and 0 behind. This supersedes the older 2026-11-22 divergence snapshot (575 ahead / 14 behind); retain the older figures only as historical evidence.
+- Development head at the start of this audit was `0838779a7fcd6f13a5577102a96e25fb4bf6f361`; subsequent isolated Argon2id health-probe correction commit is `4d513470159e48e3a7f18790974fa56c8c110dcc`, followed by documentation commits. The current head must be re-read before any release operation.
+- PR #1 remains open and Draft, with `current-focus-development` targeting `main`. No merge or branch rewrite was performed.
+- Latest isolated Argon2id runtime run #45860426221 built and deployed the temporary Worker but failed at the health probe (HTTP 404); automatic cleanup was verified (delete HTTP 200 and follow-up absence HTTP 404). The prototype CI run #45860260434 passed.
+- A follow-up change moves the static, non-sensitive `GET /health` endpoint ahead of the temporary test-token guard. Website validation run #45875591292 passed. Prototype CI #45875591553 and runtime #45875591303 were still running at the time of this audit entry.
+- The runtime CPU-time evidence gate remains open. No application authentication integration, existing Preview deployment, D1 operation, Production change, `main` update, PR merge or deployment occurred.
+
 # Master Project History and Audit Baseline
 
 **Project:** Sohel Consulting Website  
