@@ -1,3 +1,12 @@
+## 2026-11-27 — Observability query correction
+
+The first successful runtime after the harness fix (#45875891768) still returned zero invocation groups. The query body had placed `view: "invocations"` inside `parameters`; Cloudflare's current API schema defines `view` as a top-level query property. The corrected request now sets top-level `view: "invocations"`, retains `parameters.datasets`, and filters by the exact disposable Worker using `$workers.scriptName`.
+
+- Fix commit: `09e84882e5eac8099dddbf3cc15dd5bf1f6ee090`.
+- Rerun: https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662415 (pending at update time).
+- API reference: https://developers.cloudflare.com/api/resources/workers/subresources/observability/subresources/telemetry/methods/query/.
+- Do not substitute JavaScript wall-clock timing for Cloudflare CPU time. Record CPU/wall-time samples only from returned invocation events.
+
 ## 2026-11-27 — Runtime harness follow-up correction
 
 - The health-probe correction worked: runtime #45875591303 successfully deployed the isolated Worker, uploaded its temporary test token, passed the health probe and proceeded through hash/verify and sequential/concurrent request checks.
