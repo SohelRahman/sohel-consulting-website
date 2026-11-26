@@ -608,3 +608,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Added automatic benchmark Worker deletion on workflow exit and a 10 ms CPU budget to test the Workers Free constraint.
 - The harness reports wall-clock timing only; it does not claim to measure Cloudflare CPU-time or isolate memory.
 - No existing password hash, Admin account, database, or Production resource was changed.
+## 2026-11-26 — Cloudflare Free plan confirmed; benchmark config corrected
+
+- The first isolated KDF benchmark deploy was rejected with Cloudflare API error 100328 because the Free plan does not support setting a custom CPU limit.
+- Confirmed the linked account is on Workers Free; the benchmark had not yet executed.
+- Removed the explicit CPU limit from the benchmark Worker config so it uses the plan's default limit.
+- No existing Worker, Admin password hash, D1 database or Production resource was changed.
