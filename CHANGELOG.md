@@ -1,3 +1,9 @@
+## 2026-11-26 — Argon2id ABI CI formatting correction
+
+- Corrected Rust formatting after dedicated prototype CI Run #13 failed at the formatting check. The log showed no compilation or test failure because later steps were skipped.
+- A fresh dedicated CI run is required to verify formatting, host tests, Clippy and WASM compilation.
+- No application authentication, Preview or Production resources changed.
+
 ## 2026-11-26 — Bounded wasm-bindgen ABI source
 
 - Added wasm32-only typed-array exports for derivation and PHC operations with pre-copy length guards and zeroizing password copies.

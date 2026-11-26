@@ -33,7 +33,6 @@ impl Drop for WipingMemory {
     }
 }
 
-
 /// Validate JS typed-array lengths before copying any caller-controlled bytes into Wasm memory.
 fn validate_wasm_input_lengths(password_len: u32, salt_len: u32) -> Result<(), &'static str> {
     if password_len == 0 || password_len as usize > MAX_PASSWORD_LEN {
@@ -62,8 +61,7 @@ mod wasm_api {
     /// Hash bounded JS byte arrays. Lengths are checked before either array is copied.
     #[wasm_bindgen]
     pub fn wasm_hash(password: &Uint8Array, salt: &Uint8Array) -> Result<Box<[u8]>, JsValue> {
-        validate_wasm_input_lengths(password.length(), salt.length())
-            .map_err(JsValue::from_str)?;
+        validate_wasm_input_lengths(password.length(), salt.length()).map_err(JsValue::from_str)?;
         let password = Zeroizing::new(password.to_vec());
         let salt = salt.to_vec();
         let tag = derive(&password, &salt).map_err(JsValue::from_str)?;
@@ -214,7 +212,9 @@ mod tests {
         assert!(validate_wasm_input_lengths(1, SALT_LEN as u32).is_ok());
         assert!(validate_wasm_input_lengths(MAX_PASSWORD_LEN as u32, SALT_LEN as u32).is_ok());
         assert!(validate_wasm_input_lengths(0, SALT_LEN as u32).is_err());
-        assert!(validate_wasm_input_lengths((MAX_PASSWORD_LEN + 1) as u32, SALT_LEN as u32).is_err());
+        assert!(
+            validate_wasm_input_lengths((MAX_PASSWORD_LEN + 1) as u32, SALT_LEN as u32).is_err()
+        );
         assert!(validate_wasm_input_lengths(1, (SALT_LEN - 1) as u32).is_err());
         assert!(validate_wasm_input_lengths(1, (SALT_LEN + 1) as u32).is_err());
         assert!(validate_wasm_phc_length(1).is_ok());

@@ -1,3 +1,9 @@
+## 2026-11-26 — Argon2id ABI CI formatting failure corrected
+
+- Inspected dedicated prototype CI Run [#13](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45812972475) and its job log. The failure was exclusively `cargo fmt --all -- --check`; host tests, Clippy and WASM compilation were skipped, not failed.
+- Applied the exact rustfmt changes reported by the runner. A new dedicated CI run is required before treating the ABI source as verified.
+- The next technical gates remain generated wasm-bindgen glue, a JavaScript adapter with CSPRNG salt generation and memory-growth-safe handling, Worker precompiled-module import, and runtime validation. No Preview/Production deployment or application authentication change.
+
 ## 2026-11-26 — Bounded wasm-bindgen ABI source added (CI pending)
 
 - Added wasm32-only `wasm-bindgen` exports for fixed-output tag derivation, PHC generation and PHC verification.
