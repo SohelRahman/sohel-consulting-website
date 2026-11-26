@@ -1,3 +1,9 @@
+## 2026-11-27 — First actual Cloudflare CPU-time sample
+
+- Corrected runtime #45876662415 passed and returned one invocation telemetry event filtered to the exact disposable Worker. Cloudflare reports `$workers.cpuTimeMs = 58` and `$workers.wallTimeMs = 60`.
+- This confirms that actual CPU-time telemetry can be retrieved. One invocation is not enough to attribute cost to a specific endpoint, establish a distribution, or claim CPU-limit compliance; independent repeat runs are the next priority.
+- Same run: two concurrent hash requests took 126.997 ms combined wall-clock; WASM memory grew 17 → 323 pages and remained stable; temporary Worker deletion and HTTP 404 absence check passed.
+- Website validation #45876662428 passed. No application authentication, existing Preview, D1, Production, `main` or PR merge changes.
 ## 2026-11-27 — Argon2id runtime and telemetry-query follow-up
 
 - Isolated runtime #45875891768 passed deployment, health, PHC hash/verify, correct/wrong password, sequential/concurrent checks and automatic cleanup (HTTP 200 deletion; HTTP 404 absence check). Two concurrent hash requests took 683.469 ms combined wall-clock; memory grew from 17 to 323 WASM pages and remained stable. This is not CPU-time evidence.
