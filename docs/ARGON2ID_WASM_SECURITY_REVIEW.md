@@ -1,3 +1,11 @@
+## 2026-11-27 — Runtime harness follow-up correction
+
+- The health-probe correction worked: runtime #45875591303 successfully deployed the isolated Worker, uploaded its temporary test token, passed the health probe and proceeded through hash/verify and sequential/concurrent request checks.
+- The run then failed in its result-reporting code with `ReferenceError: concurrent is not defined`; the harness declared `concurrentBodies` but reported `concurrent.length`. The EXIT cleanup still deleted the temporary Worker (HTTP 200) and verified absence (HTTP 404).
+- Corrected `.github/workflows/test-argon2id-cloudflare-preview.yml` to report `concurrentBodies.length`. Commit: `fa48da65de2aec6d34c0611ba834fda0dced8976`.
+- A fresh runtime run and final prototype CI result are required. No CPU-time evidence was captured; do not treat this as runtime acceptance.
+- No application authentication, existing Preview, D1, Production or `main` changes.
+
 ## 2026-11-26 — Runtime health probe diagnostic boundary
 
 - The failed runtime run #45860426221 deployed the isolated Worker successfully but received HTTP 404 from the authenticated health route. Because the Worker used the same 404 response for unauthenticated requests and unknown paths, the harness could not distinguish the failure class.
