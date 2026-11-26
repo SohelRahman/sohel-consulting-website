@@ -1,3 +1,13 @@
+
+
+## 2026-11-27 — Second isolated Cloudflare telemetry run
+
+- Runtime [#45877435363](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45877435363) passed on `current-focus-development` at commit `db0b46bec19cda5c78080d86963ea9060aeb00fd`.
+- Cloudflare Observability returned two records for the exact disposable Worker: **59 ms CPU / 60 ms wall** and **0 ms / 0 ms**. The records are invocation-level and cannot be attributed to individual hash or verify routes. Do not claim per-operation CPU cost or CPU-limit compliance.
+- Sequential JavaScript hash/verify timing fields rounded to 0 ms; two concurrent hashes took 134.572 ms combined client wall time. WASM memory grew 17 → 323 pages and remained stable.
+- Cleanup verified: temporary Worker DELETE HTTP 200; subsequent GET HTTP 404.
+- Together with run #45876662415 (58 ms CPU / 60 ms wall in one event), this is a second independent runtime with a non-zero invocation sample, not a sufficient distribution. Request-level correlation and additional samples remain the next gate.
+- No application authentication integration, existing Preview deployment, D1 operation, Production change, `main` update or PR merge.
 ## 2026-11-27 — First Cloudflare CPU-time sample captured
 
 - Runtime #45876662415 passed and returned one Cloudflare invocation event filtered to the exact disposable Worker. Platform telemetry: **58 ms CPU time**, **60 ms wall time**. This is the first actual CPU-time sample; it is not derived from JavaScript timers.
