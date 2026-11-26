@@ -620,3 +620,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - The first request immediately after secret upload returned HTTP 401; the benchmark did not run.
 - Added bounded retry handling for temporary 401 responses after ephemeral secret creation.
 - The workflow retains automatic deletion of the isolated benchmark Worker on exit.
+## 2026-11-26 — KDF benchmark diagnostic
+
+- Isolated Worker deployment and ephemeral-token authentication succeeded on Workers Free.
+- Argon2id request returned HTTP 500; no timing results were recorded.
+- Added sanitized error name/message output to the benchmark-only Worker to identify the failure cause on retry.
+- No existing Admin password hash or application authentication code was modified.
