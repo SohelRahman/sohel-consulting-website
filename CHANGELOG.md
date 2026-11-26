@@ -1,3 +1,8 @@
+## 2026-11-26 — Preview Admin API diagnostic visibility
+- The Admin API client now displays the Worker-provided `diagnostic` field when Preview returns an internal error; Production responses do not include this field.
+- This is a temporary Preview troubleshooting aid. It does not reveal credentials or change authentication behavior.
+- Automated validation and a Preview deployment are required before using the updated diagnostic display.
+
 ## 2026-11-26 — Preview Admin session-secret remediation
 - Updated the guarded Preview deployment workflow to verify whether `SESSION_SECRET` exists on the Preview Worker.
 - If absent, it generates and stores a cryptographically random 32-byte base64url value; an existing secret is preserved and never displayed.
