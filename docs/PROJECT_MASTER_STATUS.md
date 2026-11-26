@@ -388,3 +388,17 @@ The PHC reference C repository remains useful as a reference and known-answer so
 Preferred isolated prototype candidate is RustCrypto Argon2 0.6.0 pinned to signed commit `dc7e0c25cda9a8421d2604debf548d663886b431` (2026-11-05). Source review confirms pure Rust/no_std, Argon2id, PHC interfaces, single-thread default, optional zeroize support and MIT OR Apache-2.0 licensing. Its documented default matches OWASP's m=19,456 KiB, t=2, p=1 baseline. **Important:** the inspected allocated block-buffer Drop deallocates without wiping the full matrix; a wrapper must explicitly zeroize its owned matrix on all exit paths. Do not assume enabling the optional zeroize feature solves that issue.
 
 Next: build a bounded single-thread `wasm32-unknown-unknown` prototype with fixed Argon2id v=19 parameters, PHC-compatible input/output, pre-allocation PHC parameter limits, RAII full-matrix wiping and KAT/interop/ABI tests. Then import the precompiled module in the isolated Workers Free benchmark and measure CPU/memory. This is candidate selection only: no dependency or application code was changed; Production remains blocked.
+
+## 2026-11-26 — Isolated Argon2id prototype CI milestone
+
+The isolated Rust Argon2id prototype now includes bounded PHC-style generation and fixed-profile verification. Commit `a2809a78ea8f490d206ecaaf03d1bb274a1f4fef` passed CI Run [#9](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45781931534): formatting, five host tests, Clippy with warnings denied and release `wasm32-unknown-unknown` compilation.
+
+**Evidence boundary:** the local PHC round-trip is not independent interoperability testing; the C/WASM ABI, JavaScript adapter, explicit memory-wipe test, precompiled Wrangler module import and isolated Workers Free runtime benchmark remain open. The Preview deployment and benchmark workflows were skipped for this source-only commit. No application authentication, stored password hash, D1, secret or Production resource changed. No deployment was performed.
+
+### Next execution gate
+
+1. Design and implement a bounded WASM ABI with checked pointer/length ranges, explicit buffer capacities and status codes; prevent panics crossing the ABI.
+2. Add a JavaScript adapter that uses `crypto.getRandomValues` for 16-byte salts and handles WASM memory growth safely.
+3. Add independent PHC fixtures and a test proving matrix zeroization on all exits.
+4. Verify the compiled module is imported as a precompiled Wrangler Wasm module, then benchmark only in the isolated Worker.
+5. Keep application authentication and stored hashes unchanged until every gate passes.
