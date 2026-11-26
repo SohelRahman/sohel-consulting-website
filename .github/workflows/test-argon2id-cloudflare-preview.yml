@@ -33,6 +33,7 @@ jobs:
           ref: current-focus-development
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: 1.100.0
           targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v4
         with:
@@ -43,6 +44,10 @@ jobs:
         run: |
           set -euo pipefail
           cargo build --locked --release --target wasm32-unknown-unknown
+          echo "rustc=$(rustc --version)"
+          echo "cargo=$(cargo --version)"
+          echo "node=$(node --version)"
+          echo "wrangler=4.160.1"
           VERSION="$(cargo tree --locked --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
           : "${VERSION:?Could not resolve wasm-bindgen version}"
           cargo install wasm-bindgen-cli --version "$VERSION" --locked
