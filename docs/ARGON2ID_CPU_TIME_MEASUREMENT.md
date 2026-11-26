@@ -1,3 +1,18 @@
+## 2026-11-27 — First Cloudflare CPU-time sample captured
+
+Runtime #45876662415 completed successfully after correcting the Observability query. The query returned one invocation event for the exact disposable Worker `sohel-argon2id-preview-45876662415`:
+
+- Cloudflare `$workers.cpuTimeMs`: **58 ms**
+- Cloudflare `$workers.wallTimeMs`: **60 ms**
+- Event count: **1**
+- Worker script name matched the per-run disposable Worker.
+- Temporary Worker cleanup was confirmed (DELETE HTTP 200; subsequent GET HTTP 404).
+
+This is the first genuine Cloudflare telemetry sample, not a JavaScript timer. It is an invocation-level measurement; the single event is not enough to attribute the cost to an individual `/hash` or `/verify` request, establish a stable distribution, or claim CPU-limit compliance. Collect multiple independent runs and correlate invocation events before drawing performance conclusions.
+
+Runtime wall-clock benchmark from the same run: two concurrent hash requests completed in 126.997 ms combined; WASM memory grew from 17 to 323 pages and remained stable. This client-side duration is distinct from the Cloudflare 58 ms CPU sample.
+
+Run: https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662415
 ## 2026-11-27 — Observability query correction
 
 The first successful runtime after the harness fix (#45875891768) still returned zero invocation groups. The query body had placed `view: "invocations"` inside `parameters`; Cloudflare's current API schema defines `view` as a top-level query property. The corrected request now sets top-level `view: "invocations"`, retains `parameters.datasets`, and filters by the exact disposable Worker using `$workers.scriptName`.
