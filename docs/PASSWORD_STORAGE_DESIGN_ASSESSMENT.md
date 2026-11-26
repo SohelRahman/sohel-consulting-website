@@ -142,3 +142,18 @@ Dedicated CI run [#45777843556](https://github.com/SohelRahman/sohel-consulting-
 The broader development validation [#45777849748](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777849748) also passed. The Preview deployment job was skipped, and the separate KDF benchmark job was skipped by its commit-marker gate. No Worker was deployed, no runtime benchmark was performed, and no application authentication code or stored hashes changed.
 
 **Gate result:** Rust source / host test / Wasm compile stage passes. PHC compatibility, bounded ABI, independent interoperability, full memory-wipe test coverage and Cloudflare Worker runtime/CPU/memory acceptance remain open. This is not a release candidate for Preview or Production.
+
+
+## Isolated Rust Argon2id prototype — 2026-11-26
+
+An isolated Rust prototype now implements Argon2id v=19 with fixed parameters of 19,456 KiB, two passes, parallelism 1 and a 32-byte output. It pins RustCrypto Argon2 to commit `dc7e0c25cda9a8421d2604debf548d663886b431`. The wrapper owns the working matrix and explicitly zeroizes its blocks in `Drop`, avoiding the upstream convenience allocator whose internal matrix owner was found not to wipe the full allocation.
+
+The prototype now generates and verifies bounded PHC-style strings. Verification accepts only the exact fixed algorithm/version/cost profile and does not allocate based on attacker-supplied cost parameters. The current five host tests cover input bounds, deterministic derivation, an upstream Argon2id v=19 known-answer vector, local PHC round-trip and malformed/unsupported PHC rejection.
+
+CI Run [#9](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45781931534) passed formatting, host tests, Clippy with warnings denied and release compilation for `wasm32-unknown-unknown` at commit `a2809a78ea8f490d206ecaaf03d1bb274a1f4fef`.
+
+**Qualification:** this is not independent PHC interoperability evidence because the prototype both creates and verifies its own format. The C/WASM ABI, JavaScript adapter, memory-wipe test, Wrangler precompiled-module import and isolated Workers Free runtime benchmark remain unimplemented. The CI compilation check does not demonstrate Worker runtime compatibility or performance. The prototype is not connected to application authentication, and no Preview or Production deployment was performed.
+
+### Next gate
+
+Implement a bounded WASM ABI and JavaScript adapter only after reviewing pointer/length safety and memory-growth behavior. Add independent PHC fixtures and explicit memory-wipe verification. Then test the precompiled module in an isolated Worker before considering any application integration. Do not change stored hashes or `src/password-hash.js` at this stage.
