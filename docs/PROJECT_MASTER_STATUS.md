@@ -325,3 +325,5 @@ Added a separate, short-lived Cloudflare Worker benchmark using pinned `hash-was
 The benchmark Worker explicitly sets a 10 ms CPU budget to test the Cloudflare Workers Free constraint; this is not the production Worker and cannot modify the production application. The response reports wall-clock durations only; these are not represented as CPU-time or memory measurements. If the request exceeds the runtime limit, the workflow will report the failure and remove the Worker.
 
 The benchmark workflow is tagged to run only on a development commit containing `[kdf-benchmark]` or by manual dispatch. Workflow YAML validation was added to development CI. No password hash implementation or existing Admin credential was changed.
+
+Benchmark harness execution trigger commit. The isolated workflow is configured to run for this tagged development commit and remove its temporary Worker after the test.
