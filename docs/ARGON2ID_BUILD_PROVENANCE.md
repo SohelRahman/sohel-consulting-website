@@ -64,3 +64,8 @@ Prototype CI #45856402852 completed successfully. `cargo audit --file Cargo.lock
 ## 2026-11-26 — Node.js and action pinning
 
 The observed runtime was Node.js `v22.23.5`. Pinned this exact patch in `.github/workflows/test-argon2id-cloudflare-preview.yml`, `.github/workflows/test-argon2id-prototype.yml` and `.github/workflows/benchmark-password-kdf.yml`. The benchmark workflow's setup-node reference was also changed from the moving `v4` tag to immutable commit `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0). Prototype CI #45860260434 and runtime rerun #45860426221 are expected to verify the pinned setup; both were not yet complete at documentation time.
+
+
+## Toolchain warning classification — 2026-11-26
+
+The future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0` was emitted while compiling the separately installed `wasm-bindgen-cli` build tool, not while compiling the Argon2id crate. A direct check of the committed application `Cargo.lock` confirms neither package is present in its 34-package dependency graph. Keep this as a tooling dependency warning for follow-up; do not misclassify it as an application runtime dependency or a RustSec advisory. The pinned `wasm-bindgen-cli` version remains 0.2.130.
