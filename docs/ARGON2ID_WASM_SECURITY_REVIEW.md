@@ -1,3 +1,10 @@
+## CPU-time observability implementation — 2026-11-26
+
+- Enabled Cloudflare native Workers invocation logs for the isolated Argon2id Worker at 100% head sampling in its Wrangler configuration.
+- Added `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md` with the dashboard/API measurement procedure and acceptance criteria.
+- Cloudflare documents CPU time separately from wall time in invocation logs and Trace Events. Workers Logs is listed as included on Workers Free; this prototype does not create a Logpush job or external destination.
+- **Status remains blocked:** no actual `CPUTimeMs` samples have been collected yet. The config change must deploy and invocation records must be inspected and tied to the correct temporary Worker/run before performance conclusions are drawn.
+
 ## Additional runtime observation — 2026-11-26
 
 A second ordinary isolated runtime run, [#45837980987](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45837980987), passed Worker build/deploy, hash/verify, sequential/concurrent request checks and cleanup (HTTP 200). The two-request batch was 145.017 ms wall-clock; per-operation hash/verify timer samples again reported 0 ms. Memory grew 17 to 323 pages and remained at 323. This reinforces that the current per-operation timer is not useful and that wall-clock is not CPU time. This run did not exercise the injected failure path.
