@@ -767,3 +767,25 @@ Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/
 ### Admin unauthenticated/MFA entry-state browser smoke — passed — 2026-11-24
 
 Corrected Preview smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322065022) passed. The HTTP/security checks passed, and Playwright passed all eight page/viewport combinations at 390px and 1440px. The Admin assertions now confirm the login panel and email/password fields are present, dashboard and MFA panels are hidden before authentication, and English/Bangla enrollment and recovery copy exists in the hidden panels' DOM. No credentials were submitted and no Admin state was changed. This remains unauthenticated entry-state coverage only; live MFA enrollment, verification, replay protection, recovery-code single-use and RBAC remain unverified.
+
+
+## Admin MFA — authenticated Preview acceptance (pending)
+
+Record the exact Preview deployment commit, browser/device, test account role and result for each case. Use a dedicated synthetic test account; never paste credentials, TOTP values or recovery codes into chat or commit them to the repository.
+
+- [ ] Password-only login produces only a restricted MFA challenge and cannot access the dashboard or ordinary Admin APIs.
+- [ ] First-time enrollment displays the authenticator setup material only during the authorized enrollment flow; confirmation requires a valid current TOTP code.
+- [ ] After enrollment, password verification alone cannot create a full Admin session.
+- [ ] A valid TOTP challenge completes login and grants only the account's assigned role/permissions.
+- [ ] Invalid, expired, malformed, wrong-user and purpose-mismatched challenges are rejected without issuing a full session.
+- [ ] Reuse of an already accepted TOTP time-step is rejected.
+- [ ] Recovery codes are displayed only at generation, accepted once, and rejected on second use.
+- [ ] Recovery-code storage contains hashes/salts only; no plaintext code appears in responses, logs or audit records.
+- [ ] Independent account/IP rate limits apply to password and MFA attempts without exposing account existence.
+- [ ] MFA disable/reset requires fresh proof, increments session version/revokes prior sessions, and writes an audit event.
+- [ ] Logout clears the authenticated session; a previously copied/replayed session is rejected when the account session version is changed.
+- [ ] Admin and permission-limited User roles are tested against direct API requests, not only hidden UI controls.
+- [ ] English and Bangla enrollment, challenge, recovery and error states are usable at mobile and desktop widths.
+- [ ] No password, encryption key, TOTP seed, TOTP value or recovery code appears in browser console, network error text, Worker logs or D1 audit details.
+
+A passing CI run or unauthenticated browser smoke does not complete these checks. Record evidence and failures before marking any item passed.
