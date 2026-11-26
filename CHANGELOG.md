@@ -1,3 +1,10 @@
+## 2026-11-26 — Select maintained RustCrypto Argon2 prototype candidate
+- Reassessed the PHC reference C repository: latest release shown as 2019-07-02 and inspected master commit dated 2021-06-25. Its maintenance gap makes it a weaker choice for a new security-critical integration.
+- Selected RustCrypto Argon2 0.6.0 as the preferred isolated prototype candidate, pinned to signed commit `dc7e0c25cda9a8421d2604debf548d663886b431` dated 2026-11-05. The crate is pure Rust, no_std, Argon2id-capable, single-thread by default, PHC-capable, and dual MIT/Apache-2.0 licensed.
+- Identified a critical memory-clearing caveat: the optional zeroize feature wipes selected intermediates but the inspected Argon2 block-buffer Drop implementation deallocates without wiping the full matrix. A wrapper must explicitly zeroize its owned matrix on every exit path and test it.
+- Next: prototype a bounded single-thread wasm32-unknown-unknown wrapper, enforce fixed Argon2id v=19 OWASP parameters, PHC compatibility, pre-allocation parameter bounds and RAII memory wiping; then run KAT, malformed-input, ABI and isolated Cloudflare Free-plan benchmarks.
+- No application dependency, authentication code, stored hash, Preview or Production resource changed.
+
 ## 2026-11-26 — PHC reference Argon2 fallback source review
 - Inspected the official PHC reference C implementation and its dual CC0 1.0 / Apache-2.0 licence.
 - Confirmed source-level support for Argon2id, PHC encoded hash handling, reference block-filling code, memory clearing, known-answer tests and a `NO_THREADS=1` build option.
