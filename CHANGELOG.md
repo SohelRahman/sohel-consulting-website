@@ -1,3 +1,7 @@
+## 2026-11-26 — Preview smoke verification trigger
+- The PBKDF2 runtime fix is deployed to the isolated Preview Worker (deployment Run #45758679816 succeeded).
+- Triggering the existing unauthenticated Preview HTTP/security-boundary and responsive-browser smoke suite against that deployed Worker. This docs-only commit does not redeploy application code.
+
 ## 2026-11-26 — Preview Admin PBKDF2 runtime fix
 - The deployed Preview diagnostic identified a Cloudflare Workers production PBKDF2 ceiling of 100,000 iterations; the previous 600,000-iteration setting caused the sign-in HTTP 500.
 - Updated password hashing and compatibility tests to use the Workers-supported 100,000-iteration value. Development validation passed on commit `90a47a50f3d052eceda82d97a67d6095ec1bb2d6`.
