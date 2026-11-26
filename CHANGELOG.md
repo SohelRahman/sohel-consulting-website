@@ -1,3 +1,12 @@
+## 2026-11-26 — Argon2id isolated runtime benchmark completed
+
+- Prototype CI Run [#45836658113](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836658113) passed formatting, Rust tests, Clippy, release WASM compilation, wasm-bindgen bindings, JS adapter/memory-growth tests and artifact upload.
+- Cloudflare runtime Run [#45836666885](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836666885) passed Worker deployment, health, hash/verify, correct/wrong password checks, sequential requests, two concurrent hash requests and temporary Worker deletion (HTTP 200).
+- Memory grew from 17 to 323 Wasm pages and remained stable through the test batch. The two-request concurrent batch took 108.956 ms wall-clock; per-operation timer samples were 0 ms, so useful per-operation timing resolution was not obtained.
+- No Cloudflare CPU-time metric was collected. The single batch result is not a load benchmark.
+- Updated prototype README and security review; added deterministic malformed-PHC/property-corpus tests in `prototypes/argon2id-wasm/tests/phc_input_corpus.rs`. New test CI is pending.
+- Prototype remains isolated; no application authentication, D1, existing Preview, Production or `main` changes.
+
 ## 2026-11-26 — Argon2id Cloudflare runtime compatibility passed
 
 - Isolated Cloudflare Worker test passed compiled-Wasm loading, health, Argon2id hash, correct/wrong password verification, memory growth and temporary Worker cleanup.
