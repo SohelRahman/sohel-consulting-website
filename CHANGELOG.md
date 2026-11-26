@@ -1,3 +1,10 @@
+## 2026-11-26 — Argon2id Cloudflare runtime compatibility passed
+
+- Isolated Cloudflare Worker test passed compiled-Wasm loading, health, Argon2id hash, correct/wrong password verification, memory growth and temporary Worker cleanup.
+- Added high-precision wall-clock timing and repeated sequential/concurrent request measurements to the isolated runtime test.
+- Cloudflare CPU-time evidence remains outstanding; wall-clock measurements are not CPU-time measurements.
+- No application authentication or Production changes.
+
 ## 2026-11-26 — Argon2id WASM source-level security review
 
 - Added `docs/ARGON2ID_WASM_SECURITY_REVIEW.md` covering the Rust implementation, JavaScript adapter, temporary Worker harness and CI workflows.
