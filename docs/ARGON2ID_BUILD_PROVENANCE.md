@@ -44,8 +44,8 @@ The resulting `build-provenance.txt` is uploaded with the short-retention CI art
 - [x] wasm-bindgen CLI version derived from the lockfile and installed with `--locked`.
 - [x] Build metadata, dependency/license inventory and artifact SHA-256 capture added to CI.
 - [x] RustSec `cargo-audit` step pinned to 0.23.0 added to CI.
-- [ ] Latest CI must pass the new audit step and publish the provenance artifact.
-- [ ] Review any RustSec advisories and all license expressions reported by the run.
+- [x] Prototype CI run [#45856402852](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856402852) passed the RustSec audit step and uploaded the build-provenance artifact (artifact ID `15134694932`; ZIP SHA-256 `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`). The audit scanned 34 locked crate dependencies against 1,568 loaded advisories and exited successfully.
+- [ ] Manually review all license expressions in the uploaded provenance artifact. The successful audit exit is not a legal/license review.
 - [x] Pin the GitHub Actions used by the prototype and runtime workflows to immutable commit SHAs.
 - [ ] Pin Node.js to an exact patch release (currently major version 22; exact version is captured in the provenance artifact).
 - [ ] Generate and retain a signed build provenance attestation or equivalent release evidence.
@@ -54,3 +54,8 @@ The resulting `build-provenance.txt` is uploaded with the short-retention CI art
 ## Release decision
 
 This work improves traceability but does not approve application integration or production deployment. The CPU-time evidence, repeatable performance characterization, independent security assessment and remaining release gates are still separate requirements.
+
+
+## 2026-11-26 CI provenance checkpoint
+
+Prototype CI #45856402852 completed successfully. `cargo audit --file Cargo.lock` loaded 1,568 RustSec advisories, scanned all 34 locked crate dependencies and exited successfully. The same run generated and uploaded `build-provenance.txt` and the WASM/binding package as artifact ID `15134694932`. The artifact ZIP SHA-256 is `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`. This is CI evidence for the run, not a signed attestation. The build emitted a Rust future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; these are noted for dependency-tree review. Node remains major-version pinned only.
