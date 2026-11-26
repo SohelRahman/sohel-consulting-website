@@ -1,3 +1,7 @@
+## Additional runtime observation — 2026-11-26
+
+A second ordinary isolated runtime run, [#45837980987](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45837980987), passed Worker build/deploy, hash/verify, sequential/concurrent request checks and cleanup (HTTP 200). The two-request batch was 145.017 ms wall-clock; per-operation hash/verify timer samples again reported 0 ms. Memory grew 17 to 323 pages and remained at 323. This reinforces that the current per-operation timer is not useful and that wall-clock is not CPU time. This run did not exercise the injected failure path.
+
 - **Failure-path cleanup status correction:** the marked run #45838191990 was canceled before execution; it did not verify cleanup. The latest normal runtime run #45838254764 is queued without failure injection. Treat failure-path cleanup as open until a marked run completes and confirms HTTP 404 after deletion.
 
 ## Latest test work — 2026-11-26
