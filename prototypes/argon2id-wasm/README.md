@@ -1,3 +1,12 @@
+## Latest execution checkpoint — 2026-11-27
+
+- Isolated runtime #45875891768 passed the complete Cloudflare Worker exercise, including health, hash/verify, correct/wrong password, sequential/concurrent requests and temporary Worker cleanup (HTTP 200 deletion; HTTP 404 absence verification).
+- Two concurrent hash requests took 683.469 ms combined wall-clock. WASM memory grew from 17 to 323 pages and remained stable after sequential/concurrent requests. JavaScript per-operation timers rounded to 0 ms; this is not CPU-time evidence.
+- Cloudflare Observability keys discovery returned CPU/wall-time keys, but the first corrected runtime query returned zero invocation groups. The request had placed `view` under `parameters`; current Cloudflare API documentation defines it as a top-level property. The harness was corrected to set top-level `view: "invocations"` and filter by the exact temporary Worker script name.
+- Query correction commit `09e84882e5eac8099dddbf3cc15dd5bf1f6ee090`; rerun #45876662415 was still in progress at the last check. Do not claim CPU-time compliance until real invocation samples are captured.
+- Provenance inventory from CI artifact #15144349196 lists the Rust dependencies with permissive license expressions (primarily MIT OR Apache-2.0; `unicode-ident` also lists Unicode-3.0). The prototype crate itself is marked `UNKNOWN` and has no repository LICENSE file. Do not treat the dependency inventory as legal approval; the project owner must choose and document the prototype's licensing terms before distribution or integration.
+- Prototype remains isolated and is not approved for application authentication or Production.
+
 ## Latest execution checkpoint — 2026-11-26
 
 - Prototype CI #45856402852 passed the full build/test pipeline and RustSec audit; provenance artifact ID `15134694932`.
