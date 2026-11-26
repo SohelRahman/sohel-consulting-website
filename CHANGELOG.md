@@ -1,3 +1,9 @@
+## 2026-11-26 — Node.js exact patch pin
+
+- Pinned Node.js `22.23.5` across Argon2id prototype, runtime and password-KDF benchmark workflows.
+- Replaced the benchmark workflow's moving setup-node v4 tag with immutable v4.4.0 commit `49933ea5288caeca8642d1e84afbd3f7d6820020`.
+- CI verification is pending in prototype run #45860260434 and runtime run #45860426221.
+
 ## 2026-11-26 — Argon2id transient Worker response retry
 
 - Unfiltered runtime diagnostic #45859485701 stopped when `/verify` returned HTML instead of JSON; cleanup was verified (HTTP 200 deletion, HTTP 404 absence).
