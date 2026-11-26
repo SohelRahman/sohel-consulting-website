@@ -583,3 +583,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Recorded successful Development validation Run #1076, including the Admin MFA test step.
 - Added an explicit authenticated Preview acceptance matrix for enrollment, challenge, replay, recovery-code single use, session revocation, throttling and RBAC.
 - Authenticated Preview acceptance and Production readiness remain pending; no Production resource was changed.
+## 2026-11-26 — RBAC acceptance documentation
+
+- Documented the user-confirmed authenticated Preview Admin dashboard access separately from pending live limited-User authorization tests.
+- Recorded the Worker source-review findings for session/account validation, MFA enrollment enforcement, permission mapping and fail-closed handling of unknown Admin API routes.
+- Clarified that source-contract tests do not substitute for direct Preview API read/write denial tests using an authorized limited-User account.
+- No Preview account, database, Production resource or `main` branch was changed.
