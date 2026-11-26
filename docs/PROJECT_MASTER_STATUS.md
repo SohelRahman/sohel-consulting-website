@@ -304,3 +304,10 @@ No Production resource was changed.
 These are source-review findings backed by existing static contract tests, not live limited-User API acceptance. No Preview account or D1 data was changed. A live limited-User account and direct read/write denial tests remain required before RBAC acceptance can be marked complete.
 
 Latest documentation commit: `3db5302519ceeb8e3dcfdc87f793451a452fb5b9` (`docs/TESTING.md`). Production and `main` remain unchanged.
+## 2026-11-26 — Production deployment workflow validation gate added
+
+The manual Production deployment workflow now runs the repository's development validation suite before the deployment job. The Production job remains restricted to `main` and the GitHub `production` environment, and now runs `wrangler deploy --dry-run` before the actual deploy command. This is a workflow-source change on `current-focus-development`; it has not been executed against Production.
+
+Important remaining gates: validate the workflow through GitHub Actions; independently verify the Production D1 identity and remote migration ledger; confirm backup/restore readiness, runtime secret presence and environment protection; complete stronger password-storage design and live RBAC/MFA acceptance; obtain PR review and approval. The dry-run is not a substitute for D1 migration or backup preflight. No Production resource was changed.
+
+Latest workflow commit: `24a6480d20baa34807733ab378f6e90cc6e93a7a`.
