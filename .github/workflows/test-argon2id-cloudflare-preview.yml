@@ -123,7 +123,6 @@ jobs:
           : "${URL:?Could not identify isolated Preview Worker URL}"
           export ARGON2ID_TEST_URL="$URL" ARGON2ID_TEST_TOKEN="$TOKEN"
           node --input-type=module <<'NODE'
-          # Exercise bounded retries for transient edge HTML responses observed in the previous isolated run.
           const headers = { authorization: `Bearer ${process.env.ARGON2ID_TEST_TOKEN}` };
           const base = process.env.ARGON2ID_TEST_URL;
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -222,7 +221,6 @@ jobs:
           sleep 20
           # Trigger a fresh isolated invocation-log query after removing the unverified service-name filter.
           # Discover the complete key set first; the keys endpoint supports keyNeedle/limit,
-          # while invocation filtering uses the documented indexed service field below.
           jq -n '{datasets:["cloudflare-workers"],limit:1000}' > /tmp/argon2id-telemetry-keys-request.json
           KEYS_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-keys.json --write-out '%{http_code}' \
             --request POST \
