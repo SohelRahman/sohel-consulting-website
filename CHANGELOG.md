@@ -589,3 +589,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Recorded the Worker source-review findings for session/account validation, MFA enrollment enforcement, permission mapping and fail-closed handling of unknown Admin API routes.
 - Clarified that source-contract tests do not substitute for direct Preview API read/write denial tests using an authorized limited-User account.
 - No Preview account, database, Production resource or `main` branch was changed.
+## 2026-11-26 — Production workflow validation gate
+
+- Added a validation job to the manual Production deployment workflow, running the repository's syntax, site, RBAC, CMS, MFA, password-hash, pricing and registration contract checks.
+- Made the Production deployment job depend on successful validation and added a Wrangler deployment dry-run before the deploy command.
+- Kept Production deployment restricted to `main` and the GitHub `production` environment.
+- Workflow execution, remote D1 migration/backup preflight, secret presence, and environment protection remain unverified. No Production resource was changed.
