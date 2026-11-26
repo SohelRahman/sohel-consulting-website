@@ -510,3 +510,14 @@ The isolated Rust Argon2id prototype now includes bounded PHC-style generation a
 3. Add independent PHC fixtures and a test proving matrix zeroization on all exits.
 4. Verify the compiled module is imported as a precompiled Wrangler Wasm module, then benchmark only in the isolated Worker.
 5. Keep application authentication and stored hashes unchanged until every gate passes.
+
+
+## 2026-11-26 — Argon2id prototype verification update
+
+- Prototype CI [#45843299302](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299302) passed formatting, host tests, Clippy, WASM compilation, wasm-bindgen bindings, JS adapter/memory-growth tests and artifact upload.
+- Host-test evidence confirms both independent PHC fixtures (argon2-cffi and libsodium) and the deterministic malformed-PHC corpus (including 4,096 bounded arbitrary ASCII inputs) passed.
+- Adapter tests passed Web Crypto salt generation, input-boundary rejection, memory-growth handling and best-effort cleanup of adapter-owned mutable buffers on success and controlled WASM failures.
+- Controlled Worker cleanup failure-path test [#45840895843](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45840895843) passed: injected post-runtime failure, deletion HTTP 200 and follow-up API absence HTTP 404.
+- Runtime test [#45843299379](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299379) passed hash/verify and cleanup. Cloudflare Logs query for that Worker over the last 24 hours returned zero records; CPUTimeMs and WallTimeMs remain unmeasured.
+
+**Current gate:** the prototype remains isolated and not approved for application integration or Production. Remaining work: obtain invocation CPU-time evidence while the Worker is live; perform repeatable load/latency and memory characterization; review dependency lockfile and generated artifact provenance; complete security review. No application password hashes, authentication routes, D1 data or Production resources have been changed.
