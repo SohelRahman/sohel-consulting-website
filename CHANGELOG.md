@@ -1,5 +1,11 @@
 
 
+## 2026-11-27 — Argon2id telemetry reporter correction and TinyFish ground rule
+
+- Fixed jq field-key quoting in the isolated Cloudflare telemetry reporting step. Commit `6a776de5e9f6cd58462d0dd086d1845aebfcd99e`; fresh workflow validation is pending.
+- Added the project rule to use TinyFish when it materially improves engineering/testing/research, while avoiding unnecessary calls and costs and respecting all authorization boundaries.
+
+
 ## 2026-11-27 — Third Cloudflare telemetry run and correlation instrumentation
 
 - Isolated runtime #45878008941 passed. Cloudflare returned two invocation records: 59 ms CPU / 59 ms wall and 96 ms CPU / 99 ms wall. The inspected event keys exposed no request path/method, so neither sample is attributed to hash or verify.
