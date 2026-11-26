@@ -160,3 +160,20 @@ Preview runtime smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-
 - Do not run remote migrations, D1 writes, Cloudflare secret/configuration changes, or Worker deployments without explicit approval.
 - Never read, print, request, or commit secret values.
 - No work from other projects is in scope for this repository or chat.
+
+
+## 2026-11-26 — Preview deployment reconciliation (read-only)
+
+- Latest confirmed successful Preview deployment found in the inspected GitHub Actions history: [Deploy run #34](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45320348541), deploying commit `55585c4fa3f6927df14776eac508c2eed6efd290` to the isolated Preview Worker. All deployment job steps completed successfully, including Preview Worker/D1 identity verification, source and CMS/MFA checks, secret-presence handling, and Preview-only Worker/static-asset deployment.
+- Subsequent deployment workflow runs inspected for commits `02cb4ef`, `72d5c51`, `48f8790`, `adb5dff` and `45fed5a` were skipped by the commit-message/manual-dispatch gate. No later successful deployment was identified in the inspected run history.
+- GitHub compare from deployed commit `55585c4` to current development head `45fed5a` reports 39 commits ahead and 0 behind. The changed paths are limited to the Preview smoke workflow, changelog, Preview deployment/status/testing documentation, and `scripts/test-preview-browser.py`. No Worker source, public site asset, Wrangler configuration, or migration file changed in this range. This supports source-level application parity between the last confirmed deployment and current development head; it does not prove that no manual Cloudflare-side change occurred.
+- Preview smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322065022) passed against the Preview origin after the #34 deployment. It confirms the specified HTTP/security and responsive public-page smoke assertions at that time, not a current live-edge check on 2026-11-26.
+- A direct live-origin check could not be completed in this audit because the web retrieval service could not access either documented Worker hostname. Therefore **current live Worker availability/version remains unverified**; do not report the current live deployment as freshly confirmed.
+- No deployment was triggered. The deployment workflow can bootstrap/deploy the Preview Worker and create the Preview-only `MFA_ENCRYPTION_KEY` if missing, so it is a mutating operation. Obtain explicit user approval before running it. No remote D1 read/write, migration, secret read, secret change, Worker deployment, or Production action was performed.
+
+### D1 reconciliation result
+- **Source parity:** confirmed for application/runtime files relative to the last confirmed deployment.
+- **Last confirmed deployed source:** `55585c4fa3f6927df14776eac508c2eed6efd290` (Run #34).
+- **Current development head:** `45fed5af355be5b4bf7a52f539ac5c1b44f361f7` (documentation/test-only changes since deployment).
+- **Live Worker state:** pending independent current-origin verification.
+- **Next priority:** perform an approved Preview deployment only if a fresh live deployment is required; otherwise continue with non-mutating automated acceptance work and authenticated test-plan preparation.
