@@ -6,7 +6,13 @@ on:
     branches:
       - current-focus-development
     paths:
-      - 'prototypes/argon2id-wasm/**'
+      - 'prototypes/argon2id-wasm/Cargo.toml'
+      - 'prototypes/argon2id-wasm/Cargo.lock'
+      - 'prototypes/argon2id-wasm/src/**'
+      - 'prototypes/argon2id-wasm/test/**'
+      - 'prototypes/argon2id-wasm/worker.mjs'
+      - 'prototypes/argon2id-wasm/worker-adapter.mjs'
+      - 'prototypes/argon2id-wasm/wrangler.toml'
       - '.github/workflows/test-argon2id-cloudflare-preview.yml'
 
 permissions:
@@ -54,6 +60,7 @@ jobs:
           : "${CLOUDFLARE_API_TOKEN:?Missing Cloudflare Workers API token}"
           : "${CLOUDFLARE_ACCOUNT_ID:?Missing Cloudflare account ID}"
           WORKER="sohel-argon2id-preview-${GITHUB_RUN_ID}"
+          RUNTIME_START_MS="$(date +%s%3N)"
           CONFIG='prototypes/argon2id-wasm/wrangler.toml'
           TOKEN="$(node --input-type=module -e 'import { randomBytes } from "node:crypto"; process.stdout.write(randomBytes(32).toString("base64url"))')"
           delete_worker_api() {
@@ -176,8 +183,44 @@ jobs:
           console.log(JSON.stringify(result, null, 2));
           if (valid.valid !== true || invalid.valid !== false) throw new Error("Cloudflare Workers Argon2id PHC verification test failed.");
           NODE
-          echo 'Holding the isolated Worker for 150 seconds so invocation telemetry can be inspected before automatic cleanup.'
-          sleep 150
+          echo 'Waiting briefly for Workers invocation telemetry ingestion before querying the API.'
+          sleep 20
+          KEYS_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-keys.json --write-out '%{http_code}' \\
+            --request POST \\
+            --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
+            --header 'Content-Type: application/json' \\
+            --data "{\\\"datasets\\\":[\\\"cloudflare-workers\\\"],\\\"filters\\\":[{\\\"key\\\":\\\"$metadata.service\\\",\\\"operation\\\":\\\"eq\\\",\\\"type\\\":\\\"string\\\",\\\"value\\\":\\\"$WORKER\\\"}]}" \\
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/observability/telemetry/keys")"
+          if [[ "$KEYS_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-keys.json >/dev/null; then
+            echo 'Cloudflare telemetry key discovery succeeded.'
+            jq -r '.result[]?.key' /tmp/argon2id-telemetry-keys.json | grep -Ei 'cpuTimeMs|wallTimeMs|metadata.service' || true
+            CPU_KEY="$(jq -r '.result[]? | select(.key | test("cpuTimeMs"; "i")) | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
+            WALL_KEY="$(jq -r '.result[]? | select(.key | test("wallTimeMs"; "i")) | .key' /tmp/argon2id-telemetry-keys.json | head -n 1)"
+            if [[ -n "$CPU_KEY" && -n "$WALL_KEY" ]]; then
+              QUERY_BODY="$(jq -n --arg worker "$WORKER" --argjson from "$RUNTIME_START_MS" --argjson to "$(date +%s%3N)" '{queryId:"argon2id-runtime-telemetry",timeframe:{from:$from,to:$to},parameters:{datasets:["cloudflare-workers"],filterCombination:"and",filters:[{key:"$metadata.service",operation:"eq",type:"string",value:$worker}],view:"invocations"},limit:100}')"
+              QUERY_CODE="$(curl --silent --show-error --output /tmp/argon2id-telemetry-query.json --write-out '%{http_code}' \\
+                --request POST \\
+                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
+                --header 'Content-Type: application/json' \\
+                --data "$QUERY_BODY" \\
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/observability/telemetry/query")"
+              if [[ "$QUERY_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-query.json >/dev/null; then
+                echo 'Cloudflare invocation telemetry query succeeded. CPU and wall-time samples follow; no JavaScript timers are used for these values.'
+                jq -c '[.result.invocations // {} | to_entries[] | .value[] | {trigger, timestamp, cpuTimeMs: .["$workers"].cpuTimeMs, wallTimeMs: .["$workers"].wallTimeMs} | select(.cpuTimeMs != null or .wallTimeMs != null)]' /tmp/argon2id-telemetry-query.json
+              else
+                echo "Cloudflare telemetry query did not return data (HTTP $QUERY_CODE); response is retained only in this ephemeral runner."
+                jq -c '{success,errors,messages}' /tmp/argon2id-telemetry-query.json || true
+              fi
+            else
+              echo 'Telemetry key discovery did not expose both CPU and wall-time fields; refusing to guess field names.'
+            fi
+          elif [[ "$KEYS_CODE" == '401' || "$KEYS_CODE" == '403' ]]; then
+            echo "Cloudflare telemetry API access unavailable (HTTP $KEYS_CODE). Existing token lacks required Observability permission or is unauthorized; no permissions were changed."
+          else
+            echo "Cloudflare telemetry key discovery unavailable (HTTP $KEYS_CODE)."
+            jq -c '{success,errors,messages}' /tmp/argon2id-telemetry-keys.json || true
+          fi
+          echo 'Telemetry query phase complete; proceeding to automatic Worker cleanup.'
           if [[ "$ARGON2ID_INJECT_FAILURE_AFTER_RUNTIME" == '1' ]]; then
             echo 'Injecting controlled failure after successful runtime checks to exercise EXIT cleanup.'
             exit 73
