@@ -339,3 +339,8 @@ The isolated benchmark is now configured to use the default Workers Free CPU bud
 The corrected benchmark deployment successfully uploaded the isolated Worker and its temporary bearer secret. The first authenticated request returned HTTP 401 immediately after secret creation, consistent with a deployment/secret propagation delay; the benchmark did not run. The workflow's exit cleanup ran. Added bounded retries for HTTP 401 to allow the new Worker version and secret to propagate. The next tagged run will verify this. No existing Worker, Admin credential, D1 database or Production resource was changed.
 
 Retry-enabled isolated Argon2id benchmark execution trigger.
+## 2026-11-26 — Argon2id Free-tier runtime test requires error detail
+
+The isolated benchmark Worker deployed successfully on Workers Free, and the ephemeral authentication secret was accepted after bounded retries. The benchmark request then returned HTTP 500 with a sanitized generic KDF failure; no timing data was produced. The workflow's cleanup trap ran. The failure does not yet establish whether the cause is WebAssembly initialization, Argon2 parameter handling, or a runtime resource limit.
+
+Added a bounded, non-secret error reason to the isolated benchmark response so the next run can distinguish initialization/parameter errors from runtime resource failures. This diagnostic exists only in the temporary benchmark Worker source; no Admin password hashes or application authentication behavior were changed.
