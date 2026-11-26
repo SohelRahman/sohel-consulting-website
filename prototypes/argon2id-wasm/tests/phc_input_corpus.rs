@@ -1,4 +1,4 @@
-use sohel_argon2id_prototype::{verify_phc, MAX_PHC_LEN};
+use sohel_argon2id_prototype::{MAX_PHC_LEN, verify_phc};
 
 const FIXTURE: &str = "$argon2id$v=19$m=19456,t=2,p=1$AAECAwQFBgcICQoLDA0ODw$HgadzgMogaKvjm4sbwElL0wO9HGwNWhl6ya2mcTteT8";
 
@@ -18,7 +18,10 @@ fn rejects_structural_and_canonical_encoding_mutations() {
     ];
     for encoded in cases {
         assert!(
-            !matches!(verify_phc(b"independent PHC interoperability fixture", encoded), Ok(true)),
+            !matches!(
+                verify_phc(b"independent PHC interoperability fixture", encoded),
+                Ok(true)
+            ),
             "mutated or malformed PHC unexpectedly verified: {encoded}"
         );
     }
