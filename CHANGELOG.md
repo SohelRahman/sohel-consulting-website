@@ -1,3 +1,11 @@
+## 2026-11-26 — Preview acceptance and Production release gate audit
+- Confirmed Preview deployment Run #45758679816 succeeded, development validation Run #45759504101 passed, and Preview runtime/browser smoke Run #45759498860 passed.
+- User reports the Preview Admin link opens; authenticated dashboard access and completed MFA are not yet independently evidenced.
+- Audited PR #1: open/draft, 856 commits ahead of main, 0 behind, 110 changed files, no recorded reviews or review threads.
+- Audited the current Production deployment workflow: it runs `wrangler deploy` from `main` but does not run validation, confirm the exact Production D1 identity, or verify the remote migration ledger.
+- Production D1 live identity, backup/restore readiness, remote migration ledger, runtime secrets and GitHub production environment protections remain unverified. No Production resource was changed.
+- PBKDF2 100,000 iterations remains a documented Workers-compatibility compromise below OWASP's 600,000 recommendation; stronger password hashing remains a security task.
+
 ## 2026-11-26 — Preview smoke verification trigger
 - The PBKDF2 runtime fix is deployed to the isolated Preview Worker (deployment Run #45758679816 succeeded).
 - Triggering the existing unauthenticated Preview HTTP/security-boundary and responsive-browser smoke suite against that deployed Worker. This docs-only commit does not redeploy application code.
