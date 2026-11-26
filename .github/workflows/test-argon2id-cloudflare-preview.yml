@@ -36,8 +36,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo build --release --target wasm32-unknown-unknown
-          VERSION="$(cargo tree --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
+          cargo build --locked --release --target wasm32-unknown-unknown
+          VERSION="$(cargo tree --locked --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
           : "${VERSION:?Could not resolve wasm-bindgen version}"
           cargo install wasm-bindgen-cli --version "$VERSION" --locked
           wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
@@ -176,6 +176,8 @@ jobs:
           console.log(JSON.stringify(result, null, 2));
           if (valid.valid !== true || invalid.valid !== false) throw new Error("Cloudflare Workers Argon2id PHC verification test failed.");
           NODE
+          echo 'Holding the isolated Worker for 150 seconds so invocation telemetry can be inspected before automatic cleanup.'
+          sleep 150
           if [[ "$ARGON2ID_INJECT_FAILURE_AFTER_RUNTIME" == '1' ]]; then
             echo 'Injecting controlled failure after successful runtime checks to exercise EXIT cleanup.'
             exit 73
