@@ -18,22 +18,36 @@ This crate pins RustCrypto Argon2 to commit `dc7e0c25cda9a8421d2604debf548d66388
 - Generated `wasm-bindgen` web and Node.js glue in CI.
 - JavaScript adapter tests covering CSPRNG handling, input boundaries, PHC operations and explicit Wasm memory growth.
 
-Latest successful CI: [Run #45818799624](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45818799624). Formatting, host tests, Clippy with warnings denied, release Wasm compilation, binding generation, JavaScript integration/memory-growth tests and artifact upload all passed.
+Latest prototype CI: [Run #45836658113](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836658113) passed formatting, host tests, Clippy, release Wasm compilation, binding generation, JavaScript adapter/memory-growth tests and artifact upload.
+
+## Cloudflare Workers runtime and benchmark
+
+Isolated runtime workflow [Run #45836666885](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836666885) passed:
+
+- Precompiled Wasm build and Wrangler Worker deployment.
+- Worker startup and health response.
+- PHC generation, correct-password acceptance and wrong-password rejection.
+- Linear-memory growth from 17 to 323 Wasm pages (64 KiB per page); memory remained at 323 pages after sequential and concurrent requests.
+- Four sequential hash requests, four sequential verification requests and two concurrent hash requests.
+- Temporary Worker deletion confirmed by Cloudflare API (HTTP 200).
+
+**Benchmark interpretation:** the concurrent two-request batch took 108.956 ms wall-clock in this single CI run. The Worker-reported per-operation `performance.now()` samples were all 0 ms, so that timer did not provide usable per-operation resolution in this run. These are not CPU-time measurements and are not a statistically meaningful performance characterization. Cloudflare invocation CPU-time evidence remains outstanding.
 
 ## Not yet verified or approved
 
-- The isolated Cloudflare Workers runtime workflow has not yet passed. Wrangler's precompiled-Wasm import and actual Worker instantiation therefore remain unverified.
-- No Cloudflare runtime hash/verify measurements or CPU-time evidence have been collected.
-- No concurrency or production-like load test has been completed.
-- No application authentication integration, stored-password migration or production deployment is authorized.
-- The independent interoperability evidence is one cross-implementation fixture, not a broad fuzz/property test suite.
+- Actual Cloudflare invocation CPU-time evidence (`CPUTimeMs`) for Argon2id hash and verify requests.
+- Repeatable latency distribution, peak memory under meaningful concurrent load and plan-limit compliance.
+- Broad PHC fuzz/property coverage and multiple independent implementation/version fixtures.
+- Controlled failure-path cleanup test.
+- Generated Wasm/binding and dependency provenance review.
+- Application authentication integration, stored-password migration, rate limiting, rollback and Production release approval.
 
 ## Security limitations
 
 The explicit zeroization test verifies the wrapper's wipe routine. It does not prove resistance to compiler transformations, allocator copies, runtime snapshots, crashes or process termination. Clearing mutable JavaScript buffers is best effort; JavaScript strings are immutable and cannot be reliably zeroized. Do not describe this implementation as guaranteeing complete password erasure.
 
-## Runtime gate
+## Next engineering priority
 
-The next gate is the isolated Cloudflare Workers test using the compiled module import in `wrangler.toml`. The test must prove Worker startup, hash generation, correct-password acceptance, wrong-password rejection, memory-growth handling and successful deletion of the temporary Worker. Wall-clock timing must not be presented as Cloudflare CPU time.
+Add a deterministic malformed-PHC/property corpus that exercises parser boundaries and canonical base64 handling without repeatedly invoking the expensive KDF. Then add controlled failure-path Worker cleanup verification. Keep CPU-time evidence as a separate release blocker; do not infer it from wall-clock timing or lower the KDF parameters to fit a runtime limit.
 
 This prototype remains separate from the website's authentication path until runtime compatibility, security review and release assessment are complete.
