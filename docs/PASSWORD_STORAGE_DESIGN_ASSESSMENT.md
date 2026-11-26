@@ -50,3 +50,10 @@ Do not introduce a pepper-only change and call the issue resolved. A pepper is d
 - RFC 9106, Argon2: https://www.rfc-editor.org/rfc/rfc9106
 
 Source review performed 2026-11-26. Account-specific Worker plan, CPU configuration, and live Preview Argon2id benchmark remain unverified.
+## Isolated Workers benchmark result — 2026-11-26
+
+The `hash-wasm` 4.12.0 candidate deployed successfully as an isolated Worker on the linked Workers Free account, but the request failed before Argon2 ran. The sanitized runtime error was `WebAssembly.compile(): Wasm code generation disallowed by embedder` (`CompileError`). No latency, CPU-time or memory result was obtained. This is consistent with Cloudflare's requirement to use precompiled Wasm modules and Wrangler's support for importing `.wasm` files as `WebAssembly.Module` objects.
+
+**Decision:** reject `hash-wasm` for direct use in this Worker. Continue evaluating an implementation that ships a precompiled `.wasm` asset. Do not change Admin authentication until the candidate passes RFC/known-answer tests, PHC compatibility, code/license/provenance review, Worker deployment, and Free-plan CPU/memory acceptance.
+
+Additional source: Cloudflare Wrangler bundling and precompiled Wasm module imports: https://developers.cloudflare.com/workers/wrangler/bundling/
