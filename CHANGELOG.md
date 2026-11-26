@@ -1,3 +1,10 @@
+## 2026-11-26 — Argon2id parser and cleanup test coverage expanded
+
+- Added deterministic PHC structural and canonical-Base64 mutation tests plus a 4,096-case bounded arbitrary-input corpus.
+- Prototype CI #45837980772 passed formatting, host tests and Clippy; WASM binding and adapter checks were still running at documentation time.
+- Added a controlled post-deployment failure injection path to the isolated Worker workflow. It verifies API-level absence after cleanup; runtime CI #45838191990 is pending.
+- No application authentication, D1, Preview application deployment or Production changes.
+
 ## 2026-11-26 — Argon2id isolated runtime benchmark completed
 
 - Prototype CI Run [#45836658113](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836658113) passed formatting, Rust tests, Clippy, release WASM compilation, wasm-bindgen bindings, JS adapter/memory-growth tests and artifact upload.
