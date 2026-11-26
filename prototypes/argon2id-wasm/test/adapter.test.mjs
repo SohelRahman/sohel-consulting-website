@@ -5,7 +5,7 @@ import { createArgon2idAdapter } from "../adapter.mjs";
 
 const require = createRequire(import.meta.url);
 const wasm = require("../node-pkg/sohel_argon2id_prototype.js");
-const { wasm_memory_pages } = wasm;
+const { wasm_memory_pages, wasm_test_grow_memory } = wasm;
 
 test("uses Web Crypto salt generation and verifies generated PHC", () => {
   let calls = 0;
@@ -47,10 +47,11 @@ test("reuses generated bindings safely after WASM memory growth", () => {
     cryptoProvider: globalThis.crypto
   });
   const before = wasm_memory_pages();
+  assert.equal(wasm_test_grow_memory(1), before);
+  const afterGrowth = wasm_memory_pages();
+  assert.equal(afterGrowth, before + 1);
   const encoded = adapter.hashPassword("memory growth integration password");
-  const afterHash = wasm_memory_pages();
-  assert.ok(afterHash > before, `expected WASM memory growth: before=${before}, after=${afterHash}`);
   assert.equal(adapter.verifyPassword("memory growth integration password", encoded), true);
   assert.equal(adapter.verifyPassword("incorrect", encoded), false);
-  assert.ok(wasm_memory_pages() >= afterHash);
+  assert.equal(wasm_memory_pages(), afterGrowth);
 });
