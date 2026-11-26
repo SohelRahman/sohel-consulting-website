@@ -626,3 +626,10 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Argon2id request returned HTTP 500; no timing results were recorded.
 - Added sanitized error name/message output to the benchmark-only Worker to identify the failure cause on retry.
 - No existing Admin password hash or application authentication code was modified.
+## 2026-11-26 — Argon2id WebAssembly compatibility finding
+
+- The isolated Workers Free benchmark reached the Worker but failed before hashing: `WebAssembly.compile(): Wasm code generation disallowed by embedder`.
+- Cloudflare Workers supports precompiled Wasm module imports; `hash-wasm` embeds and compiles Wasm at runtime, making this package unsuitable for the current runtime.
+- Documented a precompiled-Wasm Argon2id implementation as the next candidate, subject to source/license/release/API/test review before benchmark.
+- Updated the benchmark workflow to report whether the temporary Worker deletion succeeded instead of silently suppressing cleanup errors.
+- No Admin authentication code or stored password hashes were changed.
