@@ -327,3 +327,8 @@ The benchmark Worker explicitly sets a 10 ms CPU budget to test the Cloudflare W
 The benchmark workflow is tagged to run only on a development commit containing `[kdf-benchmark]` or by manual dispatch. Workflow YAML validation was added to development CI. No password hash implementation or existing Admin credential was changed.
 
 Benchmark harness execution trigger commit. The isolated workflow is configured to run for this tagged development commit and remove its temporary Worker after the test.
+## 2026-11-26 — Cloudflare Free plan confirmed; benchmark configuration corrected
+
+The first isolated benchmark deployment was rejected by Cloudflare with API error 100328: CPU limits are not supported for the Free plan. This is direct account-plan evidence that the linked Cloudflare deployment account is on Workers Free. The benchmark did not deploy or execute in that attempt. The failure was caused by setting an explicit `cpu_ms` limit in the benchmark Wrangler config, not by Argon2 execution.
+
+Removed the explicit CPU limit from the isolated benchmark config so the Worker uses the Free plan's default 10 ms request CPU limit. The benchmark remains isolated, authenticated with an ephemeral token, has no D1 binding, and is configured for automatic deletion. Its next tagged run will determine whether the Argon2id baseline fits the Free runtime. No application Worker or database was changed.
