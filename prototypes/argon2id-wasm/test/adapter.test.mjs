@@ -18,7 +18,7 @@ test("uses Web Crypto salt generation and verifies generated PHC", () => {
   };
   const adapter = createArgon2idAdapter({ wasm, cryptoProvider });
   const encoded = adapter.hashPassword("adapter integration password");
-  assert.match(encoded, /^\$argon2id\$v=19\$m=19456,t=2,p=1\$/);
+  assert.match(encoded, /^\\$argon2id\\$v=19\\$m=19456,t=2,p=1\\$/);
   assert.equal(adapter.verifyPassword("adapter integration password", encoded), true);
   assert.equal(adapter.verifyPassword("wrong password", encoded), false);
   assert.equal(calls, 1);
@@ -54,4 +54,89 @@ test("reuses generated bindings safely after WASM memory growth", () => {
   assert.equal(adapter.verifyPassword("memory growth integration password", encoded), true);
   assert.equal(adapter.verifyPassword("incorrect", encoded), false);
   assert.equal(wasm_memory_pages(), afterGrowth);
+});
+
+test("zeroizes adapter-owned password, salt and PHC buffers after success", () => {
+  let hashPasswordBytes;
+  let hashSaltBytes;
+  let verifyPasswordBytes;
+  let verifyPhcBytes;
+  const adapter = createArgon2idAdapter({
+    wasm: {
+      wasm_hash_phc(password, salt) {
+        hashPasswordBytes = password;
+        hashSaltBytes = salt;
+        return "test-phc";
+      },
+      wasm_verify_phc(password, phc) {
+        verifyPasswordBytes = password;
+        verifyPhcBytes = phc;
+        return true;
+      }
+    },
+    cryptoProvider: { getRandomValues(bytes) { return bytes.fill(0x5a); } }
+  });
+
+  assert.equal(adapter.hashPassword("temporary password"), "test-phc");
+  assert.ok(hashPasswordBytes.every(byte => byte === 0));
+  assert.ok(hashSaltBytes.every(byte => byte === 0));
+
+  assert.equal(adapter.verifyPassword("temporary password", "test-phc"), true);
+  assert.ok(verifyPasswordBytes.every(byte => byte === 0));
+  assert.ok(verifyPhcBytes.every(byte => byte === 0));
+});
+
+test("zeroizes adapter-owned buffers when WASM operations throw", () => {
+  let hashPasswordBytes;
+  let hashSaltBytes;
+  let verifyPasswordBytes;
+  let verifyPhcBytes;
+  const adapter = createArgon2idAdapter({
+    wasm: {
+      wasm_hash_phc(password, salt) {
+        hashPasswordBytes = password;
+        hashSaltBytes = salt;
+        throw new Error("controlled hash failure");
+      },
+      wasm_verify_phc(password, phc) {
+        verifyPasswordBytes = password;
+        verifyPhcBytes = phc;
+        throw new Error("controlled verify failure");
+      }
+    },
+    cryptoProvider: { getRandomValues(bytes) { return bytes.fill(0x33); } }
+  });
+
+  assert.throws(() => adapter.hashPassword("temporary password"), /controlled hash failure/);
+  assert.ok(hashPasswordBytes.every(byte => byte === 0));
+  assert.ok(hashSaltBytes.every(byte => byte === 0));
+
+  assert.throws(() => adapter.verifyPassword("temporary password", "test-phc"), /controlled verify failure/);
+  assert.ok(verifyPasswordBytes.every(byte => byte === 0));
+  assert.ok(verifyPhcBytes.every(byte => byte === 0));
+});
+
+test("zeroizes password and salt buffers when Web Crypto throws", () => {
+  let capturedPasswordBytes;
+  let capturedSaltBytes;
+  const adapter = createArgon2idAdapter({
+    wasm: {
+      wasm_hash_phc(password, salt) {
+        capturedPasswordBytes = password;
+        capturedSaltBytes = salt;
+        return "unused";
+      },
+      wasm_verify_phc() { return false; }
+    },
+    cryptoProvider: {
+      getRandomValues(bytes) {
+        bytes.fill(0x77);
+        throw new Error("controlled crypto failure");
+      }
+    }
+  });
+
+  assert.throws(() => adapter.hashPassword("temporary password"), /controlled crypto failure/);
+  assert.ok(capturedPasswordBytes.every(byte => byte === 0));
+  assert.ok(capturedSaltBytes.every(byte => byte === 0));
 });
