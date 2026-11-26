@@ -1,3 +1,13 @@
+## 2026-11-26 — Argon2id WASM binding and adapter CI passed
+
+- Development head at this checkpoint: `2c7ceaf635b737694c826b77865c6b2816b0d1d0` on `current-focus-development`.
+- Dedicated CI [Run #45818799624](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45818799624) passed formatting, Rust host tests, Clippy, release Wasm compilation, `wasm-bindgen` web/Node binding generation, JavaScript adapter integration tests, explicit Wasm memory-growth testing and artifact upload.
+- The Node integration build uses a feature-gated test-only memory-growth export; the ordinary release Worker build does not enable this feature.
+- The adapter uses `crypto.getRandomValues` for salt generation and validates input bounds. JavaScript buffer clearing is best effort; immutable strings and runtime/allocator copies cannot be guaranteed erased.
+- Independent PHC fixture and working-memory wipe tests are included in the passing host test suite. Interoperability coverage remains a single independent fixture, not a broad fuzz suite.
+- The precompiled module is built and bindings are generated in CI. Wrangler compiled-Wasm import, Cloudflare Workers runtime compatibility, CPU-time measurement and temporary Worker cleanup still require a successful isolated runtime workflow.
+- No application authentication change, D1 operation, existing Preview deployment, Production action or `main` modification occurred.
+
 ## 2026-11-26 — Follow-up rustfmt correction for Argon2id ABI
 
 - The first formatting correction did not cover the second `wasm_hash_phc` export; dedicated CI Run [#14](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45815086593) still failed only at `cargo fmt --all -- --check` for that remaining line wrap. Host tests, Clippy and WASM compilation were skipped.
