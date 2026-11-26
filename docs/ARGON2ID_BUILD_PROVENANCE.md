@@ -32,7 +32,7 @@ The resulting `build-provenance.txt` is uploaded with the short-retention CI art
 - `cargo audit` checks the locked Rust dependency graph against RustSec advisories at the time of the run. A passing scan is time-bounded and does not establish that all dependencies are safe.
 - The license inventory is evidence for manual review. It does not automatically establish license compatibility or satisfy a legal review.
 - The audit tool's own build dependencies are not part of the application's Cargo.lock and are not included in the application's dependency inventory.
-- GitHub Actions are currently referenced by major-version tags (for example, `actions/checkout@v4`), not immutable commit SHAs. This remains a supply-chain hardening item.
+- Prototype CI and runtime workflows pin GitHub Actions to immutable commits: checkout v4.2.2 (`11bd71901bbe5b1630ceea73d27597364c9af683`), setup-node v4.4.0 (`49933ea5288caeca8642d1e84afbd3f7d6820020`), upload-artifact v4.6.2 (`ea165f8d65b6e75b540449e92b4886f43607fa02`), and dtolnay/rust-toolchain stable commit `39008827e6b4319a349e9a42dfc90579dd25f1ca`. The first three SHAs resolve the named upstream release tags; the Rust toolchain action commit was fetched from its stable ref and GitHub reports its signature verified.
 - Node.js is pinned to major version 22, not an exact patch version. Its exact resolved version is recorded in the artifact.
 - CI artifact checksums are recorded, but no signed provenance/attestation or reproducible independent rebuild has been completed.
 
@@ -46,7 +46,8 @@ The resulting `build-provenance.txt` is uploaded with the short-retention CI art
 - [x] RustSec `cargo-audit` step pinned to 0.23.0 added to CI.
 - [ ] Latest CI must pass the new audit step and publish the provenance artifact.
 - [ ] Review any RustSec advisories and all license expressions reported by the run.
-- [ ] Pin GitHub Actions by immutable commit SHA and Node.js to an exact patch release.
+- [x] Pin the GitHub Actions used by the prototype and runtime workflows to immutable commit SHAs.
+- [ ] Pin Node.js to an exact patch release (currently major version 22; exact version is captured in the provenance artifact).
 - [ ] Generate and retain a signed build provenance attestation or equivalent release evidence.
 - [ ] Perform an independent clean rebuild and compare artifact hashes.
 
