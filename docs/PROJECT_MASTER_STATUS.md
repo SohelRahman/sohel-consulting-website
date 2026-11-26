@@ -337,3 +337,5 @@ The isolated benchmark is now configured to use the default Workers Free CPU bud
 ## 2026-11-26 — Isolated benchmark deployment path verified; request retry added
 
 The corrected benchmark deployment successfully uploaded the isolated Worker and its temporary bearer secret. The first authenticated request returned HTTP 401 immediately after secret creation, consistent with a deployment/secret propagation delay; the benchmark did not run. The workflow's exit cleanup ran. Added bounded retries for HTTP 401 to allow the new Worker version and secret to propagate. The next tagged run will verify this. No existing Worker, Admin credential, D1 database or Production resource was changed.
+
+Retry-enabled isolated Argon2id benchmark execution trigger.
