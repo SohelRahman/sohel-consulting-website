@@ -1,0 +1,48 @@
+name: Isolated Argon2id prototype checks
+
+on:
+  push:
+    branches:
+      - current-focus-development
+    paths:
+      - 'prototypes/argon2id-wasm/**'
+      - '.github/workflows/test-argon2id-prototype.yml'
+  pull_request:
+    branches:
+      - current-focus-development
+    paths:
+      - 'prototypes/argon2id-wasm/**'
+      - '.github/workflows/test-argon2id-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: argon2id-prototype-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: current-focus-development
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - name: Check formatting
+        working-directory: prototypes/argon2id-wasm
+        run: cargo fmt --all -- --check
+      - name: Run host tests
+        working-directory: prototypes/argon2id-wasm
+        run: cargo test --locked
+      - name: Lint host target
+        working-directory: prototypes/argon2id-wasm
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Compile WebAssembly target
+        working-directory: prototypes/argon2id-wasm
+        run: cargo build --locked --release --target wasm32-unknown-unknown
