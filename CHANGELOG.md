@@ -601,3 +601,10 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Confirmed that the current 100,000-iteration PBKDF2-HMAC-SHA-256 setting is below OWASP's recommended 600,000 iterations.
 - Recorded that a pepper is supplementary and cannot replace a suitable password KDF.
 - No hash implementation, Preview Worker, database, secret or Production resource was changed.
+## 2026-11-26 — Isolated Argon2id benchmark harness
+
+- Added a separate Cloudflare Worker benchmark using pinned `hash-wasm` 4.12.0 and OWASP's 19,456 KiB / 2-pass / parallelism-1 Argon2id baseline.
+- Added sequential hash/verify and two-operation concurrency checks, with an ephemeral bearer token and no D1 binding or Admin endpoints.
+- Added automatic benchmark Worker deletion on workflow exit and a 10 ms CPU budget to test the Workers Free constraint.
+- The harness reports wall-clock timing only; it does not claim to measure Cloudflare CPU-time or isolate memory.
+- No existing password hash, Admin account, database, or Production resource was changed.
