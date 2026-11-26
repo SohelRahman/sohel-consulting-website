@@ -353,3 +353,10 @@ The isolated benchmark ran on the Cloudflare Workers Free plan. The selected `ha
 Next candidate: inspect a maintained Argon2id implementation that ships a precompiled `.wasm` module and imports it through Wrangler's compiled-Wasm module mechanism. Review source, license, release provenance, API, PHC format and test coverage before benchmarking it. Do not integrate a package into Admin authentication solely because its README claims Workers compatibility.
 
 The benchmark workflow cleanup now reports success/failure for deletion rather than silently ignoring delete errors. The prior benchmark run's cleanup attempt was not independently verified because its delete output was suppressed. No application authentication code or existing password hashes were changed.
+
+
+## 2026-11-26 — Precompiled-Wasm Argon2id candidate review
+
+Reviewed the public README for `@hallaxius/argon2w`. Its documented standalone SIMD Wasm asset and Cloudflare Workers compiled-module import make it a technically relevant candidate, but the package is not approved: the exact published tarball, npm provenance, source/build workflow, release-to-commit correspondence, maintainer identity and upstream tests were not independently verified. A third-party listing reports version 0.0.1, Apache-2.0, zero dependencies, zero weekly downloads and an incomplete health report; this is a weak adoption signal, not a security finding. The README's `m16t2` profile is below OWASP's 19 MiB / 2-pass / p=1 baseline; its `standard` profile is documented as 19,456 KiB / 3 passes. No package was added and no password/authentication code changed.
+
+Next: verify the exact registry artifact and provenance, inspect the source and licences, run known-answer tests, then benchmark a verified 19,456 KiB / 2-pass / p=1 configuration in the isolated Worker. If package provenance cannot be established, reject it and build a reproducible precompiled module from the PHC reference implementation. Production and the `main` branch remain untouched.
