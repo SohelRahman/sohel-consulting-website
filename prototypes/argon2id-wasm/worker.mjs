@@ -19,7 +19,7 @@ export default {
       const memoryPagesBefore = wasmMemoryPages();
       const started = performance.now();
       const phc = hashPassword(TEST_PASSWORD);
-      const elapsedMs = Math.round((performance.now() - started) * 100) / 100;
+      const elapsedMs = Number((performance.now() - started).toFixed(6));
       const memoryPagesAfter = wasmMemoryPages();
       return json({
         phc,
