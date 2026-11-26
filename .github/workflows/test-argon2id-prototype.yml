@@ -55,9 +55,18 @@ jobs:
           : "${WASM_BINDGEN_VERSION:?Could not resolve wasm-bindgen crate version}"
           cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
           wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
+          wasm-bindgen --target nodejs --out-dir node-pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
           test -s pkg/sohel_argon2id_prototype.js
           test -s pkg/sohel_argon2id_prototype_bg.wasm
-          echo "Generated wasm-bindgen JS glue and precompiled WASM module."
+          test -s node-pkg/sohel_argon2id_prototype.js
+          echo "Generated browser/Worker and Node.js wasm-bindgen glue."
+      - name: Set up Node.js for WASM integration tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test JavaScript adapter and WASM memory growth
+        working-directory: prototypes/argon2id-wasm
+        run: node --test test/adapter.test.mjs
       - name: Upload precompiled WASM package
         uses: actions/upload-artifact@v4
         with:
