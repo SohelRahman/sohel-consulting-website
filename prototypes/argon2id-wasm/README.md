@@ -1,5 +1,14 @@
 ## Latest execution checkpoint — 2026-11-26
 
+- Prototype CI #45856402852 passed the full build/test pipeline and RustSec audit; provenance artifact ID `15134694932`.
+- Runtime #45857773930 passed isolated deployment, hash/verify, correct/wrong password checks, sequential/concurrent tests and cleanup. Concurrent hash batch: 124.138 ms wall-clock; memory 17 to 323 pages, stable thereafter.
+- Telemetry keys include `$workers.cpuTimeMs` and `$workers.wallTimeMs`, but invocation query #45857773930 returned zero groups.
+- Unfiltered diagnostic #45859485701 did not reach telemetry: `/verify` returned HTML instead of JSON. Cleanup succeeded (HTTP 200 deletion; HTTP 404 absence check). The test now retries transient non-JSON/5xx/429 responses with bounded backoff and reports response metadata.
+- Corrected runtime rerun #45859898860 is queued. No CPU-time result is claimed.
+- Prototype remains experimental and isolated; not approved for application authentication or Production.
+
+## Latest execution checkpoint — 2026-11-26
+
 - Prototype CI #45856402852 passed all checks, including locked RustSec audit across 34 dependencies, host tests, Clippy, WASM build/bindings, JS integration/memory-growth tests and provenance artifact upload (ID `15134694932`).
 - Runtime #45857773930 passed deployment, health, hash/verify, correct/wrong password checks, sequential/concurrent requests and cleanup (HTTP 200 deletion; HTTP 404 absence check). Concurrent hash batch: 124.138 ms wall-clock; memory 17 to 323 pages, stable thereafter.
 - Cloudflare keys API returned `$workers.cpuTimeMs` and `$workers.wallTimeMs`. The invocation query returned zero groups, so no CPU-time samples were captured. The unverified `$metadata.service` filter was removed.
