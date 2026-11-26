@@ -1,3 +1,10 @@
+## 2026-11-26 — Precompiled-Wasm Argon2id candidate review
+- Evaluated the public claims for `@hallaxius/argon2w`: it documents a standalone SIMD Wasm asset, a Cloudflare Workers compiled-module import and PHC-compatible Argon2id output.
+- The package remains unapproved: source, exact published artifact, npm provenance, release-to-commit correspondence, maintainer identity and tests could not be independently verified through the available GitHub connection. A third-party health listing reports version 0.0.1, Apache-2.0, zero dependencies, zero weekly downloads and an incomplete health report; treat this as a weak adoption signal, not a security verdict.
+- The documented `m16t2` profile is below OWASP's 19 MiB / 2-pass baseline. The `standard` profile is documented as 19,456 KiB / 3 passes. Neither should be accepted based on its name; a custom 19,456 KiB / 2-pass / p=1 profile requires direct verification and benchmark.
+- No package was added, no application password hashing or Admin authentication changed, and no Preview/Production resources were touched.
+- Next: independently verify the published tarball and provenance, inspect source/build/licences/tests, then run known-answer and isolated Workers benchmark gates. Reject the package if evidence cannot be established.
+
 ## 2026-11-26 — Authenticated Preview Admin dashboard confirmed
 - User explicitly confirmed access to the authenticated Preview Admin dashboard with management navigation.
 - Recorded as user-confirmed authenticated access in `docs/PROJECT_MASTER_STATUS.md`; this does not independently verify every MFA recovery, replay or RBAC control.
