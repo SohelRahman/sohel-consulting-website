@@ -1,5 +1,23 @@
 
 
+## 2026-11-27 — Third telemetry run and request-correlation limitation
+
+Isolated runtime [#45878008941](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45878008941) passed on commit 69a68d0af39f705dcb722bb408e2657ae2383893. Cloudflare returned two invocation records for the exact disposable Worker:
+
+- **59 ms CPU / 59 ms wall**.
+- **96 ms CPU / 99 ms wall**.
+- Event count: 2; both records matched the run-specific Worker script name.
+- The event schema exposed only top-level keys $metadata, $workers, dataset, source and timestamp. The inspected output contained no top-level request path or method fields. Route-level attribution is therefore still unresolved; do not map either event to /hash or /verify.
+- The test performed health, hash, verify, sequential and concurrent requests. JavaScript hash/verify timing fields remained below the displayed timer resolution (0 ms); two concurrent hashes took **123.828 ms** combined client wall time.
+- WASM memory remained stable at 323 pages after growing from 17. Temporary Worker deletion returned HTTP 200 and absence verification returned HTTP 404.
+
+The two non-zero samples in this run add to earlier invocation-level samples (58 ms in #45876662415 and 59 ms in #45877435363). These are observations across disposable Worker invocations, not a route-specific KDF distribution or proof of CPU-limit compliance. The earlier run #45877435363 also returned a zero/zero invocation record; retain it in the record rather than silently discarding it.
+
+### Next correlation improvement
+
+Runtime workflow commit 065c0e16cc99d621508ab8a2b35dbb3bc56dc243 adds a client-side request timeline containing each request's label, method, path, epoch start/end timestamps and elapsed wall time. Telemetry output now includes the event timestamp, source/dataset and nested metadata/workers key names. The next run will test whether invocation timestamps can be aligned with client request intervals. This is correlation evidence only; client wall time must never be relabeled as platform CPU time.
+
+
 ## 2026-11-27 — Second Cloudflare telemetry run; repeatability still open
 
 Isolated runtime [#45877435363](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45877435363) passed after the telemetry retry/validation change. The Cloudflare Observability query returned **2 invocation records** for the exact disposable Worker `sohel-argon2id-preview-45877435363`:
