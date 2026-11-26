@@ -177,7 +177,7 @@ pub fn hash_phc(password: &[u8], salt: &[u8]) -> Result<String, &'static str> {
         ITERATIONS,
         PARALLELISM,
         b64_encode(salt),
-        b64_encode(&tag)
+        b64_encode(&tag[..])
     );
     Ok(encoded)
 }
