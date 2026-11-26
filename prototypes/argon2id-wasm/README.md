@@ -2,39 +2,38 @@
 
 **Status: experimental source prototype; not approved for application use or deployment.**
 
-This crate pins RustCrypto Argon2 to commit `dc7e0c25cda9a8421d2604debf548d663886b431` and uses Argon2id v=19 with fixed parameters: 19,456 KiB, two passes, one lane and a 32-byte output. The host is responsible for generating a unique 16-byte salt with a cryptographically secure random source.
-
-The working matrix is allocated by the wrapper and each 1 KiB block is explicitly zeroized in the owner's `Drop` implementation. The crate deliberately avoids the upstream convenience allocator because its internal matrix owner deallocates without wiping the complete matrix.
+This crate pins RustCrypto Argon2 to commit `dc7e0c25cda9a8421d2604debf548d663886b431` and uses Argon2id v=19 with fixed parameters: 19,456 KiB, two passes, one lane and a 32-byte output. The JavaScript host generates a unique 16-byte salt with `crypto.getRandomValues`.
 
 ## Implemented and CI-verified
 
-- Bounded password and salt inputs.
-- `wasm-bindgen` exports accept JavaScript `Uint8Array` objects; length checks happen before copying inputs into Wasm memory.
-- Exported operations are limited to raw fixed-length tag derivation, fixed-profile PHC generation and fixed-profile PHC verification. Password copies inside Wasm are held in `Zeroizing<Vec<u8>>`.
-- Fixed Argon2id parameters; no user-controlled PHC cost values.
-- PHC-style string generation and verification, restricted to the exact fixed profile.
-- Strict encoded-length, algorithm, version, parameter, base64 and decoded-field-length checks.
-- Verification recomputes with fixed costs and compares the complete tag without early exit.
-- Independent `argon2-cffi` PHC fixture verification and exact encoding agreement.
-- Explicit working-memory zeroization test fills every word in a multi-block matrix, invokes the wipe routine and asserts every word is zero.
-- RustCrypto Argon2id v=19 known-answer test at the upstream vector's test parameters.
-- Determinism, password-difference, salt-difference and malformed-input tests.
-- CI checks for formatting, seven host tests, Clippy with warnings denied, and release compilation for `wasm32-unknown-unknown`.
+- Bounded password, salt and PHC inputs; length checks occur before copying data into Wasm memory.
+- `wasm-bindgen` exports for fixed-profile tag derivation, PHC generation and PHC verification.
+- JavaScript adapter with CSPRNG salt generation, byte-length validation and best-effort clearing of mutable JavaScript byte buffers.
+- Password copies inside Wasm use `Zeroizing<Vec<u8>>`; output and verification tag buffers use zeroizing wrappers.
+- Fixed Argon2id parameters; PHC cost values cannot be selected by the caller.
+- Strict PHC algorithm, version, parameter, base64 and decoded-field-length validation.
+- Independent `argon2-cffi 25.1.0` PHC fixture verification, wrong-password rejection and exact encoding agreement.
+- Working-memory wipe test that fills a multi-block matrix, invokes the wipe routine and asserts every word is zero.
+- RustCrypto Argon2id v=19 known-answer test, determinism/differentiation tests, malformed-input tests and ABI boundary tests.
+- Generated `wasm-bindgen` web and Node.js glue in CI.
+- JavaScript adapter tests covering CSPRNG handling, input boundaries, PHC operations and explicit Wasm memory growth.
 
-Latest successful host-test/validation CI: [Run #45804064689](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45804064689), including the independent PHC fixture. The current zeroization-test change still requires CI.
+Latest successful CI: [Run #45818799624](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45818799624). Formatting, host tests, Clippy with warnings denied, release Wasm compilation, binding generation, JavaScript integration/memory-growth tests and artifact upload all passed.
 
-## Not yet implemented or approved
+## Not yet verified or approved
 
-- No generated `wasm-bindgen` JavaScript package or Worker adapter yet; the Rust ABI exports are source-implemented and compile validation is pending.
-- No runtime test yet proving JS typed-array behavior, memory growth or Worker module instantiation.
-- No broad independent PHC interoperability/fuzz suite; the current fixture is a single cross-implementation vector.
-- The explicit wipe test verifies the wrapper routine; it does not prove resistance to all compiler, allocator, crash or process-termination behaviors.
-- No Cloudflare Worker integration or runtime benchmark.
-- No measured CPU-time, peak memory or concurrency result.
-- No application authentication changes or legacy PBKDF2 migration.
+- The isolated Cloudflare Workers runtime workflow has not yet passed. Wrangler's precompiled-Wasm import and actual Worker instantiation therefore remain unverified.
+- No Cloudflare runtime hash/verify measurements or CPU-time evidence have been collected.
+- No concurrency or production-like load test has been completed.
+- No application authentication integration, stored-password migration or production deployment is authorized.
+- The independent interoperability evidence is one cross-implementation fixture, not a broad fuzz/property test suite.
 
-The prototype must pass independent PHC interoperability tests, ABI boundary review, memory-wipe verification and isolated Cloudflare Free-plan runtime tests before any Preview application integration is considered.
+## Security limitations
 
-## Independent PHC interoperability fixture
+The explicit zeroization test verifies the wrapper's wipe routine. It does not prove resistance to compiler transformations, allocator copies, runtime snapshots, crashes or process termination. Clearing mutable JavaScript buffers is best effort; JavaScript strings are immutable and cannot be reliably zeroized. Do not describe this implementation as guaranteeing complete password erasure.
 
-Added a fixed Argon2id PHC fixture generated independently with Python `argon2-cffi 25.1.0` using Argon2id v=19, m=19,456 KiB, t=2, p=1, a 16-byte salt containing bytes 0 through 15, and a 32-byte tag. The Rust test verifies the independent encoded string, rejects a wrong password, and checks that Rust-generated PHC output exactly matches the fixture. This establishes cross-implementation interoperability for this vector; it does not replace a broader fuzz/property test suite or runtime Worker validation.
+## Runtime gate
+
+The next gate is the isolated Cloudflare Workers test using the compiled module import in `wrangler.toml`. The test must prove Worker startup, hash generation, correct-password acceptance, wrong-password rejection, memory-growth handling and successful deletion of the temporary Worker. Wall-clock timing must not be presented as Cloudflare CPU time.
+
+This prototype remains separate from the website's authentication path until runtime compatibility, security review and release assessment are complete.
