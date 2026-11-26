@@ -3,7 +3,7 @@
 **Latest handover update:** 2026-11-26  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Latest development head:** `57348f2a0ed2731f9ccc4219e553eb702b798276`  
+**Latest development head:** Updated by the Preview session-secret remediation commit; see repository branch head.  
 **Latest verified source CI:** [Run #1076](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45756744386) passed on application-equivalent merge commit `4aed95bba0af650f3e8c913405852d62dc88e5a0`.
 
 ## Active priority — Authenticated Preview acceptance and Production readiness
@@ -240,3 +240,10 @@ Wait for the validation run on the reconciled head, inspect its jobs and results
 
 ### Next acceptance action
 Complete authenticated Preview Admin/MFA acceptance using an authorized test account through a secure browser/session workflow. Do not send passwords, TOTP values, recovery codes or secret values in chat. If no test account exists, provision one only through a reviewed Preview-only procedure and record the state change.
+
+
+## 2026-11-26 — Preview Admin login configuration remediation
+
+The Preview deployment workflow now checks the Worker secret-name list for `SESSION_SECRET`. If absent, it generates a cryptographically random 32-byte base64url signing secret and stores it only on the Preview Worker. Existing values are preserved and never printed. This complements the existing non-rotating `MFA_ENCRYPTION_KEY` provisioning.
+
+The change is committed to `current-focus-development`. It is not yet evidence of a successful Preview deployment or a working Admin login. The next guarded Preview deployment must complete, then the login endpoint must be rechecked. If login proceeds to MFA enrollment, the bootstrap Admin account still requires valid Preview bootstrap credentials or an existing active account. No credentials are included in source or documentation. Production and `main` remain untouched.
