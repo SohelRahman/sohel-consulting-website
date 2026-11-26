@@ -44,6 +44,13 @@ jobs:
           echo 'BEGIN_ARGON2ID_CARGO_LOCK'
           cat Cargo.lock
           echo 'END_ARGON2ID_CARGO_LOCK'
+      - name: Audit locked Rust dependencies
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install cargo-audit --version 0.23.0 --locked
+          cargo audit --file Cargo.lock
       - name: Check formatting
         working-directory: prototypes/argon2id-wasm
         run: cargo fmt --all -- --check
@@ -90,12 +97,16 @@ jobs:
             echo "cargo_version=$(cargo --version)"
             echo "node_version=$(node --version)"
             echo "wasm_bindgen_version=$(wasm-bindgen --version)"
+            echo "cargo_audit_version=$(cargo audit --version)"
             echo "target=wasm32-unknown-unknown"
             echo "profile=release"
             echo "features=default"
             echo
             echo "[locked_dependency_graph]"
             cargo tree --locked --target wasm32-unknown-unknown
+            echo
+            echo "[dependency_license_inventory]"
+            cargo metadata --locked --format-version 1 | jq -r '.packages[] | [.name, .version, (.license // "UNKNOWN"), (.source // "workspace")] | @tsv' | sort
             echo
             echo "[artifact_sha256]"
             sha256sum Cargo.lock target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm pkg/sohel_argon2id_prototype.js pkg/sohel_argon2id_prototype_bg.wasm node-pkg/sohel_argon2id_prototype.js node-pkg/sohel_argon2id_prototype_bg.wasm
