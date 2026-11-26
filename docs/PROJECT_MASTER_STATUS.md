@@ -1,3 +1,10 @@
+## 2026-11-26 — Argon2id runtime transient response handling
+
+- Unfiltered diagnostic run #45859485701 deployed the Worker but a `/verify` request returned HTML instead of JSON. The exact HTTP status/content type was not captured by the previous client. The run failed before telemetry query; no invocation samples were captured.
+- Cleanup still passed: temporary Worker deletion HTTP 200 and absence check HTTP 404.
+- Updated the isolated runtime harness with bounded retry/backoff for transient non-JSON, HTTP 5xx and HTTP 429 responses, and clearer persistent-error diagnostics. Rerun #45859898860 is queued.
+- CPU-time evidence remains outstanding. Cloudflare exposes CPU/wall-time keys, but a usable invocation query has not yet returned records.
+
 ## 2026-11-26 — Argon2id invocation query diagnostic
 
 - Runtime #45857773930 passed deployment, hash/verify, correct/wrong password, sequential/concurrent checks and cleanup (HTTP 200 deletion; HTTP 404 absence verification). Two concurrent hashes: 124.138 ms combined wall-clock; WASM memory grew from 17 to 323 pages and remained stable.
