@@ -1,3 +1,11 @@
+## 2026-11-26 — Argon2id invocation query diagnostic
+
+- Runtime #45857773930 passed deployment, hash/verify, correct/wrong password, sequential/concurrent checks and cleanup (HTTP 200 deletion; HTTP 404 absence verification). Two concurrent hashes: 124.138 ms combined wall-clock; WASM memory grew from 17 to 323 pages and remained stable.
+- Cloudflare keys API exposed `$workers.cpuTimeMs` and `$workers.wallTimeMs`. Invocation query completed successfully but returned zero invocation groups. No CPU-time result is claimed.
+- Removed the unverified `$metadata.service` script-name filter and added sanitized event/metadata inspection. Unfiltered diagnostic runtime #45859485701 is in progress.
+- Prototype CI #45856402852 passed locked RustSec audit (34 dependencies, 1,568 advisories loaded), full tests/build and provenance artifact upload (ID `15134694932`).
+- No application authentication, D1, `main`, existing Preview or Production resources changed. Integration remains blocked pending CPU-time evidence, independent rebuild, signed provenance, dependency/license review and external security assessment.
+
 ## 2026-11-26 — Argon2id CI and isolated runtime verification update
 
 - Prototype CI [#45856402852](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856402852) passed formatting, host tests, Clippy, WASM compilation/bindings, Node integration/memory-growth tests, locked RustSec audit and provenance artifact upload. `cargo audit` scanned 34 locked dependencies against 1,568 loaded advisories and exited successfully.
