@@ -1,3 +1,9 @@
+## 2026-11-26 — RustCrypto Argon2id prototype source stage
+- Added an isolated Rust crate pinned to RustCrypto Argon2 0.6.0 at commit `dc7e0c25cda9a8421d2604debf548d663886b431`.
+- Fixed candidate parameters to Argon2id v=19, 19,456 KiB, two passes, one lane and a 32-byte tag; bounded password input and required a 16-byte caller-supplied salt.
+- Added an owned working-matrix wrapper that zeroizes every block in `Drop`, upstream Argon2id v=19 KAT coverage, deterministic/differentiation/input-bound tests, and CI for host tests, formatting, Clippy and wasm32 compilation.
+- CI outcome is pending. No ABI, PHC layer, Worker integration or benchmark is implemented yet. No application authentication, stored hashes, Preview or Production resources changed.
+
 ## 2026-11-26 — Select maintained RustCrypto Argon2 prototype candidate
 - Reassessed the PHC reference C repository: latest release shown as 2019-07-02 and inspected master commit dated 2021-06-25. Its maintenance gap makes it a weaker choice for a new security-critical integration.
 - Selected RustCrypto Argon2 0.6.0 as the preferred isolated prototype candidate, pinned to signed commit `dc7e0c25cda9a8421d2604debf548d663886b431` dated 2026-11-05. The crate is pure Rust, no_std, Argon2id-capable, single-thread by default, PHC-capable, and dual MIT/Apache-2.0 licensed.
