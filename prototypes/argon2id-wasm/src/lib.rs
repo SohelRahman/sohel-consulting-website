@@ -66,6 +66,20 @@ mod wasm_api {
         core::arch::wasm32::memory_size(0) as u32
     }
 
+    /// Test-only hook: force linear-memory growth to exercise wasm-bindgen view refresh.
+    #[cfg(feature = "test-hooks")]
+    #[wasm_bindgen]
+    pub fn wasm_test_grow_memory(pages: u32) -> Result<u32, JsValue> {
+        if pages == 0 || pages > 16 {
+            return Err(JsValue::from_str("test growth must be between 1 and 16 pages"));
+        }
+        let previous = core::arch::wasm32::memory_grow(0, pages as usize);
+        if previous == usize::MAX {
+            return Err(JsValue::from_str("WebAssembly memory growth failed"));
+        }
+        Ok(previous as u32)
+    }
+
     /// Hash bounded JS byte arrays. Lengths are checked before either array is copied.
     #[wasm_bindgen]
     pub fn wasm_hash(password: &Uint8Array, salt: &Uint8Array) -> Result<Box<[u8]>, JsValue> {
