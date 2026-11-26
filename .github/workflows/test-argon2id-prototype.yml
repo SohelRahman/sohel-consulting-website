@@ -55,6 +55,7 @@ jobs:
           : "${WASM_BINDGEN_VERSION:?Could not resolve wasm-bindgen crate version}"
           cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
           wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
+          cargo build --release --target wasm32-unknown-unknown --features test-hooks
           wasm-bindgen --target nodejs --out-dir node-pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
           test -s pkg/sohel_argon2id_prototype.js
           test -s pkg/sohel_argon2id_prototype_bg.wasm
