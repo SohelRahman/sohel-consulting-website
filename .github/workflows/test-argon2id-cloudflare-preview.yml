@@ -190,6 +190,7 @@ jobs:
           NODE
           echo 'Waiting briefly for Workers invocation telemetry ingestion before querying the API.'
           sleep 20
+          # Trigger a fresh isolated invocation-log query after removing the unverified service-name filter.
           # Discover the complete key set first; the keys endpoint supports keyNeedle/limit,
           # while invocation filtering uses the documented indexed service field below.
           jq -n '{datasets:["cloudflare-workers"],limit:1000}' > /tmp/argon2id-telemetry-keys-request.json
