@@ -1,3 +1,11 @@
+
+
+## 2026-11-27 — Telemetry jq reporter correction and TinyFish operating rule
+
+- Corrected the escaped field access in the isolated Argon2id Cloudflare telemetry report so jq reads the literal `$workers` and `$metadata` keys and compares object types without shell-escape artifacts.
+- Source commit: `6a776de5e9f6cd58462d0dd086d1845aebfcd99e`. This change is not runtime-verified until a fresh GitHub Actions run completes successfully.
+- TinyFish is an approved project tool to use when it materially improves browser-based testing, Preview inspection, research or engineering execution. Use it only when required; avoid unnecessary operations and avoidable costs. No unauthorized mutations, authenticated actions, Production/configuration changes or secret handling.
+- Existing branch, Preview, D1, Production and PR approval gates remain in force.
 ## 2026-11-27 — First actual Cloudflare CPU-time sample
 
 - Corrected runtime #45876662415 passed and returned one invocation telemetry event filtered to the exact disposable Worker. Cloudflare reports `$workers.cpuTimeMs = 58` and `$workers.wallTimeMs = 60`.
