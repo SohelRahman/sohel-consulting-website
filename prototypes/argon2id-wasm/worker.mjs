@@ -4,6 +4,7 @@ const json = (value, status = 200) => new Response(JSON.stringify(value), {
   status,
   headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }
 });
+const TEST_PASSWORD = "isolated Cloudflare Workers Argon2id runtime test";
 
 export default {
   async fetch(request, env) {
@@ -14,23 +15,30 @@ export default {
     if (url.pathname === "/health" && request.method === "GET") {
       return json({ ok: true, runtime: "cloudflare-workers" });
     }
-    if (url.pathname === "/self-test" && request.method === "POST") {
-      const beforePages = wasmMemoryPages();
-      const password = "isolated Cloudflare Workers Argon2id runtime test";
-      const phc = hashPassword(password);
-      const afterHashPages = wasmMemoryPages();
-      const valid = verifyPassword(password, phc);
-      const invalid = verifyPassword("incorrect test password", phc);
-      const result = {
-        hashGenerated: phc.startsWith("$argon2id$v=19$m=19456,t=2,p=1$"),
-        validPasswordAccepted: valid,
-        wrongPasswordRejected: !invalid,
-        memoryPagesBefore: beforePages,
-        memoryPagesAfterHash: afterHashPages,
-        memoryGrowthObserved: afterHashPages > beforePages
-      };
-      const passed = result.hashGenerated && valid && !invalid && result.memoryGrowthObserved;
-      return json({ ...result, passed }, passed ? 200 : 500);
+    if (url.pathname === "/hash" && request.method === "POST") {
+      const memoryPagesBefore = wasmMemoryPages();
+      const started = performance.now();
+      const phc = hashPassword(TEST_PASSWORD);
+      const elapsedMs = Math.round((performance.now() - started) * 100) / 100;
+      const memoryPagesAfter = wasmMemoryPages();
+      return json({
+        phc,
+        hashMs: elapsedMs,
+        memoryPagesBefore,
+        memoryPagesAfter,
+        memoryGrowthObserved: memoryPagesAfter > memoryPagesBefore
+      });
+    }
+    if (url.pathname === "/verify" && request.method === "POST") {
+      let body;
+      try { body = await request.json(); } catch { return json({ error: "Invalid JSON." }, 400); }
+      if (typeof body?.phc !== "string" || body.phc.length > 128 || typeof body?.password !== "string" || body.password.length > 1024) {
+        return json({ error: "Invalid test input." }, 400);
+      }
+      const started = performance.now();
+      const valid = verifyPassword(body.password, body.phc);
+      const elapsedMs = Math.round((performance.now() - started) * 100) / 100;
+      return json({ valid, verifyMs: elapsedMs });
     }
     return new Response("Not found", { status: 404 });
   }
