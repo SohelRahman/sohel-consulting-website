@@ -3,12 +3,12 @@
 **Latest handover update:** 2026-11-26  
 **Repository:** `SohelRahman/sohel-consulting-website`  
 **Development branch:** `current-focus-development`  
-**Latest development head:** Updated by the Preview session-secret remediation commit; see repository branch head.  
+**Latest development head:** `3c6cb93ba65425fe8de10bfb5f3903c9b0c6f572`  
 **Latest verified source CI:** [Run #1076](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45756744386) passed on application-equivalent merge commit `4aed95bba0af650f3e8c913405852d62dc88e5a0`.
 
 ## Active priority — Authenticated Preview acceptance and Production readiness
 
-**Status:** Development/main ancestry has been reconciled and the current development validation run passed. Preview source and migration work includes Admin MFA, but authenticated MFA enrollment/login, recovery-code use, RBAC and full business workflow acceptance remain pending. Production D1, secrets, environment protections and backup readiness remain unverified.
+**Status:** Development validation and Preview HTTP/responsive browser smoke checks have passed. The PBKDF2 runtime compatibility fix is deployed to Preview. The user reports that the Preview Admin page opens; authenticated dashboard access, MFA activation, recovery-code use and RBAC have not yet been independently confirmed. Production D1, secrets, environment protections and backup readiness remain unverified. PR #1 remains draft with no recorded reviews.
 
 ### Deployment evidence
 - Preview URL: https://current-focus-development.sohelrahman118.workers.dev
@@ -26,12 +26,12 @@
 - Workflow [run](https://github.com/SohelRahman/sohel-consulting-website/actions/workflows/preview-runtime-smoke.yml) must pass before marking these HTTP checks accepted.
 
 ### Remaining acceptance sequence
-1. Complete and record the guarded HTTP smoke workflow.
-2. Perform browser QA for English/Bangla navigation, mobile/desktop layouts, accessibility, console/network errors and consent behavior.
-3. Verify Admin bootstrap/account readiness, login/MFA enrollment and role-based access.
-4. Execute two-session CMS concurrency tests and verify stale-write HTTP 409, revision increments and history/audit consistency.
-5. Test Page Builder, Media Library/Cloudinary, course, registration, inquiry, quotation and chat workflows.
-6. Complete formal OWASP ASVS Level 2 verification and release-readiness review.
+1. Confirm whether the opened Admin page is the authenticated dashboard, not only the login/enrollment screen.
+2. Complete MFA enrollment and test a fresh MFA login, recovery-code single use and RBAC using the authorized Preview account.
+3. Execute two-session CMS concurrency tests and verify stale-write HTTP 409, revision increments and history/audit consistency.
+4. Test Page Builder, Media Library/Cloudinary, course, registration, inquiry, quotation and chat workflows.
+5. Complete formal OWASP ASVS Level 2 verification and release-readiness review.
+6. Complete Production D1 identity/backup/migration-ledger and runtime-secret/environment preflight, obtain required PR review, then merge and deploy.
 
 Do not treat deployment success or CI as browser/runtime acceptance. Keep all tests on Preview and preserve the Production/`main` boundary.
 
@@ -262,3 +262,23 @@ The Preview Admin diagnostic exposed the exact failure: Cloudflare Workers produ
 - The Worker now has the Workers-compatible 100,000-iteration PBKDF2 implementation. Development validation passed on the tested code commit `90a47a50f3d052eceda82d97a67d6095ec1bb2d6`; subsequent changes were documentation only.
 - The existing Preview smoke workflow was skipped because its explicit `[preview-smoke]` commit-message gate was not met. A docs-only commit will trigger that smoke workflow without redeploying the Worker.
 - Admin sign-in has not yet been retested after this deployment. The 100,000-iteration PBKDF2 setting remains a documented security compromise requiring a stronger future KDF design.
+
+
+## 2026-11-26 — Preview runtime acceptance and Production gate audit
+
+### Verified
+- Preview deployment Run [#45758679816](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45758679816) succeeded for PBKDF2 compatibility fix commit `df6b7a311c1d92e3091a6b3c80f0aa142afd43be`.
+- Development validation Run [#45759504101](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45759504101) passed.
+- Preview runtime smoke Run [#45759498860](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45759498860) passed, including public page delivery, unauthenticated Admin API rejection, sensitive path denial, privacy headers and responsive Chromium checks.
+- The user reports that the Preview Admin link opens. This is not sufficient evidence of a completed authenticated session; a dashboard screenshot or successful authenticated API check is still required.
+- PBKDF2 at 100,000 iterations is a compatibility workaround and remains below OWASP's current 600,000 PBKDF2-SHA-256 recommendation. Do not treat this as the final password-storage security design.
+
+### Production release gate audit
+- PR #1 is still **open and draft**, with 856 commits ahead of `main`, 0 behind, 110 changed files, and no recorded PR reviews or review threads.
+- The current Production workflow `.github/workflows/deploy-cloudflare.yml` only runs `wrangler deploy` from `main`. It does not run the repository validation suite, verify the exact Production D1 identity, check the remote migration ledger, or apply/verify pending migrations.
+- Production D1 identity is configured in `wrangler.toml` as `consulting-db` / `3a4f765a-46c2-4040-9753-36e9483893a4`; this is configuration evidence, not independent confirmation of the live Cloudflare database.
+- Production backups/restore readiness, remote migration ledger, runtime secret presence and GitHub `production` environment protection/reviewer configuration remain unverified.
+- No merge, Production D1 operation, Production secret mutation or Production deployment was performed.
+
+### Next engineering priority
+Complete authenticated Preview Admin/MFA acceptance, then harden the Production deployment workflow with validation and read-only target/migration preflight. Do not merge or deploy while PR review, Production database/backup and secret/environment gates remain open.
