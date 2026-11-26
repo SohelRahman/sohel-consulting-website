@@ -5,13 +5,29 @@ on:
     branches:
       - current-focus-development
     paths:
-      - 'prototypes/argon2id-wasm/**'
+      - 'prototypes/argon2id-wasm/Cargo.toml'
+      - 'prototypes/argon2id-wasm/Cargo.lock'
+      - 'prototypes/argon2id-wasm/src/**'
+      - 'prototypes/argon2id-wasm/tests/**'
+      - 'prototypes/argon2id-wasm/test/**'
+      - 'prototypes/argon2id-wasm/adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker-adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker.mjs'
+      - 'prototypes/argon2id-wasm/wrangler.toml'
       - '.github/workflows/test-argon2id-prototype.yml'
   pull_request:
     branches:
       - current-focus-development
     paths:
-      - 'prototypes/argon2id-wasm/**'
+      - 'prototypes/argon2id-wasm/Cargo.toml'
+      - 'prototypes/argon2id-wasm/Cargo.lock'
+      - 'prototypes/argon2id-wasm/src/**'
+      - 'prototypes/argon2id-wasm/tests/**'
+      - 'prototypes/argon2id-wasm/test/**'
+      - 'prototypes/argon2id-wasm/adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker-adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker.mjs'
+      - 'prototypes/argon2id-wasm/wrangler.toml'
       - '.github/workflows/test-argon2id-prototype.yml'
   workflow_dispatch:
 
