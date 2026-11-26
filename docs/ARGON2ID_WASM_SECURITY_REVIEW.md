@@ -1,3 +1,5 @@
+- **Failure-path cleanup status correction:** the marked run #45838191990 was canceled before execution; it did not verify cleanup. The latest normal runtime run #45838254764 is queued without failure injection. Treat failure-path cleanup as open until a marked run completes and confirms HTTP 404 after deletion.
+
 ## Latest test work — 2026-11-26
 
 - Added a deterministic PHC parser corpus covering structural mutations, canonical Base64 boundaries and 4,096 arbitrary bounded ASCII inputs. Formatting, host tests and Clippy passed in prototype CI #45837980772; WASM binding and adapter checks were still in progress at the time of this update.
