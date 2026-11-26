@@ -2,7 +2,7 @@
 
 **Review date:** 2026-11-26  
 **Scope:** `prototypes/argon2id-wasm` only. This is a source-level review, not an external audit or penetration test.  
-**Decision:** **Not approved for application integration or release.** Keep isolated until runtime and performance gates pass.
+**Decision:** **Not approved for application integration or release.** Basic Cloudflare Workers runtime compatibility now passes; keep isolated until CPU-time and performance gates pass.
 
 ## Files reviewed
 
@@ -26,8 +26,8 @@
 
 | Severity | Finding | Required action |
 |---|---|---|
-| **Release blocker** | Cloudflare Workers Free has a 10 ms CPU-time limit per HTTP request. The Argon2id baseline performs substantial CPU work; the current harness records `performance.now()` elapsed time, not Cloudflare CPU time. | Confirm runtime compatibility and obtain invocation CPU-time evidence. Do not lower KDF parameters to force a pass. |
-| **High / unresolved** | Cloudflare runtime compatibility has not yet been accepted. Local Node tests and Wasm compilation do not prove Wrangler's compiled-module import or Workers execution. | Require the isolated Worker workflow to pass hash, correct-password, wrong-password, memory-growth and cleanup checks. |
+| **Release blocker** | The runtime harness records `performance.now()` elapsed time, not Cloudflare CPU time. | Obtain invocation CPU-time evidence from Cloudflare Workers invocation logs/trace events. Do not infer CPU time from wall-clock duration. |
+| **Resolved for basic compatibility** | The isolated runtime workflow passed Wrangler compiled-Wasm import, Worker startup, health, hash, correct/wrong password verification, memory growth and temporary Worker deletion. | Retain this as a basic runtime acceptance result; it is not a production readiness approval. |
 | **Medium** | Zeroization tests verify the wrapper's wipe routine, not all compiler, allocator, runtime-copy, snapshot, crash or process-termination behavior. JavaScript strings are immutable and cannot be reliably erased. | Retain precise claims; avoid promising complete password erasure. Review generated Wasm and runtime behavior before integration. |
 | **Medium** | Independent PHC evidence consists of one `argon2-cffi` fixture. There is no broad fuzz/property suite or multi-implementation version matrix. | Add malformed-input fuzzing, property tests and more independent fixtures before production consideration. |
 | **Medium** | There is no concurrency/load, peak-memory or failure-injection evidence. A 19 MiB matrix is only the algorithm's working-memory baseline; isolate memory and CPU behavior still need measurement. | Benchmark serial and concurrent requests, memory reuse/growth and allocation-failure behavior on the actual Worker plan. |
@@ -41,8 +41,8 @@ No change to `src/password-hash.js`, stored password hashes, Admin authenticatio
 
 ## Release gates
 
-- [ ] Isolated Wrangler precompiled-Wasm import and Cloudflare Worker execution pass.
-- [ ] Temporary Worker deletion is confirmed even on failed test paths.
+- [x] Isolated Wrangler precompiled-Wasm import and Cloudflare Worker execution pass (CI run #45827375696).
+- [x] Temporary Worker deletion was confirmed on the successful retry (HTTP 200); the prior orphaned name was already absent (HTTP 404). Failed-path cleanup still needs a controlled failure-injection test.
 - [ ] Actual invocation CPU-time evidence is collected; wall-clock timing is labelled separately.
 - [ ] Serial/concurrent latency and memory behavior are characterized.
 - [ ] Broader PHC interoperability and fuzz/property tests pass.
@@ -52,7 +52,7 @@ No change to `src/password-hash.js`, stored password hashes, Admin authenticatio
 
 ## Overall conclusion
 
-The current source has useful defensive controls and its dedicated CI suite passes. That is not equivalent to a production security approval. Runtime compatibility, Workers Free CPU budget, concurrency/memory behavior and broader interoperability remain unresolved. Keep the prototype isolated and do not alter application authentication or stored password hashes.
+The current source has useful defensive controls and its dedicated CI suite passes. That is not equivalent to a production security approval. Basic runtime compatibility is verified. CPU-time evidence, repeated/concurrent performance, broader interoperability and failure-path cleanup still remain unresolved. Keep the prototype isolated and do not alter application authentication or stored password hashes.
 
 ## References
 
