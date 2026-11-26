@@ -1,3 +1,9 @@
+## 2026-11-26 — Argon2id CPU-time observability instrumentation
+
+- Enabled native Workers invocation logs at 100% head sampling for the isolated Argon2id prototype.
+- Added `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md` with dashboard/API measurement steps.
+- No Logpush destination or paid external service configured. Actual invocation CPU-time values remain uncollected; no compliance claim made.
+
 ## 2026-11-26 — Second Argon2id Cloudflare runtime check passed
 
 - Runtime Run #45837980987 passed deployment, health, hash/verify, sequential/concurrent checks and Worker deletion (HTTP 200).
