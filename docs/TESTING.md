@@ -789,3 +789,22 @@ Record the exact Preview deployment commit, browser/device, test account role an
 - [ ] No password, encryption key, TOTP seed, TOTP value or recovery code appears in browser console, network error text, Worker logs or D1 audit details.
 
 A passing CI run or unauthenticated browser smoke does not complete these checks. Record evidence and failures before marking any item passed.
+## Current Preview authentication and authorization status — 2026-11-26
+
+The user has confirmed successful access to the authenticated Preview Admin dashboard with its management navigation. This is user-reported browser acceptance of the Admin dashboard entry path. It is not independent evidence for each MFA control or for permission-limited User accounts.
+
+The current Worker authorization layer loads the active account and session version on each `/api/admin/*` request, requires MFA enrollment, derives the account's role and permission set, maps API routes to permissions, and returns HTTP 403 when a non-Admin account lacks the required permission. Unknown Admin API routes fail closed for non-Admin accounts. Admin-only account-management routes are handled separately. Source-contract tests cover these rules, but they do not execute live requests against a limited-User account.
+
+### Remaining live Preview authorization acceptance
+
+- [ ] Use an existing authorized permission-limited User test account; do not create or modify accounts without approval.
+- [ ] Verify the account's `/api/admin/me` response contains only its assigned permissions.
+- [ ] Verify direct API reads for unassigned modules return HTTP 403.
+- [ ] Verify direct API mutations for unassigned modules return HTTP 403 and do not change D1 state.
+- [ ] Verify a module's `*.manage` permission permits its corresponding read operation.
+- [ ] Verify `chat.reply` permits chat viewing and replying, but no unrelated module access.
+- [ ] Verify unknown `/api/admin/*` routes return HTTP 403 for a limited User.
+- [ ] Verify account-management endpoints remain Admin-only.
+- [ ] Verify disabling the test User revokes its existing session on the next request.
+
+Do not mark these cases passed from source inspection or static contract tests. Record the Preview deployment commit, account role, request path/method, HTTP status and non-sensitive outcome. Never record passwords, TOTP values, recovery codes or session cookies.
