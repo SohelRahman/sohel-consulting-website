@@ -204,3 +204,26 @@ The project owner authorized the Production release, including the required merg
 
 ### Next release action
 Reconcile the 14-commit branch divergence and six overlapping workflow files without force-pushing; then rerun required validation and complete the Production D1/secret/environment preflight before merge and deployment.
+
+
+## 2026-11-26 — Development/main ancestry reconciliation
+
+### Completed
+- Reconciled the development branch with the current `main` history using a non-force-forward merge commit: `4aed95bba0af650f3e8c913405852d62dc88e5a0`.
+- The merge commit retains the audited development tree and adds the exact current `main` head as its second parent. The branch update used an expected-head lease; no force push was used.
+- Re-audit of all six files changed on both sides found two identical files and four where the development version contains the safer/fixed logic: correct Cloudflare token whitespace normalization and strict parsing of the Preview D1 array-of-table configuration. Those development versions were retained.
+- Branch comparison now reports development is 0 commits behind `main`; PR #1 is reported mergeable by GitHub.
+- PR #1 remains a draft. The current diff contains 110 files. Development validation workflow Run #1076 was observed in progress at the time of this update; final result remains pending.
+
+### Not yet complete
+- No merge to `main` has occurred.
+- PR review/approval and readiness transition remain outstanding.
+- Production D1 identity, backup, migration ledger, protected environment and secret readiness remain unverified.
+- Authenticated Admin/MFA and end-to-end acceptance remain outstanding.
+- Final owner approval of business content, pricing and policies remains outstanding.
+
+### Safety
+No Production deployment, Production D1 operation, secret mutation, or change to the `main` ref was performed.
+
+### Next action
+Wait for the validation run on the reconciled head, inspect its jobs and results, then address any failures before proceeding with the remaining release gates.
