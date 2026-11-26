@@ -667,3 +667,11 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Documented a precompiled-Wasm Argon2id implementation as the next candidate, subject to source/license/release/API/test review before benchmark.
 - Updated the benchmark workflow to report whether the temporary Worker deletion succeeded instead of silently suppressing cleanup errors.
 - No Admin authentication code or stored password hashes were changed.
+
+## 2026-11-26 — Isolated Argon2id PHC prototype CI milestone
+
+- Added bounded PHC-style hash generation and fixed-profile verification to the isolated Rust Argon2id prototype.
+- Corrected the Clippy `manual_div_ceil` finding.
+- CI Run [#9](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45781931534) passed formatting, five host tests, Clippy with warnings denied, and release compilation for `wasm32-unknown-unknown`.
+- Updated the prototype README and password-storage assessment to distinguish implemented functionality from remaining independent interoperability, ABI, memory-wipe verification and Worker runtime gates.
+- No application authentication, stored hashes, Preview Worker, D1 database, secret or Production resource was changed. No deployment was performed.
