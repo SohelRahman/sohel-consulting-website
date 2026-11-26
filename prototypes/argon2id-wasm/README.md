@@ -85,3 +85,10 @@ This prototype remains separate from the website's authentication path until run
 - Runtime test [#45843299379](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45843299379) passed, including Worker deployment, hash/verify and cleanup. Cloudflare Logs was subsequently queried for that Worker over the last 24 hours and returned zero matching records. No CPUTimeMs or WallTimeMs values were available.
 
 **Current status:** experimental and isolated; not approved for application integration or production. Actual Cloudflare invocation CPU-time evidence, repeatable performance characterization, dependency lockfile/provenance review and an external security assessment remain open. Do not infer CPU time from performance.now() wall-clock samples. Zeroization tests do not prove complete erasure.
+
+
+## Dependency reproducibility finding — 2026-11-26
+
+The repository does not contain `prototypes/argon2id-wasm/Cargo.lock` (checked on `current-focus-development`; GitHub contents API returned 404). The latest successful CI log shows Cargo resolving and locking 33 packages to the highest versions compatible with the runner's Rust toolchain, rather than consuming a committed lockfile. The Argon2 source itself is pinned to immutable Git revision `dc7e0c25cda9a8421d2604debf548d663886b431`, but the full transitive dependency graph is not yet reproducibly pinned. CI passing does not close this provenance gap.
+
+**Required action before application integration:** generate and review the crate lockfile from a clean checkout, commit it alongside the prototype, change CI build/test commands to `--locked`, and verify the lockfile is honored for both host and `wasm32-unknown-unknown` targets. Record the Rust toolchain, wasm-bindgen CLI version, source revision and artifact checksums. Do not claim dependency provenance is complete until a clean locked build passes.
