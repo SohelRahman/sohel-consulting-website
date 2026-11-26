@@ -32,6 +32,7 @@ jobs:
           ref: current-focus-development
       - uses: dtolnay/rust-toolchain@stable
         with:
+          toolchain: 1.100.0
           targets: wasm32-unknown-unknown
           components: rustfmt, clippy
       - name: Generate and inspect prototype dependency lockfile
@@ -77,6 +78,29 @@ jobs:
       - name: Test JavaScript adapter and WASM memory growth
         working-directory: prototypes/argon2id-wasm
         run: node --test test/adapter.test.mjs
+      - name: Record build provenance and artifact checksums
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "source_commit=$GITHUB_SHA"
+            echo "rustc_version=$(rustc --version)"
+            rustc --version --verbose
+            echo "cargo_version=$(cargo --version)"
+            echo "node_version=$(node --version)"
+            echo "wasm_bindgen_version=$(wasm-bindgen --version)"
+            echo "target=wasm32-unknown-unknown"
+            echo "profile=release"
+            echo "features=default"
+            echo
+            echo "[locked_dependency_graph]"
+            cargo tree --locked --target wasm32-unknown-unknown
+            echo
+            echo "[artifact_sha256]"
+            sha256sum Cargo.lock target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm pkg/sohel_argon2id_prototype.js pkg/sohel_argon2id_prototype_bg.wasm node-pkg/sohel_argon2id_prototype.js node-pkg/sohel_argon2id_prototype_bg.wasm
+          } > build-provenance.txt
+          cat build-provenance.txt
       - name: Upload precompiled WASM package
         uses: actions/upload-artifact@v4
         with:
@@ -84,5 +108,6 @@ jobs:
           path: |
             prototypes/argon2id-wasm/pkg/
             prototypes/argon2id-wasm/Cargo.lock
+            prototypes/argon2id-wasm/build-provenance.txt
           if-no-files-found: error
           retention-days: 7
