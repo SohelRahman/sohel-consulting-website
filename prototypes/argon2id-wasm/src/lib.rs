@@ -1,5 +1,5 @@
 //! Isolated Argon2id prototype. Not connected to application authentication.
-use argon2::{Algorithm, Argon2, Block, Params, Version};
+use argon2::{Algorithm, Argon2, AssociatedData, Block, Params, ParamsBuilder, Version};
 use zeroize::Zeroize;
 
 pub const MEMORY_KIB: u32 = 19_456;
@@ -80,8 +80,15 @@ mod tests {
     #[test]
     fn matches_rustcrypto_argon2id_v19_known_answer_vector() {
         // Upstream RustCrypto KAT: m=32 KiB, t=3, p=4, tag=32 bytes.
-        let params = Params::new(32, 3, 4, Some(32)).unwrap();
-        let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+        let params = ParamsBuilder::new()
+            .m_cost(32)
+            .t_cost(3)
+            .p_cost(4)
+            .data(AssociatedData::new(&[0x04; 12]).unwrap())
+            .build()
+            .unwrap();
+        let secret = [0x03; 8];
+        let argon2 = Argon2::new_with_secret(&secret, Algorithm::Argon2id, Version::V0x13, params).unwrap();
         let password = [0x01; 32];
         let salt = [0x02; 16];
         let expected = hex!(
