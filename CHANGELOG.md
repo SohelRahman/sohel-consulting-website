@@ -1,3 +1,8 @@
+## 2026-11-26 — Argon2id transient Worker response retry
+
+- Unfiltered runtime diagnostic #45859485701 stopped when `/verify` returned HTML instead of JSON; cleanup was verified (HTTP 200 deletion, HTTP 404 absence).
+- Added bounded retries and HTTP/content-type diagnostics for transient edge responses. Runtime rerun #45859898860 queued. No CPU-time evidence captured.
+
 ## 2026-11-26 — Argon2id telemetry query diagnostic
 
 - Runtime #45857773930 passed isolated Worker runtime tests and cleanup. Two concurrent hash requests took 124.138 ms combined wall-clock; memory stabilized at 323 Wasm pages after growth from 17.
