@@ -1,3 +1,11 @@
+## 2026-11-26 — PHC corpus CI and failure-path cleanup verified
+
+- Prototype CI [#45838494936](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45838494936) passed formatting, host tests including the deterministic PHC corpus, Clippy, release WASM compilation, wasm-bindgen bindings, Node adapter/memory-growth tests and artifact upload.
+- Controlled failure-path Cloudflare runtime [#45840895843](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45840895843) passed: after runtime checks, the workflow injected the expected failure; cleanup deleted the temporary Worker (HTTP 200), and a follow-up Cloudflare API GET verified absence (HTTP 404).
+- In that run, the two-request concurrent batch took 201.874 ms wall-clock; per-operation timer samples remained 0 ms. Memory grew from 17 to 323 Wasm pages and remained stable. No CPU-time value was captured.
+- Native Workers invocation logging is now configured in the isolated Wrangler file. Added `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md` with dashboard and API steps. A new runtime deployment is required to activate logging before CPU-time samples can be inspected.
+- Failure-path cleanup is resolved for the tested workflow; actual invocation CPU-time evidence remains the next release blocker.
+
 ## 2026-11-26 — Native CPU-time observability enabled for isolated Argon2id Worker
 
 - Added native Workers invocation logging at 100% head sampling to `prototypes/argon2id-wasm/wrangler.toml`.
