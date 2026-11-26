@@ -1,3 +1,9 @@
+## 2026-11-26 — Argon2id prototype validation passed
+- Dedicated CI run [#45777843556](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777843556) passed formatting, three host tests including the Argon2id v=19 KAT, Clippy with warnings denied, and optimized wasm32 compilation.
+- Initial formatting and Clippy failures were fixed before the passing run.
+- Broader development validation [#45777849748](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45777849748) passed. Preview deployment and the isolated runtime benchmark were skipped; no Worker was deployed and no app authentication or stored hashes changed.
+- Remaining: bounded ABI, PHC interoperability, memory-wipe test coverage, Cloudflare runtime/CPU/memory benchmark.
+
 ## 2026-11-26 — RustCrypto Argon2id prototype source stage
 - Added an isolated Rust crate pinned to RustCrypto Argon2 0.6.0 at commit `dc7e0c25cda9a8421d2604debf548d663886b431`.
 - Fixed candidate parameters to Argon2id v=19, 19,456 KiB, two passes, one lane and a 32-byte tag; bounded password input and required a 16-byte caller-supplied salt.
