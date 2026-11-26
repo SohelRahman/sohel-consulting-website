@@ -1,3 +1,11 @@
+## 2026-11-27 — Argon2id runtime and telemetry-query follow-up
+
+- Isolated runtime #45875891768 passed deployment, health, PHC hash/verify, correct/wrong password, sequential/concurrent checks and automatic cleanup (HTTP 200 deletion; HTTP 404 absence check). Two concurrent hash requests took 683.469 ms combined wall-clock; memory grew from 17 to 323 WASM pages and remained stable. This is not CPU-time evidence.
+- Cloudflare telemetry keys exposed CPU/wall-time fields, but the invocation query returned zero groups. Current Cloudflare API documentation specifies `view` as a top-level query field. Corrected the harness to use top-level `view: "invocations"` and filter by `$workers.scriptName` for the exact disposable Worker. Commit `09e84882e5eac8099dddbf3cc15dd5bf1f6ee090`.
+- Runtime rerun #45876662415 was in progress at the time of this entry; CPU-time evidence remains open until real invocation events are returned.
+- Latest available provenance artifact inventory lists dependency license expressions, mainly MIT/Apache-2.0; `unicode-ident` also declares Unicode-3.0. The prototype crate is `UNKNOWN` in the inventory and has no LICENSE file. A project-owner licensing decision is required before distribution/integration; no license has been invented or added.
+- Website validation #45876662428 passed. No existing Preview deployment, application auth, D1, Production, `main` or PR merge operation occurred.
+
 ## 2026-11-27 — Fresh branch and release-state audit
 
 - Fresh GitHub compare `main...current-focus-development` reports status `ahead`, 1,074 commits ahead and 0 behind. This supersedes the older 2026-11-22 divergence snapshot (575 ahead / 14 behind); retain the older figures only as historical evidence.
