@@ -1,5 +1,12 @@
 
 
+## 2026-11-27 — Third Cloudflare telemetry run and correlation instrumentation
+
+- Isolated runtime #45878008941 passed. Cloudflare returned two invocation records: 59 ms CPU / 59 ms wall and 96 ms CPU / 99 ms wall. The inspected event keys exposed no request path/method, so neither sample is attributed to hash or verify.
+- Two concurrent hashes took 123.828 ms combined client wall time; WASM memory stabilized at 323 pages. Temporary Worker cleanup was verified (DELETE 200, GET 404).
+- Added a client-side request timeline and invocation timestamp/source/dataset/nested-key reporting in commit 065c0e16cc99d621508ab8a2b35dbb3bc56dc243 to test timestamp correlation. Runtime verification is pending; client wall time remains distinct from Cloudflare CPU time.
+
+
 ## 2026-11-27 — Second Cloudflare telemetry runtime sample
 
 - Isolated runtime #45877435363 passed and returned two Cloudflare invocation records for its disposable Worker: 59 ms CPU / 60 ms wall and 0 ms / 0 ms. Neither record can be attributed to a specific hash/verify request.
