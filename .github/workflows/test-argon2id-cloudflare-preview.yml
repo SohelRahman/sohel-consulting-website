@@ -213,7 +213,7 @@ jobs:
               if [[ "$QUERY_CODE" == '200' ]] && jq -e '.success == true' /tmp/argon2id-telemetry-query.json >/dev/null; then
                 echo 'Cloudflare invocation telemetry query succeeded. CPU and wall-time samples follow; no JavaScript timers are used for these values.'
                 jq -c '{success,errors,messages,run_status:.result.run.status,result_keys:(.result|keys),invocation_groups:((.result.invocations // {})|to_entries|map({request_id:.key,events:[.value[]|{trigger,timestamp,cpuTimeMs:.["$workers"].cpuTimeMs,wallTimeMs:.["$workers"].wallTimeMs,scriptName:.["$workers"].scriptName}]}))}' /tmp/argon2id-telemetry-query.json
-                EVENT_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[]] | length' /tmp/argon2id-telemetry-query.json)
+                EVENT_COUNT="$(jq '[(.result.invocations // {}) | to_entries[] | .value[]] | length' /tmp/argon2id-telemetry-query.json)"
                 echo "Invocation event count returned by Cloudflare: $EVENT_COUNT"
               else
                 echo "Cloudflare telemetry query did not return data (HTTP $QUERY_CODE); response is retained only in this ephemeral runner."
