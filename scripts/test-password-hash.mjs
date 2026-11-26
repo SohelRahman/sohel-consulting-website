@@ -18,7 +18,7 @@ async function legacyHash(password) {
 const password = "Correct horse battery staple 2026!";
 const legacy = await legacyHash(password);
 assert.equal(await verifyPassword(password, legacy), true, "legacy 100,000-iteration hash remains valid");
-assert.equal(needsPasswordRehash(legacy), true, "legacy hash is marked for upgrade");
+assert.equal(needsPasswordRehash(legacy), false, "Worker-compatible hash does not require an unsupported upgrade");
 assert.equal(await verifyPassword("incorrect password", legacy), false, "wrong password is rejected");
 
 const current = await hashPassword(password);
@@ -27,7 +27,7 @@ assert.equal(await verifyPassword(password, current), true, "new 600,000-iterati
 assert.equal(needsPasswordRehash(current), false, "current hash does not need upgrade");
 assert.notEqual(current, await hashPassword(password), "each password hash receives a unique salt");
 
-for (const malformed of ["", "pbkdf2$100000$bad$bad", "pbkdf2$999999$abc$def", "sha256$600000$abc$def", "pbkdf2$600000$abc$def$extra"]) {
+for (const malformed of ["", "pbkdf2$100000$bad$bad", "pbkdf2$600000$abc$def", "pbkdf2$999999$abc$def", "sha256$600000$abc$def", "pbkdf2$600000$abc$def$extra"]) {
   assert.equal(await verifyPassword(password, malformed), false, `malformed/unsupported hash rejected: ${malformed}`);
   assert.equal(needsPasswordRehash(malformed), false, "malformed hash is not treated as upgradeable");
 }
