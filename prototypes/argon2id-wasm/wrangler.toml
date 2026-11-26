@@ -7,3 +7,14 @@ workers_dev = true
 type = "CompiledWasm"
 globs = ["**/*.wasm"]
 fallthrough = true
+
+# Enable native Workers invocation logs for CPUTimeMs/WallTimeMs measurement.
+# Workers Logs is included on Workers Free; no Logpush destination is configured.
+[observability]
+enabled = true
+head_sampling_rate = 1.0
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+head_sampling_rate = 1.0
