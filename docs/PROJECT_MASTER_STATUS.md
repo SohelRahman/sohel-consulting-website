@@ -1,3 +1,12 @@
+## 2026-11-26 — Argon2id runtime health probe diagnostic correction
+
+- Inspected failed isolated runtime #45860426221. Precompiled WASM build and deployment succeeded, temporary test secret upload succeeded, but the health probe received HTTP 404 after ten retries. The Worker intentionally returned the same 404 for unauthorized requests and unknown routes, preventing the harness from distinguishing a token/configuration issue from route propagation.
+- Changed only `prototypes/argon2id-wasm/worker.mjs`: the non-sensitive `GET /health` response now runs before the test-token guard. `POST /hash` and `POST /verify` remain protected by the temporary test token. This is limited to the isolated prototype Worker.
+- Commit: `4d513470159e48e3a7f18790974fa56c8c110dcc` on `current-focus-development`.
+- Website validation run #45875591292 passed. Prototype CI #45875591553 and isolated runtime run #45875591303 were in progress at documentation time; their results must be checked before marking this correction verified.
+- No application authentication integration, D1 operation, existing Preview deployment, Production change, `main` update, branch reconciliation or PR merge occurred.
+- CPU-time evidence remains outstanding and must not be inferred from JavaScript wall-clock timing.
+
 ## 2026-11-26 — Node.js toolchain patch pin
 
 - Pinned Node.js `22.23.5` across the Argon2id prototype CI, isolated Cloudflare runtime workflow and password-KDF benchmark workflow.
