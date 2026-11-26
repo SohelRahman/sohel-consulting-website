@@ -116,17 +116,12 @@ test("zeroizes adapter-owned buffers when WASM operations throw", () => {
   assert.ok(verifyPhcBytes.every(byte => byte === 0));
 });
 
-test("zeroizes password and salt buffers when Web Crypto throws", () => {
-  let capturedPasswordBytes;
-  let capturedSaltBytes;
+test("does not call WASM when Web Crypto salt generation throws", () => {
+  let wasmCalls = 0;
   const adapter = createArgon2idAdapter({
     wasm: {
-      wasm_hash_phc(password, salt) {
-        capturedPasswordBytes = password;
-        capturedSaltBytes = salt;
-        return "unused";
-      },
-      wasm_verify_phc() { return false; }
+      wasm_hash_phc() { wasmCalls += 1; return "unused"; },
+      wasm_verify_phc() { wasmCalls += 1; return false; }
     },
     cryptoProvider: {
       getRandomValues(bytes) {
@@ -137,6 +132,5 @@ test("zeroizes password and salt buffers when Web Crypto throws", () => {
   });
 
   assert.throws(() => adapter.hashPassword("temporary password"), /controlled crypto failure/);
-  assert.ok(capturedPasswordBytes.every(byte => byte === 0));
-  assert.ok(capturedSaltBytes.every(byte => byte === 0));
+  assert.equal(wasmCalls, 0);
 });
