@@ -614,3 +614,9 @@ This is direct GitHub Actions execution evidence for the Preview D1 migration le
 - Confirmed the linked account is on Workers Free; the benchmark had not yet executed.
 - Removed the explicit CPU limit from the benchmark Worker config so it uses the plan's default limit.
 - No existing Worker, Admin password hash, D1 database or Production resource was changed.
+## 2026-11-26 — Benchmark request propagation retry
+
+- Verified that the isolated benchmark Worker can be deployed on the Free plan without a custom CPU setting.
+- The first request immediately after secret upload returned HTTP 401; the benchmark did not run.
+- Added bounded retry handling for temporary 401 responses after ephemeral secret creation.
+- The workflow retains automatic deletion of the isolated benchmark Worker on exit.
