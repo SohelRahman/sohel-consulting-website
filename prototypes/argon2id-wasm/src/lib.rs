@@ -318,6 +318,21 @@ mod tests {
     }
 
     #[test]
+    fn matches_independent_libsodium_phc_fixture() {
+        // Cross-checked independently with libsodium 1.0.18 crypto_pwhash,
+        // ALG_ARGON2ID13, opslimit=2, memlimit=19,456 KiB, output=32 bytes.
+        // The PHC envelope uses the standard Argon2id v=19, m=19456,t=2,p=1 fields.
+        let encoded = "$argon2id$v=19$m=19456,t=2,p=1$AAECAwQFBgcICQoLDA0ODw$HgadzgMogaKvjm4sbwElL0wO9HGwNWhl6ya2mcTteT8";
+        let password = b"independent PHC interoperability fixture";
+        assert!(verify_phc(password, encoded).unwrap());
+        assert!(!verify_phc(b"wrong password", encoded).unwrap());
+        assert_eq!(
+            hash_phc(password, &(0u8..16).collect::<Vec<_>>()).unwrap(),
+            encoded
+        );
+    }
+
+    #[test]
     fn matches_independent_argon2_cffi_phc_fixture() {
         // Generated independently with argon2-cffi 25.1.0:
         // Type.ID, version=19, m=19456, t=2, p=1, hash_len=32.
