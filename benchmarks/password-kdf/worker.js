@@ -32,8 +32,8 @@ export default {
         totalWallMs: Math.round(totalMs * 100) / 100,
         note: 'Wall-clock timings only. Cloudflare CPU-time and isolate memory must be confirmed from runtime analytics; this endpoint does not claim to measure either directly.'
       }, { headers: { 'cache-control': 'no-store' } });
-    } catch {
-      return Response.json({ error: 'KDF benchmark failed in the Worker runtime.' }, { status: 500, headers: { 'cache-control': 'no-store' } });
+    } catch (error) {
+      return Response.json({ error: 'KDF benchmark failed in the Worker runtime.', reason: String(error?.message || error).slice(0, 240), errorType: String(error?.name || 'Error') }, { status: 500, headers: { 'cache-control': 'no-store' } });
     }
   }
 };
