@@ -1,5 +1,5 @@
 //! Isolated Argon2id prototype. Not connected to application authentication.
-use argon2::{Algorithm, Argon2, AssociatedData, Block, Params, ParamsBuilder, Version};
+use argon2::{Algorithm, Argon2, Block, Params, Version};
 use zeroize::Zeroize;
 
 pub const MEMORY_KIB: u32 = 19_456;
@@ -57,6 +57,7 @@ pub fn derive(password: &[u8], salt: &[u8]) -> Result<[u8; OUTPUT_LEN], &'static
 #[cfg(test)]
 mod tests {
     use super::*;
+    use argon2::{AssociatedData, ParamsBuilder};
     use hex_literal::hex;
 
     #[test]
