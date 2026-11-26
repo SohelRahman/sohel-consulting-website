@@ -1,3 +1,9 @@
+## 2026-11-26 — Argon2id telemetry query diagnostic
+
+- Runtime #45857773930 passed isolated Worker runtime tests and cleanup. Two concurrent hash requests took 124.138 ms combined wall-clock; memory stabilized at 323 Wasm pages after growth from 17.
+- Cloudflare telemetry key discovery exposed CPU/wall-time fields, but the invocation query returned zero groups. Removed the unverified script-name filter and started unfiltered metadata diagnostic #45859485701.
+- No CPU-time measurement or production approval is claimed.
+
 ## 2026-11-26 — Argon2id locked audit and runtime verification update
 
 - Prototype CI #45856402852 passed all build/test steps, including RustSec audit (34 locked dependencies scanned against 1,568 advisories) and provenance artifact upload (ID `15134694932`).
