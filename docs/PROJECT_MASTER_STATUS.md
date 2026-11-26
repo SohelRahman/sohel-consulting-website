@@ -121,3 +121,42 @@ Preview smoke [Run #44](https://github.com/SohelRahman/sohel-consulting-website/
 ### Admin unauthenticated/MFA entry-state smoke accepted — 2026-11-24
 
 Preview runtime smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322065022) passed. HTTP/security checks and all eight responsive page/viewport checks succeeded. Admin assertions verified the visible login panel and email/password fields, hidden dashboard/enrollment/verification/recovery panels before authentication, and English/Bangla MFA enrollment and recovery wording in the hidden-panel DOM. The prior Run #44 failure was a test assertion visibility mistake and has been corrected. This does not establish authenticated MFA, recovery-code lifecycle, replay prevention or RBAC acceptance. No credentials, Worker deployment, D1 mutation or main-branch change was involved.
+
+
+## 2026-11-26 — Website 8 startup audit and continuity update
+
+### Repository baseline
+- Repository: `SohelRahman/sohel-consulting-website` (public; default branch `main`).
+- Development branch: `current-focus-development` at `48f87901f2609db8d8b82050087ec67490c43312` (latest branch head observed during this audit).
+- Production branch: `main` at `cae9a07bb20b509459231ee43be9f0601770c664` (latest branch head observed during this audit).
+- Open PR #1: `current-focus-development` to `main`, title “Build bilingual training registration and admin platform foundation”; it remains open and unmerged in the inspected GitHub response.
+- The development branch contains the application, 19 numbered D1 migrations (0001–0019), Worker/API code, English and Bangla pages, Admin UI, CMS, Cloudinary integration, tests, workflows and technical documentation.
+- `docs/PROJECT_MASTER_STATUS.md` exists on the development branch. A root-level `PROJECT_MASTER_STATUS.md` does not exist; the authoritative path remains `docs/PROJECT_MASTER_STATUS.md`.
+
+### Fresh CI/runtime evidence
+- Development validation [Run #1068](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322210311), commit `48f87901f2609db8d8b82050087ec67490c43312`, completed successfully on 2026-11-24.
+- Preview runtime smoke [Run #45](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45322065022), commit `72d5c51a2b038445943a5b32ea442ed0d1eb4eaa`, completed successfully. Job steps confirmed public page/security checks and responsive Chromium smoke for English homepage, Bangla homepage, Admin and quotation-response pages at 390px and 1440px.
+- These are CI and Preview smoke results. They do not establish authenticated Admin/MFA workflow acceptance, complete CMS/business workflow acceptance, or Production release.
+- The latest `main` commit found is `cae9a07` (“Fix false-positive read-only migration audit guard”). This is not evidence that the development PR was merged.
+
+### Reconciled current status
+- **Implemented on development branch:** bilingual public site, Worker API, D1 migrations 0001–0019, Admin/CMS and documented module capabilities; consult module documents for details.
+- **CI passed:** latest source validation run #1068.
+- **Preview smoke passed:** HTTP/security checks and public-page responsive smoke run #45.
+- **Preview deployment:** previous documentation records Preview Worker deployment and Preview D1 migration application. This audit did not independently re-confirm the live Worker version or re-read the remote D1 migration ledger.
+- **Not accepted yet:** authenticated Admin login/MFA enrollment and verification, recovery-code lifecycle/replay prevention, live RBAC, deployed CMS stale-write/concurrency, full Page Builder/Cloudinary and business workflows, comprehensive accessibility/browser QA, and formal ASVS Level 2 sign-off.
+- **Production:** no Production deployment or migration is authorized by this audit. The open PR is not merged; keep `main` untouched during routine development.
+
+### Immediate next execution priority
+1. Inspect Preview workflow history and deployed Preview commit/version against the current development branch head; read-only only.
+2. Review the latest test scripts/workflows and run or extend automated checks that do not require credentials or mutate remote data.
+3. Prepare authenticated Admin/MFA acceptance using a designated test account; never request credentials or secrets in chat.
+4. Execute CMS concurrency and module-level Preview acceptance only when required test access and explicit remote-action approvals exist.
+5. Update this status and changelog after each verified milestone.
+
+### Operational boundary
+- Work only on `current-focus-development` for Website 8 development.
+- Do not merge, rebase, force-push, alter, or commit to `main` without explicit separate authorization.
+- Do not run remote migrations, D1 writes, Cloudflare secret/configuration changes, or Worker deployments without explicit approval.
+- Never read, print, request, or commit secret values.
+- No work from other projects is in scope for this repository or chat.
