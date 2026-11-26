@@ -57,3 +57,27 @@ The `hash-wasm` 4.12.0 candidate deployed successfully as an isolated Worker on 
 **Decision:** reject `hash-wasm` for direct use in this Worker. Continue evaluating an implementation that ships a precompiled `.wasm` asset. Do not change Admin authentication until the candidate passes RFC/known-answer tests, PHC compatibility, code/license/provenance review, Worker deployment, and Free-plan CPU/memory acceptance.
 
 Additional source: Cloudflare Wrangler bundling and precompiled Wasm module imports: https://developers.cloudflare.com/workers/wrangler/bundling/
+
+
+## Precompiled-Wasm candidate review — 2026-11-26
+
+The package `@hallaxius/argon2w` is a technically relevant candidate because its public README describes a standalone SIMD `.wasm` asset, a Cloudflare Workers `/wasm` import that resolves to a compiled `WebAssembly.Module`, and PHC-compatible Argon2id strings. This directly addresses the runtime dynamic-compilation failure seen with `hash-wasm`. These are package-maintainer claims, not independently reproduced results.
+
+The published README lists profiles including `m16t2` (16 MiB, 2 passes, p=1) and `standard` (19,456 KiB, 3 passes, p=1). The former is below OWASP's 19 MiB / 2-pass / p=1 baseline; the latter exceeds its pass count. Do not infer that a profile named `standard` is a certification or select `m16t2` as an equivalent baseline. A custom 19,456 KiB / 2-pass / p=1 profile would need direct known-answer and runtime testing.
+
+The available third-party package-health listing reports version 0.0.1, Apache-2.0, zero dependencies and zero weekly downloads, while indicating its health report is incomplete. This is a weak adoption signal, not a vulnerability finding. The GitHub repository's source tree, exact published tarball, npm provenance attestation, release-to-commit correspondence, maintainer identity, CI/test suite and full transitive/bundled source could not be independently inspected through the available connected GitHub access during this review. The package is therefore **not approved for adoption or production use**.
+
+### Gate decision
+
+- Candidate status: **unverified; do not add it to application dependencies**.
+- Next evidence required: retrieve the exact npm tarball and registry metadata; verify npm signatures/provenance (for example, `npm audit signatures`); inspect the full source and build workflow; confirm the bundled PHC reference source and licences; run upstream known-answer tests; verify the Worker export really resolves to a compiled module under this project's Wrangler version; then benchmark 19,456 KiB / 2 passes / p=1 on the isolated Free-plan Worker.
+- Do not modify `src/password-hash.js`, existing stored hashes, Admin authentication or production resources during candidate evaluation.
+- If provenance or source review remains unavailable, reject the package and build a reproducible precompiled module from the PHC reference implementation with its dual CC0/Apache-2.0 licensing preserved.
+
+Sources reviewed:
+- Package README: https://github.com/orgShtora-1/argon2w
+- Third-party package-health listing (incomplete report): https://npm.io/package/%40hallaxius/argon2w
+- npm provenance verification guidance: https://docs.npmjs.com/viewing-package-provenance/
+- Cloudflare precompiled WebAssembly requirement: https://developers.cloudflare.com/workers/runtime-apis/webassembly/
+- OWASP Password Storage Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+- PHC Argon2 reference implementation and licensing: https://github.com/P-H-C/phc-winner-argon2
