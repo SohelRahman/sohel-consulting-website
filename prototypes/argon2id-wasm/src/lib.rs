@@ -34,6 +34,7 @@ impl Drop for WipingMemory {
 }
 
 /// Validate JS typed-array lengths before copying any caller-controlled bytes into Wasm memory.
+#[cfg(any(target_arch = "wasm32", test))]
 fn validate_wasm_input_lengths(password_len: u32, salt_len: u32) -> Result<(), &'static str> {
     if password_len == 0 || password_len as usize > MAX_PASSWORD_LEN {
         return Err("password length out of bounds");
@@ -44,6 +45,7 @@ fn validate_wasm_input_lengths(password_len: u32, salt_len: u32) -> Result<(), &
     Ok(())
 }
 
+#[cfg(any(target_arch = "wasm32", test))]
 fn validate_wasm_phc_length(encoded_len: u32) -> Result<(), &'static str> {
     if encoded_len == 0 || encoded_len as usize > MAX_PHC_LEN {
         return Err("PHC string length out of bounds");
