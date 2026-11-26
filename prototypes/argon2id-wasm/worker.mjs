@@ -8,12 +8,14 @@ const TEST_PASSWORD = "isolated Cloudflare Workers Argon2id runtime test";
 
 export default {
   async fetch(request, env) {
-    if (!env.TEST_TOKEN || request.headers.get("authorization") !== `Bearer ${env.TEST_TOKEN}`) {
-      return new Response("Not found", { status: 404 });
-    }
     const url = new URL(request.url);
+    // Health exposes no credentials or workload data; keep it public so the runtime
+    // harness can distinguish Worker propagation from test-token configuration.
     if (url.pathname === "/health" && request.method === "GET") {
       return json({ ok: true, runtime: "cloudflare-workers" });
+    }
+    if (!env.TEST_TOKEN || request.headers.get("authorization") !== `Bearer ${env.TEST_TOKEN}`) {
+      return new Response("Not found", { status: 404 });
     }
     if (url.pathname === "/hash" && request.method === "POST") {
       const memoryPagesBefore = wasmMemoryPages();
