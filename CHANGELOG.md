@@ -1,3 +1,8 @@
+## 2026-11-27
+
+- Fixed Argon2id isolated runtime harness result reporting (`concurrentBodies.length`); runtime verification then passed, including automatic disposable Worker cleanup.
+- Corrected Cloudflare Workers Observability query shape by moving `view: "invocations"` to the top level and filtering by the exact disposable Worker script name. CPU-time measurement rerun is pending; no CPU-time result is claimed.
+
 ## 2026-11-27 — Runtime harness follow-up correction
 
 - The health-probe correction worked: runtime #45875591303 successfully deployed the isolated Worker, uploaded its temporary test token, passed the health probe and proceeded through hash/verify and sequential/concurrent request checks.
