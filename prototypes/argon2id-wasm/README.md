@@ -1,5 +1,12 @@
 ## Latest execution checkpoint — 2026-11-27
 
+- Runtime #45876662415 passed the corrected Cloudflare Observability query and returned one invocation event for the exact temporary Worker: **58 ms CPU**, **60 ms wall time** (Cloudflare `$workers` telemetry fields). This is a real platform sample, not JavaScript timing.
+- One event cannot be attributed to a specific hash/verify endpoint or used to establish a performance distribution or CPU-limit compliance. More independent samples are required.
+- Same run: two concurrent hashes took 126.997 ms combined client wall-clock; WASM memory grew 17 → 323 pages and remained stable; temporary Worker cleanup was verified.
+- Runtime: https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662415
+
+## Latest execution checkpoint — 2026-11-27
+
 - Isolated runtime #45875891768 passed the complete Cloudflare Worker exercise, including health, hash/verify, correct/wrong password, sequential/concurrent requests and temporary Worker cleanup (HTTP 200 deletion; HTTP 404 absence verification).
 - Two concurrent hash requests took 683.469 ms combined wall-clock. WASM memory grew from 17 to 323 pages and remained stable after sequential/concurrent requests. JavaScript per-operation timers rounded to 0 ms; this is not CPU-time evidence.
 - Cloudflare Observability keys discovery returned CPU/wall-time keys, but the first corrected runtime query returned zero invocation groups. The request had placed `view` under `parameters`; current Cloudflare API documentation defines it as a top-level property. The harness was corrected to set top-level `view: "invocations"` and filter by the exact temporary Worker script name.
