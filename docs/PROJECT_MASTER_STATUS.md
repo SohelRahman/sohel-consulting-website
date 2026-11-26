@@ -1,3 +1,13 @@
+## 2026-11-26 — Argon2id CI and isolated runtime verification update
+
+- Prototype CI [#45856402852](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856402852) passed formatting, host tests, Clippy, WASM compilation/bindings, Node integration/memory-growth tests, locked RustSec audit and provenance artifact upload. `cargo audit` scanned 34 locked dependencies against 1,568 loaded advisories and exited successfully.
+- Provenance artifact ID `15134694932`; uploaded ZIP SHA-256 `23a22e405dbd50f682fe00eb50f5cc6bb8866a7544caf0594c5d83c600399f77`. License inventory is captured but still needs manual review; signed attestation and independent clean rebuild remain open.
+- Isolated runtime [#45856609844](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45856609844) passed deployment, health, PHC hash/verify, correct/wrong password checks, sequential/concurrent checks and cleanup (deletion HTTP 200; absence HTTP 404).
+- WASM memory grew from 17 to 323 pages and remained stable. Two concurrent hashes took 160.404 ms combined wall-clock; per-operation timer samples were 0 ms. These are not CPU-time measurements.
+- The telemetry API key discovery returned only `$metadata.service`. Current Cloudflare API docs confirm `$metadata.service` as a common filter field and support full key discovery with a limit. Runtime workflow corrected in commit `8ee6e9e`; rerun is required before CPU-time can be measured.
+- Rust build emitted a future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0`; inspect their dependency paths. Node is still pinned only to major version 22.
+- No application authentication, D1, `main`, existing Preview or Production resources changed. Prototype remains isolated and not approved for integration.
+
 ## 2026-11-26 — CPU-time logging deployment queued
 
 - Native invocation logging configuration and measurement procedure are committed.
