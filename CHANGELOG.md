@@ -1,3 +1,10 @@
+
+
+## 2026-11-27 — Second Cloudflare telemetry runtime sample
+
+- Isolated runtime #45877435363 passed and returned two Cloudflare invocation records for its disposable Worker: 59 ms CPU / 60 ms wall and 0 ms / 0 ms. Neither record can be attributed to a specific hash/verify request.
+- Sequential JavaScript timing fields rounded to 0 ms; two concurrent hashes took 134.572 ms combined client wall time. WASM memory stabilized at 323 pages after growth from 17. Worker cleanup was verified (DELETE 200, GET 404).
+- A second non-zero invocation sample is now recorded alongside run #45876662415 (58 ms CPU / 60 ms wall). More samples and endpoint-level correlation are still required; no CPU-limit or integration approval is claimed.
 ## 2026-11-27
 
 - Captured the first actual Cloudflare Workers Observability invocation sample for the isolated Argon2id prototype: 58 ms CPU time and 60 ms wall time. One event is not sufficient for endpoint attribution or performance/CPU-limit conclusions; repeatability testing remains open.
