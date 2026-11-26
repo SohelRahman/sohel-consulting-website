@@ -20,13 +20,16 @@ impl WipingMemory {
     fn as_mut_slice(&mut self) -> &mut [Block] {
         &mut self.0
     }
+    fn wipe(&mut self) {
+        for block in &mut self.0 {
+            block.zeroize();
+        }
+    }
 }
 
 impl Drop for WipingMemory {
     fn drop(&mut self) {
-        for block in &mut self.0 {
-            block.zeroize();
-        }
+        self.wipe();
     }
 }
 
@@ -201,6 +204,20 @@ mod tests {
         assert!(verify_phc(b"password", "$argon2i$v=19$m=19456,t=2,p=1$AA$AA").is_err());
         assert!(verify_phc(b"password", &"x".repeat(MAX_PHC_LEN + 1)).is_err());
         assert!(verify_phc(b"password", "$argon2id$v=19$m=19456,t=2,p=1$%%%$AA").is_err());
+    }
+
+    #[test]
+    fn explicitly_zeroizes_every_working_memory_word() {
+        let mut memory = WipingMemory::new(3);
+        for block in memory.as_mut_slice() {
+            let words: &mut [u64] = block.as_mut();
+            words.fill(0xa5a5_a5a5_a5a5_a5a5);
+        }
+        memory.wipe();
+        for block in memory.as_mut_slice() {
+            let words: &[u64] = block.as_ref();
+            assert!(words.iter().all(|word| *word == 0));
+        }
     }
 
     #[test]

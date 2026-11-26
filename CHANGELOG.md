@@ -1,3 +1,7 @@
+## 2026-11-26 — Argon2id working-memory zeroization test
+
+- Added an explicit matrix-wipe method and a unit test that verifies every 64-bit word in a multi-block matrix is zero after wiping.
+- `Drop` now delegates to the same wipe method. CI pending; no app auth or deployment changes.
 ## 2026-11-26 — Independent Argon2id PHC interoperability fixture
 - Generated a fixed Argon2id v=19 / m=19,456 KiB / t=2 / p=1 PHC fixture using Python argon2-cffi 25.1.0, independent of the RustCrypto implementation.
 - Added a cross-implementation test for fixture verification, wrong-password rejection and exact Rust-generated PHC output.

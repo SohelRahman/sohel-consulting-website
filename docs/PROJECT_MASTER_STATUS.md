@@ -1,3 +1,9 @@
+## 2026-11-26 — Working-memory zeroization test added (CI pending)
+
+- Refactored the owned matrix wipe into one explicit method used by `Drop`.
+- Added a unit test that fills every word in a three-block working matrix with a non-zero pattern, invokes the wipe method and asserts every word is zero.
+- This tests the wrapper's zeroization routine; it does not establish guarantees against compiler, allocator, crash or process-termination behavior.
+- CI must pass before this source change is considered verified. No WASM ABI, Worker integration, deployment or application authentication change.
 ## 2026-11-26 — Independent Argon2id PHC fixture added
 
 - Generated a fixed Argon2id PHC string independently using Python `argon2-cffi 25.1.0`, with the prototype's exact v=19 / m=19,456 KiB / t=2 / p=1 profile.
