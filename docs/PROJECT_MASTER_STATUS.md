@@ -311,3 +311,10 @@ The manual Production deployment workflow now runs the repository's development 
 Important remaining gates: validate the workflow through GitHub Actions; independently verify the Production D1 identity and remote migration ledger; confirm backup/restore readiness, runtime secret presence and environment protection; complete stronger password-storage design and live RBAC/MFA acceptance; obtain PR review and approval. The dry-run is not a substitute for D1 migration or backup preflight. No Production resource was changed.
 
 Latest workflow commit: `24a6480d20baa34807733ab378f6e90cc6e93a7a`.
+## 2026-11-26 — Password-storage architecture assessment
+
+Added `docs/PASSWORD_STORAGE_DESIGN_ASSESSMENT.md` after reviewing current OWASP, Cloudflare Workers, WebAssembly and Argon2 references. The assessment confirms that the current 100,000-iteration PBKDF2-HMAC-SHA-256 setting is below OWASP's recommended 600,000 iterations. Argon2id via WebAssembly is a plausible candidate, but it is not approved until actual Preview CPU-time, isolate-memory, concurrency, compatibility and dependency checks pass. Cloudflare documents a 10 ms CPU limit per HTTP request on Workers Free and 128 MB per isolate; this account's plan and Worker CPU configuration remain unverified.
+
+Decision: do not alter the current hash format yet, do not treat a pepper as a replacement for a suitable KDF, and do not release the 100,000-iteration workaround as the final Production design. A controlled Preview benchmark and architecture decision remain required. No Preview Worker, database, secret or Production resource was changed.
+
+Validation workflow commit `9bc1fb47b5156cd155ae46e355858e77f1155162` also adds a YAML parse step for the Production deployment workflow; its run result is pending.
