@@ -1,3 +1,18 @@
+
+
+## 2026-11-27 — Second Cloudflare telemetry run; repeatability still open
+
+Isolated runtime [#45877435363](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45877435363) passed after the telemetry retry/validation change. The Cloudflare Observability query returned **2 invocation records** for the exact disposable Worker `sohel-argon2id-preview-45877435363`:
+
+- Record 1: **59 ms CPU / 60 ms wall time**.
+- Record 2: **0 ms CPU / 0 ms wall time**.
+- Both records matched the disposable Worker script name; query completed successfully.
+- The workflow exercised health, four sequential hash samples, four sequential verify samples and two concurrent hashes. However, the telemetry response does not map either invocation record to a specific route or KDF operation. Do not label 59 ms as a hash-only or verify-only cost. Treat the zero/zero record as a returned platform record, not proof that the full workflow performed no work.
+- The JavaScript response timing fields for the sequential hash/verify samples were all 0 ms at the current timer resolution. They are not CPU measurements and are too coarse to characterize per-operation latency.
+- Two concurrent hashes took **134.572 ms combined client wall time**. WASM memory grew from 17 to 323 pages and remained at 323 after sequential and concurrent requests.
+- Temporary Worker cleanup was confirmed: DELETE HTTP 200 followed by GET HTTP 404.
+
+This provides a second run with one non-zero invocation sample, but not a statistically useful distribution or endpoint attribution. The first run [#45876662415](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45876662415) returned 58 ms CPU / 60 ms wall time in one event. These two non-zero values are similar but remain invocation-level observations from separate runs, not a performance guarantee. Continue with multiple runs and improve request-to-invocation correlation before comparing against plan CPU limits or considering integration.
 ## 2026-11-27 — First Cloudflare CPU-time sample captured
 
 Runtime #45876662415 completed successfully after correcting the Observability query. The query returned one invocation event for the exact disposable Worker `sohel-argon2id-preview-45876662415`:
