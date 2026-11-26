@@ -1,3 +1,13 @@
+## 2026-11-26 — Argon2id runtime benchmark completed; next gates opened
+
+- Dedicated prototype CI [Run #45836658113](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836658113) passed formatting, host tests, Clippy, release WASM build, wasm-bindgen web/Node binding generation, adapter/memory-growth tests and artifact upload.
+- Isolated Cloudflare runtime/benchmark [Run #45836666885](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45836666885) passed precompiled-WASM deployment, health, PHC hash/verify, correct/wrong password checks, repeated sequential requests, two concurrent hash requests and temporary Worker deletion (HTTP 200).
+- Memory grew from 17 to 323 Wasm pages and remained at 323 pages after the sequential/concurrent exercise.
+- Concurrent batch wall-clock was 108.956 ms. Per-operation `performance.now()` samples were all 0 ms, so the per-operation timer did not provide usable resolution. This single run is not a stable latency/load characterization and is not Cloudflare CPU time.
+- README and source-level security review were updated. CPU-time evidence (`CPUTimeMs`), meaningful repeated load/memory characterization, broader PHC interoperability, failure-path cleanup and provenance review remain open.
+- **Next priority started:** added a deterministic malformed-PHC and arbitrary bounded-input corpus in `prototypes/argon2id-wasm/tests/phc_input_corpus.rs`. CI verification is pending.
+- No application authentication, D1, existing Preview, Production or `main` changes.
+
 ## 2026-11-26 — Cloudflare Workers runtime compatibility passed
 
 - Isolated runtime CI [Run #45827375696](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45827375696) passed compiled-Wasm import, Worker startup/health, hash generation, correct-password acceptance, wrong-password rejection, memory growth (17 to 323 pages), and temporary Worker cleanup.
