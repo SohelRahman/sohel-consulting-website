@@ -161,3 +161,8 @@ Expanded `scripts/test-admin-api-auth.mjs` beyond the initial six authentication
 ## 2026-11-27 — Authenticated course view/manage boundary tests added
 
 Extended `scripts/test-admin-api-auth.mjs` with three real Worker-handler cases: a `courses.view` user can read the course collection (200); a `courses.manage` user passes the RBAC gate and reaches course input validation (400 for an intentionally empty payload); and a `courses.view`-only user is denied the same POST (403). The invalid manage request is deliberately rejected before any database write, so this tests permission routing without mutating data. The suite now contains 16 scenarios. D1 remains mocked; CI is pending and this is not Preview runtime evidence. No deployment, remote migration, or Production change was performed.
+
+
+## 2026-11-27 — Authenticated inquiry, registration and chat permission tests added
+
+Extended `scripts/test-admin-api-auth.mjs` with real Worker-handler coverage for inquiry collection read and status mutation boundaries, registration quote-history read and quote-creation boundaries, and chat conversation read/reply boundaries. View-only inquiry/registration users and chat.view users are denied mutation (403); corresponding manage/reply permissions reach handler validation (400 for deliberately invalid input); permitted collection/history reads return 200. The invalid mutation payloads are rejected before writes. The suite now contains 24 scenarios. All use signed test sessions and mocked D1, not live Cloudflare D1 or Preview. CI is pending. No Preview deployment, migration application or Production action was performed.
