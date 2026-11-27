@@ -102,3 +102,23 @@ assert factor == 1 and revoked == 1
 assert db.execute("SELECT session_version FROM admin_users WHERE id='u1'").fetchone()[0] == 2
 assert db.execute("SELECT COUNT(*) FROM admin_mfa_credentials WHERE user_id='u1'").fetchone()[0] == 0
 print("Admin MFA disable factor/session atomicity transaction test passed.")
+
+db.execute("INSERT INTO admin_mfa_credentials(user_id,last_totp_counter,enabled_at) VALUES ('u1',20,'enabled')")
+db.execute("INSERT INTO admin_mfa_recovery_codes(user_id,code_hash,code_salt) VALUES ('u1','reset-hash','reset-salt')")
+with db:
+    factor = db.execute(
+        "UPDATE admin_mfa_recovery_codes SET used_at='used',used_by='reset-claim-a' "
+        "WHERE user_id='u1' AND code_hash='reset-hash' AND used_at IS NULL "
+        "AND EXISTS (SELECT 1 FROM admin_users WHERE id='u1' AND session_version=2)"
+    ).rowcount
+    revoked = db.execute(
+        "UPDATE admin_users SET session_version=session_version+1 WHERE id='u1' AND session_version=2 "
+        "AND EXISTS (SELECT 1 FROM admin_mfa_recovery_codes WHERE user_id='u1' "
+        "AND code_hash='reset-hash' AND used_by='reset-claim-a' AND used_at IS NOT NULL)"
+    ).rowcount
+    db.execute("DELETE FROM admin_mfa_recovery_codes WHERE user_id='u1' AND EXISTS (SELECT 1 FROM admin_users WHERE id='u1' AND session_version=3)")
+    db.execute("DELETE FROM admin_mfa_credentials WHERE user_id='u1' AND EXISTS (SELECT 1 FROM admin_users WHERE id='u1' AND session_version=3)")
+assert factor == 1 and revoked == 1
+assert db.execute("SELECT session_version FROM admin_users WHERE id='u1'").fetchone()[0] == 3
+assert db.execute("SELECT COUNT(*) FROM admin_mfa_credentials WHERE user_id='u1'").fetchone()[0] == 0
+print("Admin MFA recovery-code reset claim transaction test passed.")
