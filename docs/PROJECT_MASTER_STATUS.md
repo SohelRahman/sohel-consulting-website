@@ -806,3 +806,13 @@ Extended `scripts/test-admin-api-auth.mjs` with three authenticated Worker-handl
 ## 2026-11-28 — Admin self-protection test identity correction
 
 The first CI run for the self-protection cases exposed a test-fixture mismatch: the signed test session used a non-UUID user ID while the account route accepts UUID-form target IDs. The test now signs the session with the same UUID used in the request path, so the Worker can reach its self-account guard. This is a test correction, not an application behavior change. Fix commit: `d56c8ecdfecb8b208b109b1f10535ef7230f5066`. Validation is pending; the previous CI run failed at the DELETE self-account assertion (actual 403, expected 400). No Preview or Production changes.
+
+
+## 2026-11-28 — Atomic last-active-Admin protection added (CI pending)
+
+- Replaced the separate active-Admin count followed by an account update with a single conditional SQL UPDATE for both account PATCH and DELETE paths. When an active Admin is being demoted or disabled, the UPDATE succeeds only if another active Admin row exists at statement evaluation time.
+- Added optimistic role/active-state predicates so a concurrent change to the target account causes a conflict rather than silently applying an update based on stale state.
+- The handler checks D1's reported affected-row count. A rejected last-Admin transition returns HTTP 409; a target deleted during the operation returns 404.
+- Updated the mocked Worker-handler tests and added scripts/test-admin-last-admin-sqlite.py, which executes the conditional SQL against SQLite and verifies that two sequential removal attempts cannot remove both active Admins, and that the sole active Admin is preserved for both PATCH and DELETE forms.
+- Evidence limitation: SQLite tests validate SQL behavior and serialized statement outcomes. They are not a live Cloudflare D1 concurrency test and do not prove concurrent request behavior in the deployed Worker. CI must pass before this change is recorded as validated.
+- No remote D1 migration, Preview deployment, Production deployment, secret/configuration change, main update or PR merge was performed.
