@@ -161,3 +161,18 @@ The maintained technical documentation is in [`docs/`](docs/):
 - [Changelog](CHANGELOG.md) — significant development and maintenance history.
 
 **Maintenance requirement:** Update the relevant documentation and changelog in the same development change whenever code, APIs, database schema, configuration, security behavior, testing or deployment procedures change. Documentation must describe verified implementation; unresolved details must be marked as pending verification.
+
+
+## Project control documents
+
+Use these documents as the operating record for engineering, testing and release decisions:
+
+- [Project Master Status](docs/PROJECT_MASTER_STATUS.md) — current implementation status, blockers and next priorities.
+- [Next Chat Handover](NEXT_CHAT_HANDOVER.md) — continuation context, immediate actions and operating boundaries.
+- [Development Strategy and WBS](DEVELOPMENT_STRATEGY_WBS.md) — workstreams, dependencies and release gates.
+- [Test Report](docs/TEST_REPORT.md) — test runs, acceptance evidence and untested workflows.
+- [Security Baseline](docs/SECURITY_BASELINE.md) — security controls, verification requirements and release blockers.
+- [Master Project History](docs/MASTER_PROJECT_HISTORY.md) — decisions and historical audit trail.
+- [Deployment Checklist](DEPLOYMENT-CHECKLIST.md) — development, Preview and release checks.
+
+Update the six project-control documents (Project Master Status, Next Chat Handover, README, Development Strategy WBS, Test Report and Security Baseline) after meaningful engineering milestones. Record evidence, limitations and approval boundaries; do not mark work complete without the corresponding test or deployment evidence.
