@@ -1,5 +1,10 @@
 
 
+## 2026-11-27 — MFA migration compatibility test strengthened
+
+The SQLite challenge test now builds its schema by applying the existing `migrations/0019_admin_mfa.sql` followed by `migrations/0020_admin_mfa_challenge_state.sql`, instead of manually creating simplified MFA tables. It asserts the added `last_factor_claim_id`, `used_by`, and challenge-consumption columns exist, then exercises challenge replay, factor single-use and reset/session-revocation transactions against that migrated schema. This improves migration-order coverage but is still SQLite validation, not a remote Cloudflare D1 migration rehearsal. CI for this latest change is pending. No Preview/Production migration or deployment was performed.
+
+
 ## 2026-11-27 — MFA challenge and disable/reset hardening CI passed
 
 - Development validation [#45997274827](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45997274827) completed successfully for branch head `a4f93af07ac9df33ad19cc8a4c8a722ec7910d37`.
