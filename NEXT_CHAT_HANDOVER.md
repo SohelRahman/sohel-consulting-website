@@ -156,3 +156,8 @@ Development validation [#46030635598](https://github.com/SohelRahman/sohel-consu
 ## 2026-11-27 — Authenticated Admin API permission boundary coverage expanded
 
 Expanded `scripts/test-admin-api-auth.mjs` beyond the initial six authentication scenarios. New real-Worker-handler cases verify that a limited user with only `courses.view` cannot POST to the course collection, a dashboard-only user cannot read courses, and a limited user is denied GET/POST/PATCH/DELETE access to Admin-only account-management routes even when holding unrelated manage permissions. An Admin account-list GET is also checked. The test now contains 13 scenarios. These checks use signed test sessions and mocked D1; they do not establish live Cloudflare D1 or Preview runtime behavior. CI is pending. No Preview deployment, migration 0020 application, or Production action was performed.
+
+
+## 2026-11-27 — Authenticated course view/manage boundary tests added
+
+Extended `scripts/test-admin-api-auth.mjs` with three real Worker-handler cases: a `courses.view` user can read the course collection (200); a `courses.manage` user passes the RBAC gate and reaches course input validation (400 for an intentionally empty payload); and a `courses.view`-only user is denied the same POST (403). The invalid manage request is deliberately rejected before any database write, so this tests permission routing without mutating data. The suite now contains 16 scenarios. D1 remains mocked; CI is pending and this is not Preview runtime evidence. No deployment, remote migration, or Production change was performed.
