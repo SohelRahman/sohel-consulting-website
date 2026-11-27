@@ -590,22 +590,22 @@ async function handleApi(request, env) {
       if(!account||!(await verifyPassword(password,account.password_hash)))return json({error:"Current password is incorrect."},401);
       const credential=await env.DB.prepare("SELECT secret_ciphertext,last_totp_counter FROM admin_mfa_credentials WHERE user_id=? AND enabled_at IS NOT NULL").bind(user.id).first();
       if(!credential?.secret_ciphertext)return json({error:"MFA is not enabled for this account."},409);
-      let factorStatement=null,factorGuardSql="",factorGuardValues=[];
+      let factorStatement=null,factorGuardSql="",factorGuardValues=[],factorClaimId=id();
       if(/^\d{6}$/.test(code)){
         const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,user.id);
         const counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));
         if(counter!==null){
-          factorStatement=env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=? WHERE user_id=? AND last_totp_counter<? AND enabled_at IS NOT NULL AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(counter,user.id,counter,user.id,user.session_version);
-          factorGuardSql="EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND last_totp_counter=? AND enabled_at IS NOT NULL)";
-          factorGuardValues=[user.id,counter];
+          factorStatement=env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=?,last_factor_claim_id=? WHERE user_id=? AND last_totp_counter<? AND enabled_at IS NOT NULL AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(counter,factorClaimId,user.id,counter,user.id,user.session_version);
+          factorGuardSql="EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND last_factor_claim_id=? AND enabled_at IS NOT NULL)";
+          factorGuardValues=[user.id,factorClaimId];
         }
       }else if(recoveryCode){
         const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(user.id).all();
         for(const row of rows.results||[]){
           if(constantTimeTextEqual(await hashRecoveryCode(recoveryCode,row.code_salt),row.code_hash)){
-            factorStatement=env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(user.id,row.code_hash,user.id,user.session_version);
-            factorGuardSql="EXISTS (SELECT 1 FROM admin_mfa_recovery_codes WHERE user_id=? AND code_hash=? AND used_at IS NOT NULL)";
-            factorGuardValues=[user.id,row.code_hash];break;
+            factorStatement=env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP,used_by=? WHERE user_id=? AND code_hash=? AND used_at IS NULL AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(factorClaimId,user.id,row.code_hash,user.id,user.session_version);
+            factorGuardSql="EXISTS (SELECT 1 FROM admin_mfa_recovery_codes WHERE user_id=? AND code_hash=? AND used_by=? AND used_at IS NOT NULL)";
+            factorGuardValues=[user.id,row.code_hash,factorClaimId];break;
           }
         }
       }
