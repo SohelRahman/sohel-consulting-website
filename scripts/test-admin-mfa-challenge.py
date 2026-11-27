@@ -104,7 +104,7 @@ assert db.execute("SELECT session_version FROM admin_users WHERE id='u1'").fetch
 assert db.execute("SELECT COUNT(*) FROM admin_mfa_credentials WHERE user_id='u1'").fetchone()[0] == 0
 print("Admin MFA disable factor/session atomicity transaction test passed.")
 
-db.execute("INSERT INTO admin_mfa_credentials(user_id,last_totp_counter,enabled_at) VALUES ('u1',20,'enabled')")
+db.execute("INSERT INTO admin_mfa_credentials(user_id,last_totp_counter,enabled_at,secret_ciphertext) VALUES ('u1',20,'enabled','cipher')")
 db.execute("INSERT INTO admin_mfa_recovery_codes(user_id,code_hash,code_salt) VALUES ('u1','reset-hash','reset-salt')")
 with db:
     factor = db.execute(
