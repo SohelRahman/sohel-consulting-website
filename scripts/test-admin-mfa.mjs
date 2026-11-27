@@ -40,3 +40,8 @@ assert.ok(workerSource.includes("consumed_at IS NULL")&&workerSource.includes("c
 assert.ok(workerSource.includes("AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)"),"factor consumption must depend on the same challenge-consumption claim");
 assert.ok(workerSource.includes("UPDATE admin_mfa_challenges SET consumed_at=?,consumed_by=?")&&workerSource.includes("await env.DB.batch(["),"challenge and accepted factor must be committed in one D1 batch");
 console.log("Admin MFA single-use challenge contract checks passed.");
+
+const disableRoute=workerSource.slice(workerSource.indexOf('if(path==="/api/admin/mfa/disable"'),workerSource.indexOf('if(path==="/api/admin/users" || path.startsWith("/api/admin/users/"))'));
+assert.ok(disableRoute.includes("let factorStatement=null")&&disableRoute.includes("await env.DB.batch([")&&disableRoute.includes("AND "+'"+factorGuardSql'),"MFA disable must consume second-factor proof and revoke sessions in one guarded D1 batch");
+assert.ok(disableRoute.includes("factorGuardSql=")&&disableRoute.includes("session_version=session_version+1"),"MFA disable session revocation must depend on successful factor consumption");
+console.log("Admin MFA disable atomicity source-contract checks passed.");
