@@ -188,3 +188,9 @@ Added two further authenticated Worker-handler tests: `content.view` is denied C
 - Expected test counter is 32 based on the previous documented 29 plus three; confirm the actual CI log before treating the number as verified.
 - CI is pending. No Preview deployment, migration 0020 application, Production operation, PR merge or `main` change occurred.
 - Next engineering step: expand the D1 mock into a stateful account fixture and test target-user disable/permission update, session-version revocation and last-active-Admin protection. Continue only on `current-focus-development`.
+
+## 2026-11-28 — CI failure and test fixture fix
+
+- CI run `46051054897` failed in `scripts/test-admin-api-auth.mjs`: the self-delete test expected 400 but got 403 because the session fixture user ID was not UUID-shaped and did not match the target route ID.
+- Fixed by allowing a session identity override and using the same UUID for the token and account path. Fix commit: `d56c8ecdfecb8b208b109b1f10535ef7230f5066`.
+- Awaiting CI rerun. This was a test-fixture defect; no application route change, Preview deployment, D1 migration or Production operation occurred.
