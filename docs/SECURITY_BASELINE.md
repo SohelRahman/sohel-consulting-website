@@ -1,3 +1,7 @@
+## 2026-11-27 — Argon2id execution-budget gate
+
+The isolated runtime's 11 non-zero route-level invocation CPU samples were 44–97 ms. This conflicts with the previously recorded Free-plan 10 ms/request assumption. The effective account and per-Worker usage model/CPU limit remain unverified. Do not claim CPU-limit compliance or integrate the prototype until read-only account/Worker settings and invocation outcomes are confirmed. No billing/plan upgrade or limit/configuration change is authorized.
+
 # Security Baseline — Sohel Consulting Website
 
 **Updated:** 2026-11-27  
