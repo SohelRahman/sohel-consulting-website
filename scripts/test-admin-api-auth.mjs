@@ -157,4 +157,74 @@ let expandedScenarios = 6;
   expandedScenarios++;
 }
 
+
+async function requestJson(path, { user, cookie, method = "POST", body = {}, origin = "https://example.test" } = {}) {
+  return worker.fetch(new Request("https://example.test" + path, {
+    method,
+    headers: { cookie, origin, "content-type": "application/json" },
+    body: JSON.stringify(body)
+  }), { DB: mockDb(user), SESSION_SECRET: secret });
+}
+// Inquiry view access and mutation permission boundary.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["inquiries.view"] });
+  const read = await requestPath("/api/admin/inquiries", { user: auth.user, cookie: auth.cookie });
+  assert.equal(read.status, 200, "inquiries.view can read inquiry collection");
+  assert.deepEqual(await read.json(), { inquiries: [] });
+  const mutate = await requestJson("/api/admin/inquiries/123e4567-e89b-12d3-a456-426614174000", {
+    user: auth.user, cookie: auth.cookie, method: "PATCH", body: { status: "invalid" }
+  });
+  assert.equal(mutate.status, 403, "inquiries.view cannot change inquiry status");
+  expandedScenarios += 2;
+}
+// Inquiry manage permission passes RBAC and reaches status validation without a write.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["inquiries.manage"] });
+  const response = await requestJson("/api/admin/inquiries/123e4567-e89b-12d3-a456-426614174000", {
+    user: auth.user, cookie: auth.cookie, method: "PATCH", body: { status: "invalid" }
+  });
+  assert.equal(response.status, 400, "inquiries.manage reaches inquiry status validation");
+  expandedScenarios++;
+}
+// Registration quote history is view-only; quote creation requires manage.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["registrations.view"] });
+  const read = await requestPath("/api/admin/registrations/123e4567-e89b-12d3-a456-426614174000/quotes", { user: auth.user, cookie: auth.cookie });
+  assert.equal(read.status, 200, "registrations.view can read quote history");
+  assert.deepEqual(await read.json(), { quotations: [] });
+  const mutate = await requestJson("/api/admin/registrations/123e4567-e89b-12d3-a456-426614174000/quote", {
+    user: auth.user, cookie: auth.cookie, method: "PATCH", body: { amount: 0 }
+  });
+  assert.equal(mutate.status, 403, "registrations.view cannot create a quote");
+  expandedScenarios += 2;
+}
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["registrations.manage"] });
+  const response = await requestJson("/api/admin/registrations/123e4567-e89b-12d3-a456-426614174000/quote", {
+    user: auth.user, cookie: auth.cookie, method: "PATCH", body: { amount: 0 }
+  });
+  assert.equal(response.status, 400, "registrations.manage reaches quote amount validation");
+  expandedScenarios++;
+}
+// Chat view and reply permissions are distinct.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["chat.view"] });
+  const read = await requestPath("/api/admin/chat/conversations", { user: auth.user, cookie: auth.cookie });
+  assert.equal(read.status, 200, "chat.view can read conversation list");
+  assert.deepEqual(await read.json(), { conversations: [] });
+  const reply = await requestJson("/api/admin/chat/conversations/123e4567-e89b-12d3-a456-426614174000", {
+    user: auth.user, cookie: auth.cookie, method: "POST", body: { message: "" }
+  });
+  assert.equal(reply.status, 403, "chat.view cannot reply to conversations");
+  expandedScenarios += 2;
+}
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["chat.reply"] });
+  const response = await requestJson("/api/admin/chat/conversations/123e4567-e89b-12d3-a456-426614174000", {
+    user: auth.user, cookie: auth.cookie, method: "POST", body: { message: "" }
+  });
+  assert.equal(response.status, 400, "chat.reply reaches reply validation");
+  expandedScenarios++;
+}
+
 console.log(`PASS authenticated Worker Admin API integration: ${expandedScenarios} scenarios`);
