@@ -1,5 +1,10 @@
 
 
+## 2026-11-28 — Admin account lifecycle integration coverage expanded
+
+Added stateful test-fixture coverage for account listing, safe response serialization, permission updates, account disablement and password reset. The tests execute the actual Worker handlers, verify unknown permissions are filtered, ensure account listings do not expose password hashes, model the target account's session-version update, and confirm a previously signed target session is rejected after disablement or password reset. Password-reset coverage exercises the real password-hashing path in the test runtime. CI validation for commit `bea80e9411d525ab39490d5eb12e3f67c1260b40` is pending. The mock models D1 writes and is not a remote D1 concurrency or Preview runtime test. No Preview/Production deployment or remote D1 write was performed.
+
+
 ## 2026-11-27 — Last-active-Administrator protection integration coverage added
 
 Extended the Admin API integration fixture to distinguish the authenticated administrator from a separate target account and to model the active-Administrator count query. Added real Worker-handler tests asserting that both PATCH disablement and DELETE are rejected with HTTP 409 when the target is the only active administrator. This validates the existing guard at the handler boundary; it does not establish behavior under concurrent D1 mutations. Development validation [#46052260866](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46052260866) completed successfully for commit `75ab74ca89850fbc37d743f394c3b22638228c47`; the Admin API integration step and all other validation steps passed. No Preview/Production deployment or remote D1 write was performed.
