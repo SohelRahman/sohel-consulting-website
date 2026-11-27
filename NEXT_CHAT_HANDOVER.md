@@ -128,3 +128,12 @@ Added an executable test matrix to `scripts/test-rbac-contract.mjs`. It extracts
 ## 2026-11-27 — Admin and limited-user permission normalization tests added
 
 Extended the RBAC test to execute the actual `permissionsFor()` implementation. New cases assert that Admin receives the complete permission set, limited users retain only allowlisted permissions, malformed JSON grants no permissions, and non-array permission data grants no permissions. Combined with the route-to-permission matrix, this strengthens deterministic unit coverage of the permission model. It still does not exercise authenticated HTTP requests, session revocation, 401/403 responses or live D1. CI is pending. No remote migration, Preview deployment or Production change was performed.
+
+
+## 2026-11-27 — RBAC read-only method allowlist update
+
+Latest development changes on `current-focus-development`:
+- `src/worker.js`: read-only Admin summary, registrations, inquiries, analytics, and chat-conversation collection routes now map only `GET` to their view permissions; unsupported methods map to `null` and limited users are denied by the RBAC guard.
+- `scripts/test-rbac-contract.mjs`: exercises the real permission mapper for those routes and checks unsupported verbs `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS` are not granted permissions.
+- CI for these commits is pending at handover. Tests remain isolated/source-level; authenticated HTTP integration and Preview runtime checks are still outstanding.
+- Continue only on `current-focus-development`. Do not merge, deploy, apply migration 0020, or alter Cloudflare configuration without explicit approval.
