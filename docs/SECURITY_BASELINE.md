@@ -1,3 +1,8 @@
+## 2026-11-27 — MFA challenge single-use gap identified
+
+Read-only source review found that MFA challenge cookies are signed, purpose-bound and expire after five minutes, but their random nonce is not persisted or consumed. A successful MFA verification does not invalidate the challenge or change the session version. TOTP counter replay prevention and one-time recovery-code consumption do not make the challenge itself single-use; another valid time-step TOTP or unused recovery code could be accepted during the same challenge window. This is a high-priority source-review finding, not a live exploit demonstration.
+
+Release blocker: persist challenge state and atomically consume each challenge once with the successful factor update. Add sequential and concurrent replay tests. See `docs/ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md`.
 
 
 ### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
