@@ -1,5 +1,10 @@
 
 
+## 2026-11-28 — Admin account creation integration coverage added
+
+Added a real Worker-handler POST test for creating a limited account. The stateful D1 fixture captures the inserted account and verifies the handler returns HTTP 201 with a UUID, filters unknown permissions, and persists a password hash rather than the submitted plaintext. CI validation for commit `cfd17013017ea2e0c82fdfa1e1f239eb8f0ea4bb` is pending. The test fixture models the D1 insert; it is not a remote D1 integration test. No Preview/Production deployment or remote D1 write was performed.
+
+
 ## 2026-11-28 — Admin account lifecycle integration coverage expanded
 
 Added stateful test-fixture coverage for account listing, safe response serialization, permission updates, account disablement and password reset. The tests execute the actual Worker handlers, verify unknown permissions are filtered, ensure account listings do not expose password hashes, model the target account's session-version update, and confirm a previously signed target session is rejected after disablement or password reset. Password-reset coverage exercises the real password-hashing path in the test runtime. Development validation [#46052594517](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46052594517) completed successfully for commit `bea80e9411d525ab39490d5eb12e3f67c1260b40`; authenticated Admin API integration tests and all other validation steps passed. The mock models D1 writes and is not a remote D1 concurrency or Preview runtime test. No Preview/Production deployment or remote D1 write was performed.
