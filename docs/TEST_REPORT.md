@@ -2,7 +2,7 @@
 
 ## 2026-11-28 — Admin account creation integration coverage added
 
-Added a real Worker-handler POST test for creating a limited account. The stateful D1 fixture captures the inserted account and verifies the handler returns HTTP 201 with a UUID, filters unknown permissions, and persists a password hash rather than the submitted plaintext. CI validation for commit `cfd17013017ea2e0c82fdfa1e1f239eb8f0ea4bb` is pending. The test fixture models the D1 insert; it is not a remote D1 integration test. No Preview/Production deployment or remote D1 write was performed.
+Added a real Worker-handler POST test for creating a limited account. The stateful D1 fixture captures the inserted account and verifies the handler returns HTTP 201 with a UUID, filters unknown permissions, and persists a password hash rather than the submitted plaintext. Development validation [#46052674101](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46052674101) completed successfully for commit `cfd17013017ea2e0c82fdfa1e1f239eb8f0ea4bb`; authenticated Admin API integration tests and all other validation steps passed. The test fixture models the D1 insert; it is not a remote D1 integration test. No Preview/Production deployment or remote D1 write was performed.
 
 
 ## 2026-11-28 — Admin account lifecycle integration coverage expanded
