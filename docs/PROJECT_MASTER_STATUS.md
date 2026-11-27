@@ -1,3 +1,10 @@
+## 2026-11-27 — MFA challenge single-use remediation implemented in source
+
+- Added additive migration `migrations/0020_admin_mfa_challenge_state.sql` to persist challenge nonce, user, purpose, expiry and one-time consumption claim.
+- Updated `src/worker.js`: issue a database-backed challenge, reject absent/expired/consumed or purpose-mismatched challenge state, and atomically claim the challenge with the TOTP counter or recovery-code consumption in a D1 batch. Enrollment confirmation consumes its challenge in the same batch as credential activation and recovery-code issuance. Expired challenge rows are cleaned when a new challenge is issued.
+- Added source-contract checks to `scripts/test-admin-mfa.mjs` and SQLite transaction/replay tests in `scripts/test-admin-mfa-challenge.py`; wired the latter into `.github/workflows/validate-development.yml`.
+- **Status: source implementation complete; CI result pending.** Migration 0020 has not been applied to Preview or Production. No Preview deployment, D1 write, Production action, `main` update or PR merge was performed.
+- Required next gates: confirm CI passes; independently review D1 batch semantics and migration; obtain explicit approval before Preview migration/deployment; then test sequential and concurrent replay against the deployed Preview Worker with controlled test account.
 ## 2026-11-27 — MFA challenge replay gap found in source review
 
 - Read-only review of `src/worker.js` found the signed five-minute MFA challenge nonce is not persisted or consumed. A successful MFA verification issues a session without invalidating that challenge. TOTP counter and recovery-code one-time checks do not prevent using a different valid factor against the same challenge during its lifetime.
