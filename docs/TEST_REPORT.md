@@ -1,3 +1,6 @@
+## 2026-11-27 — MFA challenge replay test gap
+
+Source review of `src/worker.js` found that the signed five-minute MFA challenge nonce is not persisted or consumed after successful verification. The current MFA tests cover TOTP vectors, encryption, recovery-code hashing and static source contracts, but do not test single-use challenge replay or concurrent verification against one challenge. This is a high-priority unresolved security finding. No live exploit test was performed. Required retests: sequential replay, concurrent replay, wrong-purpose, expiry and successful fresh challenge after new password login.
 
 
 ### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
