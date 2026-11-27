@@ -1,5 +1,10 @@
 
 
+## 2026-11-27 — Admin self-delete integration fixture corrected
+
+The latest Admin API integration run failed because the self-delete test used a request helper that omitted the required same-origin `Origin` header. The route correctly rejected that request with HTTP 403 before reaching its self-delete guard; the test expected HTTP 400. Updated the test to use the JSON request helper, which sends the same-origin header. This is a test-fixture correction, not a Worker behavior change. Validation for commit `a9d0e1c66c1499576f7dab28bb3265d210fff1ef` is pending. No Preview/Production deployment, remote D1 migration, or data write was performed.
+
+
 ## 2026-11-27 — MFA migration compatibility test strengthened
 
 The SQLite challenge test now builds its schema by applying the existing `migrations/0019_admin_mfa.sql` followed by `migrations/0020_admin_mfa_challenge_state.sql`, instead of manually creating simplified MFA tables. It asserts the added `last_factor_claim_id`, `used_by`, and challenge-consumption columns exist, then exercises challenge replay, factor single-use and reset/session-revocation transactions against that migrated schema. This improves migration-order coverage but is still SQLite validation, not a remote Cloudflare D1 migration rehearsal. CI for this latest change is pending. No Preview/Production migration or deployment was performed.
