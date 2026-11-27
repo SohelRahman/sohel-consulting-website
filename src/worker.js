@@ -87,9 +87,12 @@ async function readSession(request, secret) {
   } catch { return null; }
 }
 
-async function makeMfaChallenge(user,purpose,secret) {
- const payload=b64url(new TextEncoder().encode(JSON.stringify({userId:user.id,email:user.email,sessionVersion:Number(user.session_version),purpose,nonce:id(),exp:Date.now()+5*60*1000})));
- return payload+"."+await sign(payload,secret);
+async function makeMfaChallenge(user,purpose,env) {
+ const nonce=id(),now=Date.now(),expiresAt=now+5*60*1000;
+ await env.DB.prepare("DELETE FROM admin_mfa_challenges WHERE expires_at<?").bind(now).run();
+ await env.DB.prepare("INSERT INTO admin_mfa_challenges (nonce,user_id,purpose,expires_at) VALUES (?,?,?,?)").bind(nonce,user.id,purpose,expiresAt).run();
+ const payload=b64url(new TextEncoder().encode(JSON.stringify({userId:user.id,email:user.email,sessionVersion:Number(user.session_version),purpose,nonce,exp:expiresAt})));
+ return payload+"."+await sign(payload,env.SESSION_SECRET);
 }
 function mfaChallengeCookie(token){return "__Host-sr_admin_challenge="+token+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=300";}
 function clearMfaChallengeCookie(){return "__Host-sr_admin_challenge=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0";}
@@ -101,9 +104,12 @@ async function readMfaChallenge(request,env,purpose){
  const [payload,signature,extra]=token.split(".");
  if(!payload||!signature||extra||!(await verifySignature(payload,signature,env.SESSION_SECRET)))return null;
  let challenge;try{challenge=JSON.parse(new TextDecoder().decode(fromB64url(payload)));}catch{return null;}
- if(challenge.purpose!==purpose||!challenge.userId||!challenge.email||!Number.isFinite(challenge.exp)||challenge.exp<=Date.now())return null;
- const user=await env.DB.prepare("SELECT id,email,role,is_active,session_version FROM admin_users WHERE id=?").bind(challenge.userId).first();
- if(!user||!user.is_active||user.email!==challenge.email||Number(user.session_version)!==Number(challenge.sessionVersion))return null;
+ if(challenge.purpose!==purpose||!challenge.userId||!challenge.email||!challenge.nonce||!Number.isFinite(challenge.exp)||challenge.exp<=Date.now())return null;
+ const [user,state]=await Promise.all([
+  env.DB.prepare("SELECT id,email,role,is_active,session_version FROM admin_users WHERE id=?").bind(challenge.userId).first(),
+  env.DB.prepare("SELECT nonce FROM admin_mfa_challenges WHERE nonce=? AND user_id=? AND purpose=? AND expires_at>? AND consumed_at IS NULL").bind(challenge.nonce,challenge.userId,purpose,Date.now()).first()
+ ]);
+ if(!user||!state||!user.is_active||user.email!==challenge.email||Number(user.session_version)!==Number(challenge.sessionVersion))return null;
  return {challenge,user};
 }
 function mfaChallengeJson(data,token,status=200){const headers=new Headers({"content-type":"application/json; charset=utf-8","cache-control":"no-store"});headers.append("set-cookie","sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");headers.append("set-cookie",mfaChallengeCookie(token));return new Response(JSON.stringify(data),{status,headers});}
@@ -457,7 +463,7 @@ async function handleApi(request, env) {
     if(!user||!user.is_active||!(await verifyPassword(password,user.password_hash)))return json({error:"Invalid email or password, or account is disabled."},401);
     if(needsPasswordRehash(user.password_hash)){const upgradedHash=await hashPassword(password);await env.DB.prepare("UPDATE admin_users SET password_hash=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND password_hash=?").bind(upgradedHash,user.id,user.password_hash).run();}
     const credential=await env.DB.prepare("SELECT enabled_at FROM admin_mfa_credentials WHERE user_id=?").bind(user.id).first();
-    const purpose=credential?.enabled_at?"login":"enroll",challenge=await makeMfaChallenge(user,purpose,env.SESSION_SECRET);
+    const purpose=credential?.enabled_at?"login":"enroll",challenge=await makeMfaChallenge(user,purpose,env);
     await audit(env,email,purpose==="login"?"admin_mfa_challenge_issued":"admin_mfa_enrollment_required","admin_user",user.id,"Password accepted; full session withheld pending MFA");
     return mfaChallengeJson({ok:true,step:purpose==="login"?"verify_mfa":"enroll_mfa"},challenge);
   }
