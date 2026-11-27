@@ -125,3 +125,8 @@ The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa
 - The successful job parsed the Preview deployment workflow YAML and passed all listed source, contract and SQLite tests, including `scripts/test-admin-mfa-challenge.py`.
 - The guarded Preview deployment workflow now includes that MFA transaction test before its deployment steps. The workflow change was syntax-validated; this CI run did not dispatch the deployment workflow.
 - No remote migration, Preview deployment or Production operation occurred. The last known Preview D1 migration state still requires a fresh read-only audit to confirm it remains current.
+
+
+## 2026-11-27 — Executable Admin RBAC route matrix added
+
+Added an executable test matrix to `scripts/test-rbac-contract.mjs`. It extracts and runs the actual `requiredPermission(path, method)` function from `src/worker.js` and asserts representative read/manage mappings across dashboard, courses, registrations, inquiries, CMS, site content, styles, pages, media, analytics and chat. It also checks Admin-only identity/user routes, unknown paths, the media-audit unsupported-method case, and ensures an unsupported method does not receive a read permission. This is a deterministic unit-level check of the permission mapper, not an authenticated API test: it does not prove role/session enforcement, HTTP status codes or Cloudflare D1 behavior. CI is pending. No Preview deployment, migration, D1 write or Production change was performed.
