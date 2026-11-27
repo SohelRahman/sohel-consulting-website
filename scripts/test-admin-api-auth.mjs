@@ -47,15 +47,19 @@ function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount =
         async run() {
           if (sql.includes("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active)")) {
             createdUsers.push({ id: values[0], email: values[1], full_name: values[2], role: values[3], password_hash: values[4], permissions_json: values[5], is_active: 1 });
-          } else if (targetUser && sql.includes("UPDATE admin_users SET full_name=COALESCE")) {
-            targetUser.full_name = values[0] ?? targetUser.full_name;
-            targetUser.role = values[1];
-            targetUser.is_active = values[2];
-            targetUser.permissions_json = values[3];
+          } else if (targetUser && (sql.includes("UPDATE admin_users SET full_name=COALESCE") || sql.includes("UPDATE admin_users SET is_active=0,session_version=session_version+1"))) {
+            const guarded = sql.includes("remaining.id<>admin_users.id");
+            if (guarded && activeAdminCount <= 1) return { meta: { changes: 0 } };
+            if (sql.includes("SET full_name=COALESCE")) {
+              targetUser.full_name = values[0] ?? targetUser.full_name;
+              targetUser.role = values[1];
+              targetUser.is_active = values[2];
+              targetUser.permissions_json = values[3];
+            } else {
+              targetUser.is_active = 0;
+            }
             targetUser.session_version = Number(targetUser.session_version || 0) + 1;
-          } else if (targetUser && sql.includes("UPDATE admin_users SET is_active=0,session_version=session_version+1")) {
-            targetUser.is_active = 0;
-            targetUser.session_version = Number(targetUser.session_version || 0) + 1;
+            return { meta: { changes: 1 } };
           }
           return { meta: { changes: 1 } };
         }
