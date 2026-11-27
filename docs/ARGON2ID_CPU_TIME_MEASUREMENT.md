@@ -1,5 +1,10 @@
 
 
+### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
+
+Cloudflare's current limits documentation also lists the deprecated legacy **Bundled** usage model, whose HTTP-request CPU limit is 50 ms; legacy Unbound has limits matching Workers Paid. This is another possible explanation to investigate, but it does not resolve the observed 51–97 ms samples or establish which model applies to this Worker. Confirm the exact Worker Usage Model in the Dashboard. Official source: https://developers.cloudflare.com/workers/platform/limits/ (sections “CPU time” and “Unbound and Bundled plan limits”).
+
+
 ## 2026-11-27 — CPU limit discrepancy requires account-side verification
 
 Runtime [#45879657641](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45879657641) passed and returned 12 route-identifiable invocation events for its disposable Worker:
