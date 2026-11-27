@@ -173,3 +173,10 @@ Extended `scripts/test-admin-api-auth.mjs` with real Worker-handler coverage for
 Added three authenticated Worker-handler cases to `scripts/test-admin-api-auth.mjs`: a `content.view` user can read a CMS page (200) but cannot save a draft (403); a `content.manage` user passes RBAC and reaches draft validation (400 for an intentionally empty payload). The invalid save does not reach D1 writes. The authenticated Admin API suite now contains 27 scenarios. Tests use signed sessions and mocked D1; CI for this update is pending and no Preview runtime proof is claimed.
 
 **Release / Production status:** This is a source-and-test update on `current-focus-development` only. Production Worker, Production D1, secrets and configuration were not changed. No Production deployment or migration was performed. Preview deployment remains gated/skipped; migration 0020 remains unapplied remotely. Production release is not approved and is not complete. Existing release blockers remain: fresh Preview D1 migration audit, explicit approval for Preview migration 0020 and Preview deployment, live Preview acceptance for MFA/RBAC/Admin workflows, and Production readiness review.
+
+
+## 2026-11-28 — CMS publishing authorization boundary added
+
+Added two further authenticated Worker-handler tests: `content.view` is denied CMS publish (403), while `content.manage` reaches page-identifier validation (400 for an intentionally invalid page identifier). The test rejects before any publishing query or database write. The authenticated Admin API integration suite now contains 29 scenarios. This remains mocked-D1 handler coverage, not live Preview CMS publishing evidence. CI is pending for this latest test change.
+
+**Production update:** No Production feature was deployed. Production Worker, D1, secrets and configuration remain untouched. The Preview deployment job was inspected for the prior documentation/test update and its deploy job was skipped. No migration 0020 was applied. Production release remains blocked pending Preview migration audit, approved Preview migration/deployment, live acceptance and Production readiness checks.
