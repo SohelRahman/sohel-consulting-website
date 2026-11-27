@@ -227,4 +227,26 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
   expandedScenarios++;
 }
 
+
+ // CMS read access and content-edit permission boundary.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["content.view"] });
+  const read = await requestPath("/api/admin/cms?page=home&lang=en", { user: auth.user, cookie: auth.cookie });
+  assert.equal(read.status, 200, "content.view can read CMS page content");
+  assert.deepEqual(await read.json(), { page: "home", language: "en", content: [] });
+  const save = await requestJson("/api/admin/cms/save", {
+    user: auth.user, cookie: auth.cookie, method: "POST", body: {}
+  });
+  assert.equal(save.status, 403, "content.view cannot save CMS drafts");
+  expandedScenarios += 2;
+}
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["content.manage"] });
+  const response = await requestJson("/api/admin/cms/save", {
+    user: auth.user, cookie: auth.cookie, method: "POST", body: {}
+  });
+  assert.equal(response.status, 400, "content.manage reaches CMS draft validation");
+  expandedScenarios++;
+}
+
 console.log(`PASS authenticated Worker Admin API integration: ${expandedScenarios} scenarios`);
