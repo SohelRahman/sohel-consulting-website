@@ -118,3 +118,8 @@ The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa
 - YAML parsing now includes `.github/workflows/deploy-cloudflare-preview.yml`; the guarded Preview workflow runs `scripts/test-admin-mfa-challenge.py` before deployment.
 - No Preview deployment or remote migration was triggered by this run. Obtain a fresh read-only Preview D1 migration audit before requesting any apply/deploy approval.
 - The audit workflow `.github/workflows/audit-preview-d1-migrations.yml` is manual-dispatch only and branch-guarded to `current-focus-development`. No workflow-dispatch action is available in the connected GitHub tools; start it from GitHub Actions UI. It only verifies the Preview D1 identity and runs `wrangler d1 migrations list --remote`; it contains no migration-apply command.
+
+
+## 2026-11-27 — Executable Admin RBAC route matrix added
+
+Added an executable test matrix to `scripts/test-rbac-contract.mjs`. It extracts and runs the actual `requiredPermission(path, method)` function from `src/worker.js` and asserts representative read/manage mappings across dashboard, courses, registrations, inquiries, CMS, site content, styles, pages, media, analytics and chat. It also checks Admin-only identity/user routes, unknown paths, the media-audit unsupported-method case, and ensures an unsupported method does not receive a read permission. This is a deterministic unit-level check of the permission mapper, not an authenticated API test: it does not prove role/session enforcement, HTTP status codes or Cloudflare D1 behavior. CI is pending. No Preview deployment, migration, D1 write or Production change was performed.
