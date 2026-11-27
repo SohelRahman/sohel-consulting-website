@@ -48,6 +48,8 @@ jobs:
         run: node scripts/test-password-hash.mjs
       - name: Admin MFA cryptographic and source-contract tests
         run: node scripts/test-admin-mfa.mjs
+      - name: Admin MFA challenge persistence and replay transaction tests
+        run: python3 scripts/test-admin-mfa-challenge.py
       - name: Course pricing unit tests
         run: node scripts/test-course-pricing.mjs
       - name: Registration workflow contract tests
