@@ -1,3 +1,8 @@
+
+
+### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
+
+Cloudflare's current limits documentation also lists the deprecated legacy **Bundled** usage model, whose HTTP-request CPU limit is 50 ms; legacy Unbound has limits matching Workers Paid. This is another possible explanation to investigate, but it does not resolve the observed 51–97 ms samples or establish which model applies to this Worker. Confirm the exact Worker Usage Model in the Dashboard. Official source: https://developers.cloudflare.com/workers/platform/limits/ (sections “CPU time” and “Unbound and Bundled plan limits”).
 ## 2026-11-27 — Argon2id CPU-budget gate clarification
 
 The latest isolated runtime produced route-level Worker CPU samples of 44–78 ms for /hash and 51–97 ms for /verify. This conflicts with the previously recorded Workers Free 10 ms/request assumption. The actual account and Worker usage model/limit must be verified read-only in Cloudflare Dashboard before the prototype can be accepted or rejected for the target runtime. No paid-plan upgrade, billing change, CPU-limit change or deployment configuration change is authorized. This gate blocks Argon2id integration, not unrelated Preview acceptance work.
