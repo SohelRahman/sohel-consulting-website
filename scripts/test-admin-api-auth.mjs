@@ -29,9 +29,9 @@ function mockDb(user, { mfaEnabled = true } = {}) {
         async first() {
           if (sql.includes("FROM admin_users WHERE id=?")) return user;
           if (sql.includes("FROM admin_mfa_credentials WHERE user_id=?")) return mfaEnabled ? { enabled_at: "2026-01-01T00:00:00Z" } : null;
-          if (sql.includes("COUNT(*) AS n FROM registrations")) return { n: 7 };
           if (sql.includes("registration_status='pending_review'")) return { n: 2 };
           if (sql.includes("enrollment_status='confirmed'")) return { n: 3 };
+          if (sql.includes("COUNT(*) AS n FROM registrations")) return { n: 7 };
           if (sql.includes("FROM inquiries WHERE status")) return { n: 4 };
           throw new Error("Unexpected D1 first() query in test: " + sql);
         },
