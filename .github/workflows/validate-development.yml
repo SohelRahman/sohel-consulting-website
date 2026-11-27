@@ -32,6 +32,8 @@ jobs:
         run: node scripts/validate-site.mjs
       - name: Check RBAC security contract
         run: node scripts/test-rbac-contract.mjs
+      - name: Authenticated Admin API handler integration tests
+        run: node scripts/test-admin-api-auth.mjs
       - name: Check CMS write atomicity contract
         run: node scripts/test-cms-atomicity.mjs
       - name: Check Page Builder write atomicity contract
