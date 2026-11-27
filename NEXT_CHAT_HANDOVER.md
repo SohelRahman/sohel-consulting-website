@@ -96,6 +96,13 @@ Runtime #45879657641 returned 6 /hash invocation CPU samples (44–78 ms) and 5 
 - The last confirmed Preview deployment was the documented 2026-11-24 deployment. Do not infer the currently deployed commit from development branch head.
 - User confirmed authenticated Admin dashboard access on 2026-11-26; MFA enrollment and full RBAC workflows remain unverified.
 
+## Latest MFA checkpoint — 2026-11-27
+
+- Current branch: `current-focus-development`; latest fix commit: `0832630d1b3dd034db064a7d778df5a5eeaa1ea0`.
+- Validation run [#46002420731](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002420731) has a successful validation job, including the MFA migration/transaction test and the remaining course, registration and quotation contract tests.
+- The preceding failure was caused by a test fixture missing `secret_ciphertext` for an enabled credential, contrary to migration 0019's CHECK constraint. The fixture is corrected.
+- SQLite schema/transaction tests are not live D1 proof. Migration 0020 is still not applied to Preview D1. Do not deploy or apply it until explicit user authorization.
+
 ## Evidence policy
 
 Every test entry must include the test/run identifier, commit when known, scope, result, limitations and cleanup/side-effect status. Never mark an item complete from source inspection alone when runtime evidence is required.
