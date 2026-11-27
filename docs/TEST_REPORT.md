@@ -1,3 +1,7 @@
+## 2026-11-27 — CPU budget interpretation limitation
+
+Runtime #45879657641 is a test PASS for its isolated runtime and cleanup scope. It does not establish plan compatibility. The 11 non-zero route-level CPU samples (44–97 ms) conflict with the earlier recorded Workers Free 10 ms/request assumption. Account/Worker usage model and effective CPU limit are not yet verified. No compliance conclusion is made. See `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`.
+
 # Test Report — Sohel Consulting Website
 
 **Updated:** 2026-11-27  
