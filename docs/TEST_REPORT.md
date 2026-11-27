@@ -1,3 +1,11 @@
+## 2026-11-27 — MFA challenge replay remediation tests added
+
+- Source changes: database-backed challenge issuance and validation; one-time claim is coupled to TOTP counter or recovery-code consumption in one D1 batch. Enrollment challenge consumption is coupled to MFA credential activation and recovery-code creation.
+- Added static/source assertions to `scripts/test-admin-mfa.mjs` and SQLite transaction tests to `scripts/test-admin-mfa-challenge.py` covering first use, replay with a different TOTP factor, recovery-code replay, enrollment replay, expiry and purpose mismatch.
+- Added the SQLite test to `.github/workflows/validate-development.yml`.
+- **Result pending:** do not report these checks as passed until the new CI run completes. SQLite tests model serialized transaction outcomes; they are not a substitute for authenticated concurrent requests against D1.
+- Migration 0020 has not been applied remotely; no Preview/Production deployment or D1 write was performed.
+
 ## 2026-11-27 — MFA challenge replay test gap
 
 Source review of `src/worker.js` found that the signed five-minute MFA challenge nonce is not persisted or consumed after successful verification. The current MFA tests cover TOTP vectors, encryption, recovery-code hashing and static source contracts, but do not test single-use challenge replay or concurrent verification against one challenge. This is a high-priority unresolved security finding. No live exploit test was performed. Required retests: sequential replay, concurrent replay, wrong-purpose, expiry and successful fresh challenge after new password login.
