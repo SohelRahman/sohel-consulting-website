@@ -38,7 +38,7 @@ jobs:
           const expected = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
           const production = "3a4f765a-46c2-4040-9753-36e9483893a4";
           if (previewId !== expected || previewId === production) throw new Error("Preview database ID guard failed.");
-          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\\s+/g, "");
+          const token = (process.env.CLOUDFLARE_API_TOKEN || "").replace(/\s+/g, "");
           const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
           if (!token || !accountId) throw new Error("Cloudflare credentials are not configured.");
           const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${expected}`, {

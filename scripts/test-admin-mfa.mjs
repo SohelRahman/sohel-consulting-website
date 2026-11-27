@@ -1,0 +1,50 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import {generateTotpSecret,totpCode,verifyTotp,encryptTotpSecret,decryptTotpSecret,generateRecoveryCodes,hashRecoveryCode,generateRecoverySalt,normalizeRecoveryCode} from "../src/admin-mfa.js";
+const secret="GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+assert.equal(await totpCode(secret,1),"287082");
+assert.equal(await totpCode(secret,2),"359152");
+const code=await totpCode(secret,2);
+assert.equal(await verifyTotp(secret,code,60000,-1),2);
+assert.equal(await verifyTotp(secret,code,60000,2),null);
+assert.equal(await verifyTotp(secret,"abc123",60000,-1),null);
+const seed=generateTotpSecret();assert.match(seed,/^[A-Z2-7]{32}$/);
+const key=Buffer.from(Array.from({length:32},(_,i)=>i)).toString("base64url");
+const cipher=await encryptTotpSecret(seed,key,"u1");assert.notEqual(cipher,seed);
+assert.equal(await decryptTotpSecret(cipher,key,"u1"),seed);
+await assert.rejects(()=>decryptTotpSecret(cipher,key,"u2"));
+const codes=generateRecoveryCodes();assert.equal(codes.length,10);assert.ok(codes.every(x=>/^[A-F0-9]{6}(?:-[A-F0-9]{6}){3}$/.test(x)));
+const salt=generateRecoverySalt(),hash=await hashRecoveryCode(codes[0],salt);
+assert.equal(hash,await hashRecoveryCode(normalizeRecoveryCode(codes[0]),salt));
+assert.notEqual(hash,await hashRecoveryCode(codes[1],salt));
+console.log("Admin MFA cryptographic tests passed.");
+
+const workerSource=readFileSync(new URL("../src/worker.js",import.meta.url),"utf8");
+const migrationSource=readFileSync(new URL("../migrations/0019_admin_mfa.sql",import.meta.url),"utf8");
+const adminSource=readFileSync(new URL("../admin.html",import.meta.url),"utf8");
+const loginSource=workerSource.slice(workerSource.indexOf('if (path === "/api/admin/login"'),workerSource.indexOf('if (path === "/api/admin/logout"'));
+assert.ok(loginSource.includes("mfaChallengeJson")&&!loginSource.includes("makeSession("),"password login must issue only a restricted MFA challenge");
+assert.ok(workerSource.includes('if(!mfaState?.enabled_at)return json({error:"MFA enrollment is required.'),"all existing Admin sessions must require completed MFA");
+assert.ok(workerSource.includes('"admin-login-account"')&&workerSource.includes('"admin-mfa-verify-account"')&&workerSource.includes('"admin-mfa-verify-ip"'),"account and IP second-factor throttles must be present");
+assert.ok(workerSource.includes("admin_mfa_verification_failed")&&workerSource.includes("admin_mfa_enrollment_verification_failed"),"failed MFA attempts must be audited");
+assert.ok(workerSource.includes("last_totp_counter<?")&&workerSource.includes("used_at IS NULL"),"TOTP replay and recovery-code reuse must be prevented atomically");
+assert.ok(workerSource.includes("__Host-sr_admin_challenge")&&workerSource.includes("Max-Age=300"),"challenge cookie must be host-only and short-lived");
+assert.ok(migrationSource.includes("admin_mfa_credentials")&&migrationSource.includes("secret_ciphertext")&&migrationSource.includes("admin_mfa_recovery_codes"),"migration must persist encrypted credentials and recovery-code hashes");
+assert.ok(adminSource.includes("দ্বি-ধাপ যাচাইকরণ")&&adminSource.includes("রিকভারি কোড"),"Admin MFA instructions must include Bangla");
+console.log("Admin MFA source-contract checks passed.");
+
+const challengeMigration=readFileSync(new URL("../migrations/0020_admin_mfa_challenge_state.sql",import.meta.url),"utf8");
+assert.ok(challengeMigration.includes("admin_mfa_challenges")&&challengeMigration.includes("nonce TEXT PRIMARY KEY")&&challengeMigration.includes("consumed_at")&&challengeMigration.includes("consumed_by"),"MFA challenge state must persist unique nonces and consumption");
+assert.ok(workerSource.includes("INSERT INTO admin_mfa_challenges (nonce,user_id,purpose,expires_at)")&&workerSource.includes("DELETE FROM admin_mfa_challenges WHERE expires_at<?"),"each challenge must be persisted and expired state cleaned");
+assert.ok(workerSource.includes("consumed_at IS NULL")&&workerSource.includes("consumed_by=?")&&workerSource.includes("MFA challenge replay or factor reuse rejected"),"challenge must be validated and consumed once");
+assert.ok(workerSource.includes("AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)"),"factor consumption must depend on the same challenge-consumption claim");
+assert.ok(workerSource.includes("UPDATE admin_mfa_challenges SET consumed_at=?,consumed_by=?")&&workerSource.includes("await env.DB.batch(["),"challenge and accepted factor must be committed in one D1 batch");
+console.log("Admin MFA single-use challenge contract checks passed.");
+
+const disableRoute=workerSource.slice(workerSource.indexOf('if(path==="/api/admin/mfa/disable"'),workerSource.indexOf('if(path==="/api/admin/users" || path.startsWith("/api/admin/users/"))'));
+assert.ok(disableRoute.includes("let factorStatement=null")&&disableRoute.includes("await env.DB.batch([")&&disableRoute.includes("AND "+'"+factorGuardSql'),"MFA disable must consume second-factor proof and revoke sessions in one guarded D1 batch");
+assert.ok(disableRoute.includes("factorGuardSql=")&&disableRoute.includes("session_version=session_version+1"),"MFA disable session revocation must depend on successful factor consumption");
+console.log("Admin MFA disable atomicity source-contract checks passed.");
+
+assert.ok(challengeMigration.includes("last_factor_claim_id TEXT")&&challengeMigration.includes("used_by TEXT"),"MFA reset must persist a unique factor-consumption claim");
+assert.ok(disableRoute.includes("last_factor_claim_id=?")&&disableRoute.includes("used_by=?")&&disableRoute.includes("factorClaimId"),"MFA disable must bind the accepted factor to a unique claim before revoking sessions");

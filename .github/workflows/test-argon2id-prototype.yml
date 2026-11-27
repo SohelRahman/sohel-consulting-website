@@ -1,0 +1,140 @@
+name: Isolated Argon2id prototype checks
+
+on:
+  push:
+    branches:
+      - current-focus-development
+    paths:
+      - 'prototypes/argon2id-wasm/Cargo.toml'
+      - 'prototypes/argon2id-wasm/Cargo.lock'
+      - 'prototypes/argon2id-wasm/src/**'
+      - 'prototypes/argon2id-wasm/tests/**'
+      - 'prototypes/argon2id-wasm/test/**'
+      - 'prototypes/argon2id-wasm/adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker-adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker.mjs'
+      - 'prototypes/argon2id-wasm/wrangler.toml'
+      - '.github/workflows/test-argon2id-prototype.yml'
+  pull_request:
+    branches:
+      - current-focus-development
+    paths:
+      - 'prototypes/argon2id-wasm/Cargo.toml'
+      - 'prototypes/argon2id-wasm/Cargo.lock'
+      - 'prototypes/argon2id-wasm/src/**'
+      - 'prototypes/argon2id-wasm/tests/**'
+      - 'prototypes/argon2id-wasm/test/**'
+      - 'prototypes/argon2id-wasm/adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker-adapter.mjs'
+      - 'prototypes/argon2id-wasm/worker.mjs'
+      - 'prototypes/argon2id-wasm/wrangler.toml'
+      - '.github/workflows/test-argon2id-prototype.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: argon2id-prototype-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: current-focus-development
+      - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca
+        with:
+          toolchain: 1.100.0
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - name: Generate and inspect prototype dependency lockfile
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f Cargo.lock ]]; then cargo generate-lockfile; fi
+          echo 'BEGIN_ARGON2ID_CARGO_LOCK'
+          cat Cargo.lock
+          echo 'END_ARGON2ID_CARGO_LOCK'
+      - name: Audit locked Rust dependencies
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo install cargo-audit --version 0.23.0 --locked
+          cargo audit --file Cargo.lock
+      - name: Check formatting
+        working-directory: prototypes/argon2id-wasm
+        run: cargo fmt --all -- --check
+      - name: Run host tests
+        working-directory: prototypes/argon2id-wasm
+        run: cargo test --locked
+      - name: Lint host target
+        working-directory: prototypes/argon2id-wasm
+        run: cargo clippy --locked --all-targets -- -D warnings
+      - name: Compile WebAssembly target
+        working-directory: prototypes/argon2id-wasm
+        run: cargo build --locked --release --target wasm32-unknown-unknown
+      - name: Generate wasm-bindgen JavaScript bindings
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          WASM_BINDGEN_VERSION="$(cargo tree --locked --target wasm32-unknown-unknown -i wasm-bindgen --prefix none | awk 'NR == 1 { sub(/^v/, "", $2); print $2 }')"
+          : "${WASM_BINDGEN_VERSION:?Could not resolve wasm-bindgen crate version}"
+          cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+          wasm-bindgen --target web --out-dir pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
+          cargo build --locked --release --target wasm32-unknown-unknown --features test-hooks
+          wasm-bindgen --target nodejs --out-dir node-pkg target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm
+          test -s pkg/sohel_argon2id_prototype.js
+          test -s pkg/sohel_argon2id_prototype_bg.wasm
+          test -s node-pkg/sohel_argon2id_prototype.js
+          echo "Generated browser/Worker and Node.js wasm-bindgen glue."
+      - name: Set up Node.js for WASM integration tests
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.23.5'
+      - name: Test JavaScript adapter and WASM memory growth
+        working-directory: prototypes/argon2id-wasm
+        run: node --test test/adapter.test.mjs
+      - name: Record build provenance and artifact checksums
+        working-directory: prototypes/argon2id-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "source_commit=$GITHUB_SHA"
+            echo "rustc_version=$(rustc --version)"
+            rustc --version --verbose
+            echo "cargo_version=$(cargo --version)"
+            echo "node_version=$(node --version)"
+            echo "wasm_bindgen_version=$(wasm-bindgen --version)"
+            echo "cargo_audit_version=$(cargo audit --version)"
+            echo "target=wasm32-unknown-unknown"
+            echo "profile=release"
+            echo "features=default"
+            echo
+            echo "[locked_dependency_graph]"
+            cargo tree --locked --target wasm32-unknown-unknown
+            echo
+            echo "[dependency_license_inventory]"
+            cargo metadata --locked --format-version 1 | jq -r '.packages[] | [.name, .version, (.license // "UNKNOWN"), (.source // "workspace")] | @tsv' | sort
+            echo
+            echo "[artifact_sha256]"
+            sha256sum Cargo.lock target/wasm32-unknown-unknown/release/sohel_argon2id_prototype.wasm pkg/sohel_argon2id_prototype.js pkg/sohel_argon2id_prototype_bg.wasm node-pkg/sohel_argon2id_prototype.js node-pkg/sohel_argon2id_prototype_bg.wasm
+          } > build-provenance.txt
+          cat build-provenance.txt
+      - name: Upload precompiled WASM package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: argon2id-wasm-${{ github.sha }}
+          path: |
+            prototypes/argon2id-wasm/pkg/
+            prototypes/argon2id-wasm/Cargo.lock
+            prototypes/argon2id-wasm/build-provenance.txt
+          if-no-files-found: error
+          retention-days: 7

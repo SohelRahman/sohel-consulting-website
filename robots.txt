@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /api/
 
 Sitemap: https://consulting.sohelrahman118.workers.dev/sitemap.xml

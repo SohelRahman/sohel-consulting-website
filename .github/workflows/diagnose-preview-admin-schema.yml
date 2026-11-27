@@ -33,7 +33,7 @@ jobs:
           const id=l?.split("=")[1]?.trim().slice(1,-1);
           const expected="e0317397-77cb-4f36-9d19-2594ff75b0c2";
           if(id!==expected||id==="3a4f765a-46c2-4040-9753-36e9483893a4") throw new Error("Preview D1 identity guard failed.");
-          const token=(process.env.CLOUDFLARE_API_TOKEN||"").replace(/\\s+/g,"");
+          const token=(process.env.CLOUDFLARE_API_TOKEN||"").replace(/\s+/g,"");
           const account=process.env.CLOUDFLARE_ACCOUNT_ID;
           if(!token||!account) throw new Error("Cloudflare credentials missing.");
           const res=await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/d1/database/${expected}`,{headers:{Authorization:`Bearer ${token}`,Accept:"application/json"}});

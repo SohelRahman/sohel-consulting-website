@@ -54,9 +54,13 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from "node:fs";
           const config = readFileSync("wrangler.toml", "utf8");
-          const previewSection = config.split("[previews.d1_databases]")[1] || "";
-          const previewLine = previewSection.split(String.fromCharCode(10)).find(line => line.trim().startsWith("database_id"));
-          const previewId = previewLine?.split("=")[1]?.trim().slice(1, -1);
+          // Wrangler declares array-of-table bindings with double brackets:
+          // [[previews.d1_databases]]. Read only that table and require an exact UUID.
+          const previewSection = config.match(/\[\[previews\.d1_databases\]\]([\s\S]*?)(?=\n\[|$)/)?.[1] || "";
+          const previewId = previewSection.match(/^\s*database_id\s*=\s*"([^"]+)"\s*$/m)?.[1];
+          if (!previewId) {
+            throw new Error("Could not parse database_id from [[previews.d1_databases]] in wrangler.toml; refusing to run migrations.");
+          }
           const expectedPreviewId = "e0317397-77cb-4f36-9d19-2594ff75b0c2";
           const productionId = "3a4f765a-46c2-4040-9753-36e9483893a4";
           if (previewId !== expectedPreviewId || previewId === productionId) {

@@ -1,0 +1,62 @@
+name: Validate development website
+
+on:
+  push:
+    branches:
+      - current-focus-development
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.event_name == 'push' || github.head_ref == 'current-focus-development'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse GitHub Actions workflow YAML
+        run: ruby -e 'require "yaml"; %w[.github/workflows/deploy-cloudflare.yml .github/workflows/deploy-cloudflare-preview.yml .github/workflows/benchmark-password-kdf.yml].each { |path| YAML.load_file(path); puts "Workflow YAML parsed" }'
+      - name: Check Worker JavaScript syntax
+        run: node --input-type=module --check < src/worker.js
+      - name: Check shared website JavaScript syntax
+        run: node --check assets/site.js
+      - name: Validate HTML, local links and inline scripts
+        run: node scripts/validate-site.mjs
+      - name: Check RBAC security contract
+        run: node scripts/test-rbac-contract.mjs
+      - name: Authenticated Admin API handler integration tests
+        run: node scripts/test-admin-api-auth.mjs
+      - name: Admin last-active guard SQLite atomicity tests
+        run: python3 scripts/test-admin-last-admin-sqlite.py
+      - name: Check CMS write atomicity contract
+        run: node scripts/test-cms-atomicity.mjs
+      - name: Check Page Builder write atomicity contract
+        run: node scripts/test-page-builder-atomicity.mjs
+      - name: Check bulk CMS initialization atomicity contract
+        run: node scripts/test-cms-initialization-atomicity.mjs
+      - name: Check bulk CMS initialization recovery paths
+        run: node scripts/test-cms-initialization-recovery.mjs
+      - name: Check CMS revision concurrency contract
+        run: node scripts/test-cms-revision-contract.mjs
+      - name: Check CMS revision SQL and transaction behavior in SQLite
+        run: python3 scripts/test-cms-revision-sqlite.py
+      - name: Password hashing compatibility tests
+        run: node scripts/test-password-hash.mjs
+      - name: Admin MFA cryptographic and source-contract tests
+        run: node scripts/test-admin-mfa.mjs
+      - name: Admin MFA challenge persistence and replay transaction tests
+        run: python3 scripts/test-admin-mfa-challenge.py
+      - name: Course pricing unit tests
+        run: node scripts/test-course-pricing.mjs
+      - name: Registration workflow contract tests
+        run: node scripts/test-registration-workflow.mjs
+      - name: Learner quotation response contract tests
+        run: node scripts/test-quotation-response.mjs

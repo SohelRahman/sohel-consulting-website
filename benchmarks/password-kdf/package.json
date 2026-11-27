@@ -1,0 +1,8 @@
+{
+  "name": "sohel-password-kdf-benchmark",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "hash-wasm": "4.12.0"
+  }
+}
