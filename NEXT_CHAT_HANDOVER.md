@@ -1,3 +1,7 @@
+## Critical open blocker — Cloudflare CPU limit
+
+Runtime #45879657641 returned 6 /hash invocation CPU samples (44–78 ms) and 5 /verify samples (51–97 ms), while the previous account assessment recorded Workers Free at 10 ms/request. Current Cloudflare documentation confirms Free 10 ms/request and Paid Standard 30-second default, with flexibility only for infrequent overruns. This discrepancy is unresolved. Before any Argon2id integration decision, obtain read-only Cloudflare Dashboard evidence for account plan/usage model, disposable Worker usage model/CPU limit, invocation outcome details, and the application Preview Worker's effective limit. No plan upgrade, billing change or configuration adjustment is authorized. See `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`.
+
 # Next Chat Handover — Sohel Consulting Website
 
 **Last updated:** 2026-11-27  
