@@ -110,3 +110,11 @@ Every test entry must include the test/run identifier, commit when known, scope,
 ## Preview deployment MFA gate — 2026-11-27
 
 The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa-challenge.py` alongside the existing MFA cryptographic/source-contract checks before any Preview deployment step. This adds the SQLite migration-order, challenge replay, expiry, purpose, recovery-code and factor/session transaction checks to the deployment gate. It does not apply migration 0020 or deploy the Worker. The workflow change is on `current-focus-development`; its CI validation is pending.
+
+
+## Latest verified CI — 2026-11-27
+
+- [Validation run #46002620627](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002620627) passed for commit `0bf2e16032b97bab504170caa8d1738aded25c74` on `current-focus-development`.
+- YAML parsing now includes `.github/workflows/deploy-cloudflare-preview.yml`; the guarded Preview workflow runs `scripts/test-admin-mfa-challenge.py` before deployment.
+- No Preview deployment or remote migration was triggered by this run. Obtain a fresh read-only Preview D1 migration audit before requesting any apply/deploy approval.
+- The audit workflow `.github/workflows/audit-preview-d1-migrations.yml` is manual-dispatch only and branch-guarded to `current-focus-development`. No workflow-dispatch action is available in the connected GitHub tools; start it from GitHub Actions UI. It only verifies the Preview D1 identity and runs `wrangler d1 migrations list --remote`; it contains no migration-apply command.
