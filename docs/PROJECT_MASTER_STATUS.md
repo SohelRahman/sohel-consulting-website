@@ -782,3 +782,7 @@ Added two further authenticated Worker-handler tests: `content.view` is denied C
 Extended `scripts/test-admin-api-auth.mjs` with three authenticated Worker-handler cases for Admin account management: an administrator cannot disable their own account, demote their own account, or delete their own account. Each request is checked through the real Worker `fetch()` entrypoint with a signed test session and mocked D1. The suite is expected to contain 32 scenarios after this addition, based on the prior documented 29 plus these three cases; verify the emitted test counter in CI before treating the count as confirmed.
 
 **Validation:** CI is pending for commit `240ec22c2cb733db2cba285a09920616c5e0ff00`. This is mocked-D1 handler coverage, not remote D1 or Preview runtime acceptance. No Preview deployment, migration 0020 application, or Production operation was performed. Production remains unreleased and unchanged.
+
+## 2026-11-28 — Admin self-protection test identity correction
+
+The first CI run for the self-protection cases exposed a test-fixture mismatch: the signed test session used a non-UUID user ID while the account route accepts UUID-form target IDs. The test now signs the session with the same UUID used in the request path, so the Worker can reach its self-account guard. This is a test correction, not an application behavior change. Fix commit: `d56c8ecdfecb8b208b109b1f10535ef7230f5066`. Validation is pending; the previous CI run failed at the DELETE self-account assertion (actual 403, expected 400). No Preview or Production changes.
