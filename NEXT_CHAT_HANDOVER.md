@@ -106,3 +106,7 @@ Runtime #45879657641 returned 6 /hash invocation CPU samples (44–78 ms) and 5 
 ## Evidence policy
 
 Every test entry must include the test/run identifier, commit when known, scope, result, limitations and cleanup/side-effect status. Never mark an item complete from source inspection alone when runtime evidence is required.
+
+## Preview deployment MFA gate — 2026-11-27
+
+The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa-challenge.py` alongside the existing MFA cryptographic/source-contract checks before any Preview deployment step. This adds the SQLite migration-order, challenge replay, expiry, purpose, recovery-code and factor/session transaction checks to the deployment gate. It does not apply migration 0020 or deploy the Worker. The workflow change is on `current-focus-development`; its CI validation is pending.
