@@ -20,7 +20,7 @@ async function sessionCookie({ role = "admin", permissions = [], active = 1, ses
   const signature = b64url(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
   return { cookie: `sr_admin=${payload}.${signature}`, user: { id: sessionUserId, email: sessionEmail, full_name: "Test User", role, permissions_json: JSON.stringify(permissions), is_active: active, session_version: sessionVersion } };
 }
-function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount = 2 } = {}) {
+function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount = 2, createdUsers = [] } = {}) {
   return {
     prepare(sql) {
       let values = [];
@@ -41,11 +41,13 @@ function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount =
           throw new Error("Unexpected D1 first() query in test: " + sql);
         },
         async all() {
-          if (sql.includes("FROM admin_users ORDER BY role,email")) return { results: targetUser ? [targetUser] : [] };
+          if (sql.includes("FROM admin_users ORDER BY role,email")) return { results: [...(targetUser ? [targetUser] : []), ...createdUsers] };
           return { results: [] };
         },
         async run() {
-          if (targetUser && sql.includes("UPDATE admin_users SET full_name=COALESCE")) {
+          if (sql.includes("INSERT INTO admin_users (id,email,full_name,role,password_hash,permissions_json,is_active)")) {
+            createdUsers.push({ id: values[0], email: values[1], full_name: values[2], role: values[3], password_hash: values[4], permissions_json: values[5], is_active: 1 });
+          } else if (targetUser && sql.includes("UPDATE admin_users SET full_name=COALESCE")) {
             targetUser.full_name = values[0] ?? targetUser.full_name;
             targetUser.role = values[1];
             targetUser.is_active = values[2];
@@ -223,6 +225,30 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
   }), { DB: db, SESSION_SECRET: secret });
   assert.equal(remove.status, 409, "Admin cannot delete the last active administrator");
   expandedScenarios += 2;
+}
+
+// Account creation stores an allowlisted permission set and returns a created identifier.
+{
+  const auth = await sessionCookie({ role: "admin" });
+  const createdUsers = [];
+  const response = await worker.fetch(new Request("https://example.test/api/admin/users", {
+    method: "POST",
+    headers: { cookie: auth.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({
+      email: "new-limited@example.test",
+      name: "New Limited User",
+      password: "Valid-Test-Password-2026",
+      role: "user",
+      permissions: ["courses.view", "unknown.permission"]
+    })
+  }), { DB: mockDb(auth.user, { createdUsers }), SESSION_SECRET: secret });
+  assert.equal(response.status, 201, "Admin can create a limited account");
+  const result = await response.json();
+  assert.match(result.id, /^[0-9a-f-]{36}$/i, "creation returns a UUID");
+  assert.equal(createdUsers.length, 1);
+  assert.deepEqual(JSON.parse(createdUsers[0].permissions_json), ["courses.view"]);
+  assert.notEqual(createdUsers[0].password_hash, "Valid-Test-Password-2026", "password is stored as a hash, not plaintext");
+  expandedScenarios++;
 }
 
 // Account listing returns the configured account fields but never password hashes.
