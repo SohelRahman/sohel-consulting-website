@@ -21,6 +21,46 @@ const permissions = [
   "chat.view", "chat.reply"
 ];
 
+// Exercise the real permission-mapping function in isolation, rather than relying only on source-pattern checks.
+const permissionFunctionStart = worker.indexOf("function requiredPermission(path, method) {");
+const permissionFunctionEnd = worker.indexOf("\nasync function makeSession", permissionFunctionStart);
+assert.ok(permissionFunctionStart >= 0 && permissionFunctionEnd > permissionFunctionStart, "requiredPermission function can be isolated");
+const requiredPermission = new Function(worker.slice(permissionFunctionStart, permissionFunctionEnd) + "\nreturn requiredPermission;")();
+const routePermissionCases = [
+  ["/api/admin/summary", "GET", "dashboard.view"],
+  ["/api/admin/courses", "GET", "courses.view"],
+  ["/api/admin/courses/abc", "GET", "courses.view"],
+  ["/api/admin/courses", "POST", "courses.manage"],
+  ["/api/admin/registrations", "GET", "registrations.view"],
+  ["/api/admin/registrations/abc", "PATCH", "registrations.manage"],
+  ["/api/admin/inquiries", "GET", "inquiries.view"],
+  ["/api/admin/inquiries/abc", "POST", "inquiries.manage"],
+  ["/api/admin/cms/history", "GET", "content.view"],
+  ["/api/admin/cms/pages", "GET", "content.view"],
+  ["/api/admin/cms/publish", "POST", "content.manage"],
+  ["/api/admin/site-content/key", "PUT", "content.manage"],
+  ["/api/admin/page-styles", "GET", "styles.view"],
+  ["/api/admin/page-styles", "PUT", "styles.manage"],
+  ["/api/admin/pages", "GET", "pages.view"],
+  ["/api/admin/pages/home", "DELETE", "pages.manage"],
+  ["/api/admin/media", "GET", "media.view"],
+  ["/api/admin/media", "POST", "media.manage"],
+  ["/api/admin/media/audit", "GET", "media.view"],
+  ["/api/admin/media/audit", "POST", null],
+  ["/api/admin/media/inventory", "GET", "media.view"],
+  ["/api/admin/media/inventory", "POST", "media.manage"],
+  ["/api/admin/analytics", "GET", "analytics.view"],
+  ["/api/admin/chat/conversations", "GET", "chat.view"],
+  ["/api/admin/chat/conversations/abc", "POST", "chat.reply"],
+  ["/api/admin/me", "GET", null],
+  ["/api/admin/users", "GET", null],
+  ["/api/admin/not-a-real-route", "GET", null]
+];
+for (const [path, method, expected] of routePermissionCases) {
+  assert.equal(requiredPermission(path, method), expected, `permission mapping: ${method} ${path}`);
+}
+assert.equal(requiredPermission("/api/admin/courses", "OPTIONS"), "courses.manage", "unsupported methods never receive read permission");
+
 const failures = [];
 function check(name, condition) {
   try { assert.ok(condition, name); console.log("PASS " + name); }
