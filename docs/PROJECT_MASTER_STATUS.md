@@ -762,3 +762,10 @@ Extended `scripts/test-admin-api-auth.mjs` with three real Worker-handler cases:
 ## 2026-11-27 — Authenticated inquiry, registration and chat permission tests added
 
 Extended `scripts/test-admin-api-auth.mjs` with real Worker-handler coverage for inquiry collection read and status mutation boundaries, registration quote-history read and quote-creation boundaries, and chat conversation read/reply boundaries. View-only inquiry/registration users and chat.view users are denied mutation (403); corresponding manage/reply permissions reach handler validation (400 for deliberately invalid input); permitted collection/history reads return 200. The invalid mutation payloads are rejected before writes. The suite now contains 24 scenarios. All use signed test sessions and mocked D1, not live Cloudflare D1 or Preview. CI is pending. No Preview deployment, migration application or Production action was performed.
+
+
+## 2026-11-28 — Authenticated CMS permission coverage and release status
+
+Added three authenticated Worker-handler cases to `scripts/test-admin-api-auth.mjs`: a `content.view` user can read a CMS page (200) but cannot save a draft (403); a `content.manage` user passes RBAC and reaches draft validation (400 for an intentionally empty payload). The invalid save does not reach D1 writes. The authenticated Admin API suite now contains 27 scenarios. Tests use signed sessions and mocked D1; CI for this update is pending and no Preview runtime proof is claimed.
+
+**Release / Production status:** This is a source-and-test update on `current-focus-development` only. Production Worker, Production D1, secrets and configuration were not changed. No Production deployment or migration was performed. Preview deployment remains gated/skipped; migration 0020 remains unapplied remotely. Production release is not approved and is not complete. Existing release blockers remain: fresh Preview D1 migration audit, explicit approval for Preview migration 0020 and Preview deployment, live Preview acceptance for MFA/RBAC/Admin workflows, and Production readiness review.
