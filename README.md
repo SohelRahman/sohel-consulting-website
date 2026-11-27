@@ -1,3 +1,11 @@
+
+
+## 2026-11-27 — MFA single-use challenge CI validation passed
+
+- Development validation [#45996901546](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45996901546) completed successfully for branch head `782cec9dfd2951d0571d64e5baaf9d6f321b35e5`.
+- Passed Worker syntax, site validation, RBAC, CMS/Page Builder atomicity, CMS revision SQL, password compatibility, Admin MFA cryptographic/source-contract checks, the new MFA challenge SQLite transaction/replay test, course pricing, registration and quotation response tests.
+- This is CI/source-level evidence only. It does not prove remote D1 migration compatibility or authenticated Preview replay resistance.
+- Migration 0020 remains unapplied remotely; Preview deploy job was skipped. No D1 write, Preview deployment, Production action, `main` update or PR merge occurred.
 ## MFA challenge persistence
 
 Administrator MFA challenges are stored in D1 with a purpose, expiry and single-use consumption claim. Challenge consumption is coupled to the accepted TOTP counter or recovery-code update in the same D1 batch. The additive schema is `migrations/0020_admin_mfa_challenge_state.sql`; source/contract tests are in `scripts/test-admin-mfa.mjs` and `scripts/test-admin-mfa-challenge.py`. Applying this migration to any remote database requires explicit approval and target verification.
