@@ -61,6 +61,16 @@ for (const [path, method, expected] of routePermissionCases) {
 }
 assert.equal(requiredPermission("/api/admin/courses", "OPTIONS"), "courses.manage", "unsupported methods never receive read permission");
 
+// Exercise the real permission normalizer for Admin and limited-user roles.
+const permissionModelStart = worker.indexOf("const ADMIN_PERMISSIONS = [");
+const permissionModelEnd = worker.indexOf("\nasync function makeSession", permissionModelStart);
+assert.ok(permissionModelStart >= 0 && permissionModelEnd > permissionModelStart, "permission model can be isolated");
+const permissionModel = new Function(worker.slice(permissionModelStart, permissionModelEnd) + "\nreturn { ADMIN_PERMISSIONS, permissionsFor };")();
+assert.deepEqual(permissionModel.permissionsFor({ role: "admin", permissions_json: "[]" }), permissionModel.ADMIN_PERMISSIONS, "Admin role always receives the complete permission set");
+assert.deepEqual(permissionModel.permissionsFor({ role: "user", permissions_json: JSON.stringify(["courses.view", "media.manage", "unknown.admin", "dashboard.delete"]) }), ["courses.view", "media.manage"], "limited users receive only allowlisted permissions");
+assert.deepEqual(permissionModel.permissionsFor({ role: "user", permissions_json: "{malformed" }), [], "malformed permission JSON fails closed");
+assert.deepEqual(permissionModel.permissionsFor({ role: "user", permissions_json: JSON.stringify({ permission: "courses.manage" }) }), [], "non-array permission data fails closed");
+
 const failures = [];
 function check(name, condition) {
   try { assert.ok(condition, name); console.log("PASS " + name); }
