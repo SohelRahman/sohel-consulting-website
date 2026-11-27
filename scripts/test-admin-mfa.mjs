@@ -32,3 +32,11 @@ assert.ok(workerSource.includes("__Host-sr_admin_challenge")&&workerSource.inclu
 assert.ok(migrationSource.includes("admin_mfa_credentials")&&migrationSource.includes("secret_ciphertext")&&migrationSource.includes("admin_mfa_recovery_codes"),"migration must persist encrypted credentials and recovery-code hashes");
 assert.ok(adminSource.includes("দ্বি-ধাপ যাচাইকরণ")&&adminSource.includes("রিকভারি কোড"),"Admin MFA instructions must include Bangla");
 console.log("Admin MFA source-contract checks passed.");
+
+const challengeMigration=readFileSync(new URL("../migrations/0020_admin_mfa_challenge_state.sql",import.meta.url),"utf8");
+assert.ok(challengeMigration.includes("admin_mfa_challenges")&&challengeMigration.includes("nonce TEXT PRIMARY KEY")&&challengeMigration.includes("consumed_at")&&challengeMigration.includes("consumed_by"),"MFA challenge state must persist unique nonces and consumption");
+assert.ok(workerSource.includes("INSERT INTO admin_mfa_challenges (nonce,user_id,purpose,expires_at)")&&workerSource.includes("DELETE FROM admin_mfa_challenges WHERE expires_at<?"),"each challenge must be persisted and expired state cleaned");
+assert.ok(workerSource.includes("consumed_at IS NULL")&&workerSource.includes("consumed_by=?")&&workerSource.includes("MFA challenge replay or factor reuse rejected"),"challenge must be validated and consumed once");
+assert.ok(workerSource.includes("AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)"),"factor consumption must depend on the same challenge-consumption claim");
+assert.ok(workerSource.includes("UPDATE admin_mfa_challenges SET consumed_at=?,consumed_by=?")&&workerSource.includes("await env.DB.batch(["),"challenge and accepted factor must be committed in one D1 batch");
+console.log("Admin MFA single-use challenge contract checks passed.");
