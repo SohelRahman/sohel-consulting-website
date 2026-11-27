@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '22'
       - name: Parse GitHub Actions workflow YAML
-        run: ruby -e 'require "yaml"; %w[.github/workflows/deploy-cloudflare.yml .github/workflows/benchmark-password-kdf.yml].each { |path| YAML.load_file(path); puts "Workflow YAML parsed" }'
+        run: ruby -e 'require "yaml"; %w[.github/workflows/deploy-cloudflare.yml .github/workflows/deploy-cloudflare-preview.yml .github/workflows/benchmark-password-kdf.yml].each { |path| YAML.load_file(path); puts "Workflow YAML parsed" }'
       - name: Check Worker JavaScript syntax
         run: node --input-type=module --check < src/worker.js
       - name: Check shared website JavaScript syntax
