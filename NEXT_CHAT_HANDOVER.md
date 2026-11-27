@@ -137,3 +137,12 @@ Latest development changes on `current-focus-development`:
 - `scripts/test-rbac-contract.mjs`: exercises the real permission mapper for those routes and checks unsupported verbs `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS` are not granted permissions.
 - CI for these commits is pending at handover. Tests remain isolated/source-level; authenticated HTTP integration and Preview runtime checks are still outstanding.
 - Continue only on `current-focus-development`. Do not merge, deploy, apply migration 0020, or alter Cloudflare configuration without explicit approval.
+
+
+## 2026-11-27 — Authenticated Admin API handler tests added
+
+- New `scripts/test-admin-api-auth.mjs` imports the real Worker entrypoint and exercises the actual `fetch()` handler with signed sessions and mocked D1.
+- Six cases cover 401 unauthenticated, 200 Admin summary access, 403 limited user without dashboard permission, 401 revoked session, 401 disabled account, and 401 missing MFA enrollment.
+- Development workflow now runs this test after RBAC contract tests. CI result is pending at handover; verify the run before claiming success.
+- This is handler-level HTTP testing with mocked D1, not Cloudflare D1 or Preview runtime verification.
+- Continue only on `current-focus-development`; do not deploy, apply migration 0020, merge, or change Cloudflare configuration without explicit approval.
