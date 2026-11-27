@@ -118,3 +118,10 @@ Record run ID/URL, tested commit, environment, exact scope, result, metrics, lim
 ## Preview deployment MFA gate — 2026-11-27
 
 The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa-challenge.py` alongside the existing MFA cryptographic/source-contract checks before any Preview deployment step. This adds the SQLite migration-order, challenge replay, expiry, purpose, recovery-code and factor/session transaction checks to the deployment gate. It does not apply migration 0020 or deploy the Worker. The workflow change is on `current-focus-development`; its CI validation is pending.
+
+## Preview workflow and development CI gate — 2026-11-27
+
+- Validation run [#46002620627](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002620627) passed for commit `0bf2e16032b97bab504170caa8d1738aded25c74` on `current-focus-development`.
+- The successful job parsed the Preview deployment workflow YAML and passed all listed source, contract and SQLite tests, including `scripts/test-admin-mfa-challenge.py`.
+- The guarded Preview deployment workflow now includes that MFA transaction test before its deployment steps. The workflow change was syntax-validated; this CI run did not dispatch the deployment workflow.
+- No remote migration, Preview deployment or Production operation occurred. The last known Preview D1 migration state still requires a fresh read-only audit to confirm it remains current.
