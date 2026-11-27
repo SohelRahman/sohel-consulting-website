@@ -1,5 +1,15 @@
 
 
+## 2026-11-27 — Argon2id request-level telemetry verified; project records expanded
+
+- Isolated runtime workflow [#45879657641](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45879657641) passed at commit `275c122fd11019670823902e4e41a1e9bde86543`. The corrected jq telemetry reporter succeeded and Cloudflare returned 12 invocation records for the exact disposable Worker.
+- Event source URLs provided request paths: 6 `POST /hash` invocations (CPU ms: 45, 48, 44, 51, 78, 66), 5 `POST /verify` invocations (CPU ms: 84, 73, 63, 51, 97), and one `GET /health` invocation (0 ms). These are route-level Worker invocation metrics, not isolated Argon2 primitive timings; sample sizes are small and do not establish a stable distribution.
+- CPU values of 44–97 ms must be reconciled with the account's actual Cloudflare plan and effective per-request CPU limit. Do not claim CPU-limit compliance. Resolve this before any KDF integration decision.
+- Cleanup verified: disposable Worker DELETE HTTP 200 and follow-up GET HTTP 404. No application authentication integration, existing Preview deployment, D1 operation, Production change, `main` update or PR merge.
+- Created `NEXT_CHAT_HANDOVER.md`, `DEVELOPMENT_STRATEGY_WBS.md`, `docs/TEST_REPORT.md` and `docs/SECURITY_BASELINE.md`; updated `README.md` with the project-document index. The six requested project-control documents now exist on `current-focus-development`.
+- Next engineering gate: verify current Cloudflare plan/CPU limit against the observed invocation metrics, then resume authenticated Preview MFA/RBAC and CMS/workflow acceptance. Formal OWASP ASVS Level 2 remains incomplete.
+
+
 ## 2026-11-27 — Argon2id telemetry reporter correction; TinyFish ground rule
 
 - Corrected the isolated Argon2id runtime workflow's jq field access quoting for the Cloudflare invocation report. Commit: `6a776de5e9f6cd58462d0dd086d1845aebfcd99e`.
