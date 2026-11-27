@@ -1,5 +1,14 @@
 
 
+## 2026-11-27 — Argon2id CPU-limit discrepancy blocks integration
+
+- Runtime #45879657641 passed and returned route-identifiable invocation CPU metrics: /hash 44–78 ms (6 events), /verify 51–97 ms (5 events), health 0 ms (1 event). These are Worker invocation metrics, not isolated KDF primitive timings.
+- This conflicts with the prior recorded assumption that the linked account was Workers Free at 10 ms/request. Current Cloudflare documentation still states Free 10 ms/request, Paid Standard 30-second default (up to 5 minutes), and limited flexibility only for infrequent over-limit invocations. Eleven non-zero route samples exceeded 10 ms.
+- The prototype Wrangler config has no explicit `limits.cpu_ms`; effective account/Worker usage model remains unverified. Do not infer that the account upgraded or that the 10 ms limit was exceeded/ignored without dashboard evidence.
+- **Blocker:** obtain read-only Cloudflare Dashboard evidence for account plan/usage model, disposable Worker Usage Model and CPU limit, invocation outcome details, and the application Preview Worker's own effective limit. No plan upgrade, charge, CPU-limit change or config change is authorized.
+- Argon2id remains isolated and not approved for application authentication. See `docs/PASSWORD_STORAGE_DESIGN_ASSESSMENT.md` and `docs/ARGON2ID_CPU_TIME_MEASUREMENT.md`.
+
+
 ## 2026-11-27 — Argon2id request-level telemetry verified; project records expanded
 
 - Isolated runtime workflow [#45879657641](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45879657641) passed at commit `275c122fd11019670823902e4e41a1e9bde86543`. The corrected jq telemetry reporter succeeded and Cloudflare returned 12 invocation records for the exact disposable Worker.
