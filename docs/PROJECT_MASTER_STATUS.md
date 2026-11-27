@@ -742,3 +742,8 @@ The centralized RBAC permission mapper now grants read permissions on the Admin 
 ## 2026-11-27 — Authenticated Admin API handler integration test added
 
 Added `scripts/test-admin-api-auth.mjs`, which imports the actual Worker entrypoint and calls its `fetch()` handler with a signed test session and a controlled in-memory D1 mock. It covers six scenarios: missing session (401), valid Admin summary access (200), limited user without `dashboard.view` (403), revoked session-version mismatch (401), disabled account (401), and incomplete MFA enrollment (401). Added the test to the development validation workflow. This exercises the real HTTP handler/authentication guard, but the D1 implementation is mocked; it is not Cloudflare D1 or Preview runtime proof. CI is pending. No Preview deployment, migration 0020 application, or Production action was performed.
+
+
+## 2026-11-27 — Authenticated Admin API handler integration CI passed
+
+Development validation [#46030635598](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46030635598) completed successfully. The authenticated Admin API handler integration step passed, along with the workflow's remaining validation steps. The test uses a mocked D1 adapter, so this does not replace remote Preview/D1 runtime verification. The Preview runtime smoke and Preview deployment jobs for this commit were skipped by workflow conditions; no Preview deployment occurred.
