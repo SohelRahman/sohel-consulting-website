@@ -590,17 +590,34 @@ async function handleApi(request, env) {
       if(!account||!(await verifyPassword(password,account.password_hash)))return json({error:"Current password is incorrect."},401);
       const credential=await env.DB.prepare("SELECT secret_ciphertext,last_totp_counter FROM admin_mfa_credentials WHERE user_id=? AND enabled_at IS NOT NULL").bind(user.id).first();
       if(!credential?.secret_ciphertext)return json({error:"MFA is not enabled for this account."},409);
-      let accepted=false;
-      if(/^\d{6}$/.test(code)){const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,user.id),counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));if(counter!==null){const r=await env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=? WHERE user_id=? AND last_totp_counter<?").bind(counter,user.id,counter).run();accepted=Boolean(r.meta?.changes);}}
-      else if(recoveryCode){const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(user.id).all();for(const row of rows.results||[]){if(constantTimeTextEqual(await hashRecoveryCode(recoveryCode,row.code_salt),row.code_hash)){const r=await env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL").bind(user.id,row.code_hash).run();accepted=Boolean(r.meta?.changes);break;}}}
-      if(!accepted){await audit(env,user.email,"admin_mfa_reset_verification_failed","admin_user",user.id,"MFA reset second-factor code rejected");return json({error:"A valid unused authenticator or recovery code is required."},401);}
+      let factorStatement=null,factorGuardSql="",factorGuardValues=[];
+      if(/^\d{6}$/.test(code)){
+        const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,user.id);
+        const counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));
+        if(counter!==null){
+          factorStatement=env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=? WHERE user_id=? AND last_totp_counter<? AND enabled_at IS NOT NULL AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(counter,user.id,counter,user.id,user.session_version);
+          factorGuardSql="EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND last_totp_counter=? AND enabled_at IS NOT NULL)";
+          factorGuardValues=[user.id,counter];
+        }
+      }else if(recoveryCode){
+        const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(user.id).all();
+        for(const row of rows.results||[]){
+          if(constantTimeTextEqual(await hashRecoveryCode(recoveryCode,row.code_salt),row.code_hash)){
+            factorStatement=env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(user.id,row.code_hash,user.id,user.session_version);
+            factorGuardSql="EXISTS (SELECT 1 FROM admin_mfa_recovery_codes WHERE user_id=? AND code_hash=? AND used_at IS NOT NULL)";
+            factorGuardValues=[user.id,row.code_hash];break;
+          }
+        }
+      }
+      if(!factorStatement){await audit(env,user.email,"admin_mfa_reset_verification_failed","admin_user",user.id,"MFA reset second-factor code rejected");return json({error:"A valid unused authenticator or recovery code is required."},401);}
       const nextVersion=Number(user.session_version)+1;
       const result=await env.DB.batch([
-        env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=?").bind(user.id,user.session_version),
+        factorStatement,
+        env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=? AND "+factorGuardSql).bind(user.id,user.session_version,...factorGuardValues),
         env.DB.prepare("DELETE FROM admin_mfa_recovery_codes WHERE user_id=? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(user.id,user.id,nextVersion),
         env.DB.prepare("DELETE FROM admin_mfa_credentials WHERE user_id=? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(user.id,user.id,nextVersion)
       ]);
-      if(!result[0]?.meta?.changes)return json({error:"Account state changed. Sign in again and retry."},409);
+      if(!result[0]?.meta?.changes||!result[1]?.meta?.changes)return json({error:"Account state changed or second-factor proof was already consumed. Sign in again and retry."},409);
       await audit(env,user.email,"admin_mfa_disabled","admin_user",user.id,"MFA reset after password and second-factor verification; re-enrollment required next login");
       const headers=new Headers({"content-type":"application/json","cache-control":"no-store"});
       headers.append("set-cookie","sr_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");headers.append("set-cookie",clearMfaChallengeCookie());
