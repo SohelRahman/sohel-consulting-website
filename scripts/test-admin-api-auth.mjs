@@ -124,4 +124,37 @@ let expandedScenarios = 6;
   assert.deepEqual(await response.json(), { users: [] });
   expandedScenarios++;
 }
+
+// Course view permission reaches the real collection handler.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["courses.view"] });
+  const response = await requestPath("/api/admin/courses", { user: auth.user, cookie: auth.cookie });
+  assert.equal(response.status, 200, "courses.view can read the course collection");
+  assert.deepEqual(await response.json(), { courses: [] });
+  expandedScenarios++;
+}
+// Manage permission passes RBAC and reaches input validation; no write is attempted.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["courses.manage"] });
+  const response = await worker.fetch(new Request("https://example.test/api/admin/courses", {
+    method: "POST",
+    headers: { cookie: auth.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({})
+  }), { DB: mockDb(auth.user), SESSION_SECRET: secret });
+  assert.equal(response.status, 400, "courses.manage reaches course validation (empty payload rejected)");
+  assert.match((await response.json()).error, /title and URL slug are required/i);
+  expandedScenarios++;
+}
+// View-only permission is denied before the same mutation validation path.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["courses.view"] });
+  const response = await worker.fetch(new Request("https://example.test/api/admin/courses", {
+    method: "POST",
+    headers: { cookie: auth.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({})
+  }), { DB: mockDb(auth.user), SESSION_SECRET: secret });
+  assert.equal(response.status, 403, "courses.view cannot reach course mutation validation");
+  expandedScenarios++;
+}
+
 console.log(`PASS authenticated Worker Admin API integration: ${expandedScenarios} scenarios`);
