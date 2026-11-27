@@ -4,10 +4,12 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 db = sqlite3.connect(":memory:")
 db.execute("PRAGMA foreign_keys=ON")
-db.execute("CREATE TABLE admin_users (id TEXT PRIMARY KEY)")
-db.execute("CREATE TABLE admin_mfa_credentials (user_id TEXT PRIMARY KEY, last_totp_counter INTEGER NOT NULL DEFAULT -1, enabled_at TEXT, pending_secret_ciphertext TEXT, secret_ciphertext TEXT, recovery_batch_id TEXT)")
-db.execute("CREATE TABLE admin_mfa_recovery_codes (user_id TEXT, code_hash TEXT, code_salt TEXT, used_at TEXT)")
+db.execute("CREATE TABLE admin_users (id TEXT PRIMARY KEY, session_version INTEGER NOT NULL DEFAULT 1)")
+db.executescript((root / "migrations/0019_admin_mfa.sql").read_text())
 db.executescript((root / "migrations/0020_admin_mfa_challenge_state.sql").read_text())
+assert "last_factor_claim_id" in {row[1] for row in db.execute("PRAGMA table_info(admin_mfa_credentials)")}
+assert "used_by" in {row[1] for row in db.execute("PRAGMA table_info(admin_mfa_recovery_codes)")}
+assert "consumed_by" in {row[1] for row in db.execute("PRAGMA table_info(admin_mfa_challenges)")}
 db.execute("INSERT INTO admin_users(id) VALUES ('u1')")
 db.execute("INSERT INTO admin_mfa_credentials(user_id,last_totp_counter) VALUES ('u1',10)")
 
@@ -85,7 +87,6 @@ assert not claim_login("wrong-purpose","wrong-purpose-claim",13), "enrollment ch
 
 print("Admin MFA challenge persistence and replay transaction tests passed.")
 
-db.execute("ALTER TABLE admin_users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 1")
 db.execute("UPDATE admin_mfa_credentials SET enabled_at='enabled' WHERE user_id='u1'")
 with db:
     factor = db.execute(
