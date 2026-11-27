@@ -1,3 +1,25 @@
+
+
+## 2026-11-27 — CPU telemetry versus recorded Free-plan assumption
+
+The isolated runtime [#45879657641](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45879657641) returned route-attributed Cloudflare invocation records for the disposable Worker: six `POST /hash` requests at 44–78 ms CPU and five `POST /verify` requests at 51–97 ms CPU; the health request reported 0 ms. These are Cloudflare Worker invocation metrics associated with each route, not isolated Argon2 primitive timings.
+
+This conflicts with the earlier account assessment that the linked account was Workers Free with a 10 ms/request CPU limit. Current Cloudflare documentation still lists 10 ms per HTTP request for Workers Free and a 30-second default (up to 5 minutes) for Workers Paid. Cloudflare also documents limited flexibility for infrequent over-limit invocations. Eleven non-zero route samples above 10 ms cannot safely be explained away as occasional flexibility.
+
+**Status: account/Worker execution model unresolved.** Plausible explanations include a changed account/usage model, a Worker-specific or legacy usage-model configuration, or an incorrect historical interpretation of API error 100328. The current isolated `wrangler.toml` has no explicit `limits.cpu_ms` setting. Do not infer the effective plan/limit from invocation samples alone.
+
+Required evidence from Cloudflare Dashboard, read-only:
+1. Account-level Workers plan/usage model and billing status.
+2. Exact disposable Worker > Settings > CPU limit and Usage Model.
+3. The invocation log details for run #45879657641, including outcome and CPU time.
+4. Confirm whether the application Preview Worker has a different effective limit from the disposable benchmark Worker.
+
+No plan upgrade, paid feature, CPU-limit change or billing change is authorized. Do not change configuration to accommodate the measurements. Keep Argon2id isolated and do not integrate it until the effective execution limit and cost implications are established.
+
+Official current references (checked 2026-11-27):
+- Cloudflare Workers limits: https://developers.cloudflare.com/workers/platform/limits/
+- Cloudflare Workers pricing and usage models: https://developers.cloudflare.com/workers/platform/pricing/
+- Cloudflare Wrangler CPU limit configuration: https://developers.cloudflare.com/workers/wrangler/configuration/
 # Password Storage Design Assessment — Cloudflare Workers
 
 **Assessment date:** 2026-11-26
