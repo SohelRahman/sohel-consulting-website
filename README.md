@@ -1,3 +1,7 @@
+## MFA challenge persistence
+
+Administrator MFA challenges are stored in D1 with a purpose, expiry and single-use consumption claim. Challenge consumption is coupled to the accepted TOTP counter or recovery-code update in the same D1 batch. The additive schema is `migrations/0020_admin_mfa_challenge_state.sql`; source/contract tests are in `scripts/test-admin-mfa.mjs` and `scripts/test-admin-mfa-challenge.py`. Applying this migration to any remote database requires explicit approval and target verification.
+
 # Sohel Rahman — Consulting & Professional Training
 
 Bilingual English/Bangla website with consulting pages, course registration, inquiry intake and a protected administrator dashboard.
