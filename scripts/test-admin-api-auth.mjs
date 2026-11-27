@@ -20,14 +20,19 @@ async function sessionCookie({ role = "admin", permissions = [], active = 1, ses
   const signature = b64url(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
   return { cookie: `sr_admin=${payload}.${signature}`, user: { id: sessionUserId, email, full_name: "Test User", role, permissions_json: JSON.stringify(permissions), is_active: active, session_version: sessionVersion } };
 }
-function mockDb(user, { mfaEnabled = true } = {}) {
+function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount = 2 } = {}) {
   return {
     prepare(sql) {
       let values = [];
       const statement = {
         bind(...args) { values = args; return statement; },
         async first() {
-          if (sql.includes("FROM admin_users WHERE id=?")) return user;
+          if (sql.includes("FROM admin_users WHERE id=?")) {
+            if (values[0] === user.id) return user;
+            if (targetUser && values[0] === targetUser.id) return targetUser;
+            return null;
+          }
+          if (sql.includes("COUNT(*) AS n FROM admin_users WHERE role='admin' AND is_active=1")) return { n: activeAdminCount };
           if (sql.includes("FROM admin_mfa_credentials WHERE user_id=?")) return mfaEnabled ? { enabled_at: "2026-01-01T00:00:00Z" } : null;
           if (sql.includes("registration_status='pending_review'")) return { n: 2 };
           if (sql.includes("enrollment_status='confirmed'")) return { n: 3 };
@@ -184,6 +189,27 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
   assert.equal(remove.status, 400, "Admin cannot delete their own account");
   expandedScenarios += 3;
 }
+// The account manager must preserve the final active administrator.
+{
+  const auth = await sessionCookie({ role: "admin" });
+  const targetId = "123e4567-e89b-12d3-a456-426614174001";
+  const targetUser = { id: targetId, email: "other-admin@example.test", role: "admin", is_active: 1, permissions_json: "[]" };
+  const db = mockDb(auth.user, { targetUser, activeAdminCount: 1 });
+  const patch = await worker.fetch(new Request("https://example.test/api/admin/users/" + targetId, {
+    method: "PATCH",
+    headers: { cookie: auth.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({ is_active: false })
+  }), { DB: db, SESSION_SECRET: secret });
+  assert.equal(patch.status, 409, "Admin cannot disable the last active administrator");
+
+  const remove = await worker.fetch(new Request("https://example.test/api/admin/users/" + targetId, {
+    method: "DELETE",
+    headers: { cookie: auth.cookie, origin: "https://example.test" }
+  }), { DB: db, SESSION_SECRET: secret });
+  assert.equal(remove.status, 409, "Admin cannot delete the last active administrator");
+  expandedScenarios += 2;
+}
+
 // Inquiry view access and mutation permission boundary.
 {
   const auth = await sessionCookie({ role: "user", permissions: ["inquiries.view"] });
