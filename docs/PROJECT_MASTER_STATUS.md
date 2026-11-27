@@ -713,3 +713,7 @@ The future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0` 
 - Validation run [#46002420731](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002420731) completed successfully for `current-focus-development` commit `0832630d1b3dd034db064a7d778df5a5eeaa1ea0`.
 - Migration 0019 followed by 0020 now passes the SQLite schema/transaction test path, including challenge replay and factor/session claim checks.
 - This does not establish live Cloudflare D1 compatibility or Preview acceptance. Migration 0020 has not been applied remotely. Preview deployment and Production actions remain unauthorized and untouched.
+
+## Preview deployment MFA gate — 2026-11-27
+
+The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa-challenge.py` alongside the existing MFA cryptographic/source-contract checks before any Preview deployment step. This adds the SQLite migration-order, challenge replay, expiry, purpose, recovery-code and factor/session transaction checks to the deployment gate. It does not apply migration 0020 or deploy the Worker. The workflow change is on `current-focus-development`; its CI validation is pending.
