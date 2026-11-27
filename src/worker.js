@@ -49,12 +49,12 @@ function permissionsFor(user) {
 }
 function requiredPermission(path, method) {
   if(path==="/api/admin/me" || path==="/api/admin/users" || path.startsWith("/api/admin/users/"))return null;
-  if(path==="/api/admin/summary")return "dashboard.view";
+  if(path==="/api/admin/summary")return method==="GET"?"dashboard.view":null;
   if(path==="/api/admin/courses")return method==="GET"?"courses.view":"courses.manage";
   if(path.startsWith("/api/admin/courses/"))return method==="GET"?"courses.view":"courses.manage";
-  if(path==="/api/admin/registrations")return "registrations.view";
+  if(path==="/api/admin/registrations")return method==="GET"?"registrations.view":null;
   if(path.startsWith("/api/admin/registrations/"))return method==="GET"?"registrations.view":"registrations.manage";
-  if(path==="/api/admin/inquiries")return "inquiries.view";
+  if(path==="/api/admin/inquiries")return method==="GET"?"inquiries.view":null;
   if(path.startsWith("/api/admin/inquiries/"))return method==="GET"?"inquiries.view":"inquiries.manage";
   if(path==="/api/admin/site-content" || path==="/api/admin/cms" || path==="/api/admin/cms/history" || path==="/api/admin/cms/preview" || path==="/api/admin/cms/pages")return method==="GET"?"content.view":"content.manage";
   if(path.startsWith("/api/admin/cms/"))return "content.manage";
@@ -65,8 +65,8 @@ function requiredPermission(path, method) {
   if(path==="/api/admin/media/audit")return method==="GET"?"media.view":null;
   if(path==="/api/admin/media/inventory")return method==="GET"?"media.view":method==="POST"?"media.manage":null;
   if(path.startsWith("/api/admin/media/"))return "media.manage";
-  if(path==="/api/admin/analytics")return "analytics.view";
-  if(path==="/api/admin/chat/conversations")return "chat.view";
+  if(path==="/api/admin/analytics")return method==="GET"?"analytics.view":null;
+  if(path==="/api/admin/chat/conversations")return method==="GET"?"chat.view":null;
   if(path.startsWith("/api/admin/chat/conversations/"))return method==="GET"?"chat.view":"chat.reply";
   return null;
 }
