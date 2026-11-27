@@ -1,5 +1,29 @@
 
 
+## 2026-11-27 — CPU limit discrepancy requires account-side verification
+
+Runtime [#45879657641](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45879657641) passed and returned 12 route-identifiable invocation events for its disposable Worker:
+
+- `POST /hash`: 6 samples, CPU **45, 48, 44, 51, 78, 66 ms**.
+- `POST /verify`: 5 samples, CPU **84, 73, 63, 51, 97 ms**.
+- `GET /health`: 1 sample, CPU **0 ms**.
+
+The source URL in each event identifies the HTTP route; this is per-Worker-invocation CPU time, not a pure Argon2 primitive benchmark. The event source and script name matched the disposable Worker. Cleanup passed (DELETE 200, absence check 404).
+
+### Critical discrepancy
+
+The password-storage assessment previously recorded that Cloudflare API error 100328 confirmed the linked account was on Workers Free, whose documented CPU limit is 10 ms/request. Current official Cloudflare docs still list Free at 10 ms/request and Paid Standard at a 30-second default (configurable up to 5 minutes). Cloudflare notes limited flexibility for infrequent over-limit executions, but 11 of 11 non-zero hash/verify events in this run exceeded 10 ms. This cannot be treated as proof that the Free limit is satisfied.
+
+The isolated `prototypes/argon2id-wasm/wrangler.toml` has no explicit `limits.cpu_ms` entry. However, this alone does not establish the effective account/Worker usage model.
+
+**Decision: BLOCKED pending read-only dashboard verification.** Verify account plan/usage model, the exact disposable Worker Usage Model and CPU limit, and the corresponding invocation outcome details. Also verify whether the website Preview Worker uses the same effective limit. Do not change plan, billing, Worker limits or deployment configuration. Do not integrate the prototype until this is resolved.
+
+Official references checked 2026-11-27:
+- https://developers.cloudflare.com/workers/platform/limits/
+- https://developers.cloudflare.com/workers/platform/pricing/
+- https://developers.cloudflare.com/workers/wrangler/configuration/
+
+
 ## 2026-11-27 — Third telemetry run and request-correlation limitation
 
 Isolated runtime [#45878008941](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45878008941) passed on commit 69a68d0af39f705dcb722bb408e2657ae2383893. Cloudflare returned two invocation records for the exact disposable Worker:
