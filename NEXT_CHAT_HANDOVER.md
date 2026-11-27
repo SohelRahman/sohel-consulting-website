@@ -151,3 +151,8 @@ Latest development changes on `current-focus-development`:
 ## 2026-11-27 — Authenticated Admin API handler integration CI passed
 
 Development validation [#46030635598](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46030635598) completed successfully. The authenticated Admin API handler integration step passed, along with the workflow's remaining validation steps. The test uses a mocked D1 adapter, so this does not replace remote Preview/D1 runtime verification. The Preview runtime smoke and Preview deployment jobs for this commit were skipped by workflow conditions; no Preview deployment occurred.
+
+
+## 2026-11-27 — Authenticated Admin API permission boundary coverage expanded
+
+Expanded `scripts/test-admin-api-auth.mjs` beyond the initial six authentication scenarios. New real-Worker-handler cases verify that a limited user with only `courses.view` cannot POST to the course collection, a dashboard-only user cannot read courses, and a limited user is denied GET/POST/PATCH/DELETE access to Admin-only account-management routes even when holding unrelated manage permissions. An Admin account-list GET is also checked. The test now contains 13 scenarios. These checks use signed test sessions and mocked D1; they do not establish live Cloudflare D1 or Preview runtime behavior. CI is pending. No Preview deployment, migration 0020 application, or Production action was performed.
