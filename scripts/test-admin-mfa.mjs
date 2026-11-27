@@ -45,3 +45,6 @@ const disableRoute=workerSource.slice(workerSource.indexOf('if(path==="/api/admi
 assert.ok(disableRoute.includes("let factorStatement=null")&&disableRoute.includes("await env.DB.batch([")&&disableRoute.includes("AND "+'"+factorGuardSql'),"MFA disable must consume second-factor proof and revoke sessions in one guarded D1 batch");
 assert.ok(disableRoute.includes("factorGuardSql=")&&disableRoute.includes("session_version=session_version+1"),"MFA disable session revocation must depend on successful factor consumption");
 console.log("Admin MFA disable atomicity source-contract checks passed.");
+
+assert.ok(challengeMigration.includes("last_factor_claim_id TEXT")&&challengeMigration.includes("used_by TEXT"),"MFA reset must persist a unique factor-consumption claim");
+assert.ok(disableRoute.includes("last_factor_claim_id=?")&&disableRoute.includes("used_by=?")&&disableRoute.includes("factorClaimId"),"MFA disable must bind the accepted factor to a unique claim before revoking sessions");
