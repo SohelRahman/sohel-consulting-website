@@ -12,13 +12,13 @@ const now = Date.now();
 function b64url(bytes) {
   return Buffer.from(bytes).toString("base64url");
 }
-async function sessionCookie({ role = "admin", permissions = [], active = 1, sessionVersion = 4, tokenVersion = sessionVersion } = {}) {
+async function sessionCookie({ role = "admin", permissions = [], active = 1, sessionVersion = 4, tokenVersion = sessionVersion, id: sessionUserId = userId } = {}) {
   const payload = b64url(Buffer.from(JSON.stringify({
-    userId, email, sessionVersion: tokenVersion, exp: now + 60_000
+    userId: sessionUserId, email, sessionVersion: tokenVersion, exp: now + 60_000
   })));
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const signature = b64url(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
-  return { cookie: `sr_admin=${payload}.${signature}`, user: { id: userId, email, full_name: "Test User", role, permissions_json: JSON.stringify(permissions), is_active: active, session_version: sessionVersion } };
+  return { cookie: `sr_admin=${payload}.${signature}`, user: { id: sessionUserId, email, full_name: "Test User", role, permissions_json: JSON.stringify(permissions), is_active: active, session_version: sessionVersion } };
 }
 function mockDb(user, { mfaEnabled = true } = {}) {
   return {
@@ -168,8 +168,8 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
 
 // Account-management self-protection: an administrator cannot disable or demote their own account.
 {
-  const auth = await sessionCookie({ role: "admin" });
   const targetPath = "/api/admin/users/123e4567-e89b-12d3-a456-426614174000";
+  const auth = await sessionCookie({ role: "admin", id: "123e4567-e89b-12d3-a456-426614174000" });
   const disable = await requestJson(targetPath, {
     user: auth.user, cookie: auth.cookie, method: "PATCH", body: { is_active: false }
   });
