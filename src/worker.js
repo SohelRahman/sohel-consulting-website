@@ -654,17 +654,20 @@ async function handleApi(request, env) {
         if(target.id===user.id && (data?.is_active===false || data?.role==="user" || (typeof data?.password==="string" && data.password)))return json({error:"You cannot disable, demote or reset your own account here. Use Account settings to change your password."},400);
         const role=data?.role==="admin"?"admin":data?.role==="user"?"user":target.role;
         const active=typeof data?.is_active==="boolean"?Number(data.is_active):Number(target.is_active);
-        if(target.role==="admin" && (role!=="admin"||!active)){
-          const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM admin_users WHERE role='admin' AND is_active=1").first();
-          if(Number(count?.n||0)<=1)return json({error:"At least one active administrator must remain."},409);
-        }
+        const removingLastAdmin=target.role==="admin" && Number(target.is_active)===1 && (role!=="admin"||!active);
         const selected=Array.isArray(data?.permissions)?[...new Set(data.permissions.filter(x=>ALL_ADMIN_PERMISSIONS.has(x)))]:null;
         const name=typeof data?.name==="string"?clean(data.name,120):null;
         const password=typeof data?.password==="string"?data.password:null;
         if(password!==null&&(password.length<12||password.length>256))return json({error:"A new password must contain at least 12 characters."},400);
         const hash=password?await hashPassword(password):null;
-        await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?")
-          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||(target.role==="admin"?[]:permissionsFor(target)))),hash,userMatch[1]).run();
+        const guard=removingLastAdmin?" AND EXISTS (SELECT 1 FROM admin_users AS remaining WHERE remaining.role='admin' AND remaining.is_active=1 AND remaining.id<>admin_users.id)":"";
+        const update=await env.DB.prepare("UPDATE admin_users SET full_name=COALESCE(?,full_name),role=?,is_active=?,permissions_json=?,password_hash=COALESCE(?,password_hash),session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND role=? AND is_active=?"+guard)
+          .bind(name,role,active,JSON.stringify(role==="admin"?[]:(selected||(target.role==="admin"?[]:permissionsFor(target)))),hash,userMatch[1],target.role,target.is_active).run();
+        if(!update?.meta?.changes){
+          const stillExists=await env.DB.prepare("SELECT id FROM admin_users WHERE id=?").bind(userMatch[1]).first();
+          if(!stillExists)return json({error:"User account not found."},404);
+          return json({error:removingLastAdmin?"At least one active administrator must remain.":"Account changed concurrently. Reload and retry."},409);
+        }
         await audit(env,session.email,"admin_user_updated","admin_user",userMatch[1],JSON.stringify({role,is_active:!!active,password_reset:!!password}));
         return json({ok:true});
       }
@@ -673,11 +676,14 @@ async function handleApi(request, env) {
         if(userMatch[1]===user.id)return json({error:"You cannot remove your own account."},400);
         const target=await env.DB.prepare("SELECT id,role,is_active FROM admin_users WHERE id=?").bind(userMatch[1]).first();
         if(!target)return json({error:"User account not found."},404);
-        if(target.role==="admin"&&target.is_active){
-          const count=await env.DB.prepare("SELECT COUNT(*) AS n FROM admin_users WHERE role='admin' AND is_active=1").first();
-          if(Number(count?.n||0)<=1)return json({error:"At least one active administrator must remain."},409);
+        const removingLastAdmin=target.role==="admin"&&Number(target.is_active)===1;
+        const guard=removingLastAdmin?" AND EXISTS (SELECT 1 FROM admin_users AS remaining WHERE remaining.role='admin' AND remaining.is_active=1 AND remaining.id<>admin_users.id)":"";
+        const update=await env.DB.prepare("UPDATE admin_users SET is_active=0,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND role=? AND is_active=?"+guard).bind(userMatch[1],target.role,target.is_active).run();
+        if(!update?.meta?.changes){
+          const stillExists=await env.DB.prepare("SELECT id FROM admin_users WHERE id=?").bind(userMatch[1]).first();
+          if(!stillExists)return json({error:"User account not found."},404);
+          return json({error:removingLastAdmin?"At least one active administrator must remain.":"Account changed concurrently. Reload and retry."},409);
         }
-        await env.DB.prepare("UPDATE admin_users SET is_active=0,session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(userMatch[1]).run();
         await audit(env,session.email,"admin_user_disabled","admin_user",userMatch[1],"Account disabled");
         return json({ok:true});
       }
