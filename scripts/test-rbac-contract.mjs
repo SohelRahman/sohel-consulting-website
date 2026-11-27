@@ -59,7 +59,18 @@ const routePermissionCases = [
 for (const [path, method, expected] of routePermissionCases) {
   assert.equal(requiredPermission(path, method), expected, `permission mapping: ${method} ${path}`);
 }
-assert.equal(requiredPermission("/api/admin/courses", "OPTIONS"), "courses.manage", "unsupported methods never receive read permission");
+for (const path of ["/api/admin/summary", "/api/admin/registrations", "/api/admin/inquiries", "/api/admin/analytics", "/api/admin/chat/conversations"]) {
+  assert.equal(requiredPermission(path, "GET"), ({
+    "/api/admin/summary": "dashboard.view",
+    "/api/admin/registrations": "registrations.view",
+    "/api/admin/inquiries": "inquiries.view",
+    "/api/admin/analytics": "analytics.view",
+    "/api/admin/chat/conversations": "chat.view"
+  })[path], `read-only route permission: ${path}`);
+  for (const method of ["POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
+    assert.equal(requiredPermission(path, method), null, `unsupported method denied before RBAC grant: ${method} ${path}`);
+  }
+}
 
 // Exercise the real permission normalizer for Admin and limited-user roles.
 const permissionModelStart = worker.indexOf("const ADMIN_PERMISSIONS = [");
