@@ -216,3 +216,13 @@ The expected suite count is 32 (previously documented 29 plus three); the CI out
 ## 2026-11-28 — Self-protection test fixture correction
 
 CI identified that the new DELETE self-account test did not reach the route's self-delete check because the fixture user ID was not UUID-shaped. Updated `sessionCookie()` to accept a test identity override and use the same UUID in the signed token and route path. This corrects the test setup only. Previous run failed on the DELETE assertion (403 versus expected 400); rerun for fix commit `d56c8ecdfecb8b208b109b1f10535ef7230f5066` is pending.
+
+
+## 2026-11-28 — Atomic last-active-Admin protection added (CI pending)
+
+- Replaced the separate active-Admin count followed by an account update with a single conditional SQL UPDATE for both account PATCH and DELETE paths. When an active Admin is being demoted or disabled, the UPDATE succeeds only if another active Admin row exists at statement evaluation time.
+- Added optimistic role/active-state predicates so a concurrent change to the target account causes a conflict rather than silently applying an update based on stale state.
+- The handler checks D1's reported affected-row count. A rejected last-Admin transition returns HTTP 409; a target deleted during the operation returns 404.
+- Updated the mocked Worker-handler tests and added scripts/test-admin-last-admin-sqlite.py, which executes the conditional SQL against SQLite and verifies that two sequential removal attempts cannot remove both active Admins, and that the sole active Admin is preserved for both PATCH and DELETE forms.
+- Evidence limitation: SQLite tests validate SQL behavior and serialized statement outcomes. They are not a live Cloudflare D1 concurrency test and do not prove concurrent request behavior in the deployed Worker. CI must pass before this change is recorded as validated.
+- No remote D1 migration, Preview deployment, Production deployment, secret/configuration change, main update or PR merge was performed.
