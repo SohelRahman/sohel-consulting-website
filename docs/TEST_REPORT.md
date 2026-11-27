@@ -135,3 +135,11 @@ Added an executable test matrix to `scripts/test-rbac-contract.mjs`. It extracts
 ## 2026-11-27 — Admin and limited-user permission normalization tests added
 
 Extended the RBAC test to execute the actual `permissionsFor()` implementation. New cases assert that Admin receives the complete permission set, limited users retain only allowlisted permissions, malformed JSON grants no permissions, and non-array permission data grants no permissions. Combined with the route-to-permission matrix, this strengthens deterministic unit coverage of the permission model. It still does not exercise authenticated HTTP requests, session revocation, 401/403 responses or live D1. CI is pending. No remote migration, Preview deployment or Production change was performed.
+
+
+## 2026-11-27 — Read-only Admin route method allowlist
+
+- Updated `requiredPermission()` so Admin summary, registrations, inquiries, analytics, and chat-conversation collection endpoints receive their view permission only for `GET`.
+- Extended `scripts/test-rbac-contract.mjs` to execute the real permission mapper and assert that `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS` return no permission requirement for those read-only routes.
+- Validation status: CI pending. These are isolated function/contract tests, not authenticated Worker HTTP tests or Preview runtime checks.
+- No D1 migration, Preview deployment, or Production action was performed.
