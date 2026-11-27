@@ -1,3 +1,8 @@
+## 2026-11-27 — Single-use challenge remediation implemented in source
+
+Migration `0020_admin_mfa_challenge_state.sql` persists challenge nonce, user, purpose, expiry, and consumption state. The Worker validates persisted unconsumed challenge state and claims the nonce in a D1 batch; the factor update is conditioned on that same unique claim. TOTP counter and recovery-code consumption are therefore coupled to the one-time challenge claim. Enrollment confirmation also claims the challenge in the same batch as MFA credential activation and recovery-code insertion.
+
+Source and SQLite transaction tests have been added, but CI is pending and no authenticated D1 runtime replay test has been run. Migration 0020 has not been applied remotely. Do not mark MFA acceptance complete until the exact deployed Preview commit passes sequential and concurrent replay tests after explicit migration/deployment authorization.
 ## 2026-11-27 — Source review finding: MFA challenge replay is not prevented
 
 A follow-up read-only source review of `src/worker.js` found that signed MFA challenges include a random nonce and a five-minute expiry, but `readMfaChallenge()` validates the signature, purpose, expiry and current account/session version without checking whether that nonce has already been consumed. After a successful `POST /api/admin/mfa/verify`, the route issues a full session using the same `session_version` and does not invalidate the challenge. The TOTP counter and recovery-code rows prevent reuse of the same factor, but they do not invalidate the challenge itself. During the challenge lifetime, a valid subsequent TOTP time-step code or a different unused recovery code may therefore be accepted against the same signed challenge, creating additional sessions.
