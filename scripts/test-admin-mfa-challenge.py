@@ -84,3 +84,21 @@ add_challenge("wrong-purpose","enroll")
 assert not claim_login("wrong-purpose","wrong-purpose-claim",13), "enrollment challenge must not authorize login"
 
 print("Admin MFA challenge persistence and replay transaction tests passed.")
+
+db.execute("ALTER TABLE admin_users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 1")
+db.execute("UPDATE admin_mfa_credentials SET enabled_at='enabled' WHERE user_id='u1'")
+with db:
+    factor = db.execute(
+        "UPDATE admin_mfa_credentials SET last_totp_counter=12 WHERE user_id='u1' "
+        "AND last_totp_counter<12 AND enabled_at IS NOT NULL "
+        "AND EXISTS (SELECT 1 FROM admin_users WHERE id='u1' AND session_version=1)"
+    ).rowcount
+    revoked = db.execute(
+        "UPDATE admin_users SET session_version=session_version+1 WHERE id='u1' AND session_version=1 "
+        "AND EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id='u1' AND last_totp_counter=12 AND enabled_at IS NOT NULL)"
+    ).rowcount
+    db.execute("DELETE FROM admin_mfa_credentials WHERE user_id='u1' AND EXISTS (SELECT 1 FROM admin_users WHERE id='u1' AND session_version=2)")
+assert factor == 1 and revoked == 1
+assert db.execute("SELECT session_version FROM admin_users WHERE id='u1'").fetchone()[0] == 2
+assert db.execute("SELECT COUNT(*) FROM admin_mfa_credentials WHERE user_id='u1'").fetchone()[0] == 0
+print("Admin MFA disable factor/session atomicity transaction test passed.")
