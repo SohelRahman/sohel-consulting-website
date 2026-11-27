@@ -12,13 +12,13 @@ const now = Date.now();
 function b64url(bytes) {
   return Buffer.from(bytes).toString("base64url");
 }
-async function sessionCookie({ role = "admin", permissions = [], active = 1, sessionVersion = 4, tokenVersion = sessionVersion, id: sessionUserId = userId } = {}) {
+async function sessionCookie({ role = "admin", permissions = [], active = 1, sessionVersion = 4, tokenVersion = sessionVersion, id: sessionUserId = userId, email: sessionEmail = email } = {}) {
   const payload = b64url(Buffer.from(JSON.stringify({
-    userId: sessionUserId, email, sessionVersion: tokenVersion, exp: now + 60_000
+    userId: sessionUserId, email: sessionEmail, sessionVersion: tokenVersion, exp: now + 60_000
   })));
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const signature = b64url(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
-  return { cookie: `sr_admin=${payload}.${signature}`, user: { id: sessionUserId, email, full_name: "Test User", role, permissions_json: JSON.stringify(permissions), is_active: active, session_version: sessionVersion } };
+  return { cookie: `sr_admin=${payload}.${signature}`, user: { id: sessionUserId, email: sessionEmail, full_name: "Test User", role, permissions_json: JSON.stringify(permissions), is_active: active, session_version: sessionVersion } };
 }
 function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount = 2 } = {}) {
   return {
@@ -40,8 +40,23 @@ function mockDb(user, { mfaEnabled = true, targetUser = null, activeAdminCount =
           if (sql.includes("FROM inquiries WHERE status")) return { n: 4 };
           throw new Error("Unexpected D1 first() query in test: " + sql);
         },
-        async all() { return { results: [] }; },
-        async run() { return { meta: { changes: 1 } }; }
+        async all() {
+          if (sql.includes("FROM admin_users ORDER BY role,email")) return { results: targetUser ? [targetUser] : [] };
+          return { results: [] };
+        },
+        async run() {
+          if (targetUser && sql.includes("UPDATE admin_users SET full_name=COALESCE")) {
+            targetUser.full_name = values[0] ?? targetUser.full_name;
+            targetUser.role = values[1];
+            targetUser.is_active = values[2];
+            targetUser.permissions_json = values[3];
+            targetUser.session_version = Number(targetUser.session_version || 0) + 1;
+          } else if (targetUser && sql.includes("UPDATE admin_users SET is_active=0,session_version=session_version+1")) {
+            targetUser.is_active = 0;
+            targetUser.session_version = Number(targetUser.session_version || 0) + 1;
+          }
+          return { meta: { changes: 1 } };
+        }
       };
       return statement;
     }
@@ -207,6 +222,71 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
     headers: { cookie: auth.cookie, origin: "https://example.test" }
   }), { DB: db, SESSION_SECRET: secret });
   assert.equal(remove.status, 409, "Admin cannot delete the last active administrator");
+  expandedScenarios += 2;
+}
+
+// Account listing returns the configured account fields but never password hashes.
+{
+  const auth = await sessionCookie({ role: "admin" });
+  const target = { id: "123e4567-e89b-12d3-a456-426614174002", email: "limited@example.test", full_name: "Limited User", role: "user", permissions_json: '["courses.view"]', is_active: 1, password_hash: "must-not-leak" };
+  const response = await worker.fetch(new Request("https://example.test/api/admin/users", {
+    headers: { cookie: auth.cookie }
+  }), { DB: mockDb(auth.user, { targetUser: target }), SESSION_SECRET: secret });
+  assert.equal(response.status, 200, "Admin can list configured accounts");
+  const payload = await response.json();
+  assert.equal(payload.users.length, 1);
+  assert.equal(payload.users[0].id, target.id);
+  assert.deepEqual(payload.users[0].permissions, ["courses.view"]);
+  assert.equal("password_hash" in payload.users[0], false, "account list never exposes password hashes");
+  expandedScenarios++;
+}
+
+// Permission edits increment the target session version and persist the allowlisted permission set.
+{
+  const auth = await sessionCookie({ role: "admin" });
+  const target = { id: "123e4567-e89b-12d3-a456-426614174003", email: "limited@example.test", role: "user", is_active: 1, permissions_json: "[]", session_version: 7 };
+  const response = await worker.fetch(new Request("https://example.test/api/admin/users/" + target.id, {
+    method: "PATCH",
+    headers: { cookie: auth.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({ permissions: ["courses.view", "unknown.permission"] })
+  }), { DB: mockDb(auth.user, { targetUser: target }), SESSION_SECRET: secret });
+  assert.equal(response.status, 200, "Admin can update a limited account's permissions");
+  assert.deepEqual(JSON.parse(target.permissions_json), ["courses.view"], "unknown permissions are discarded");
+  assert.equal(target.session_version, 8, "permission change revokes existing sessions");
+  expandedScenarios++;
+}
+
+// Disabling an account revokes its existing signed session.
+{
+  const actor = await sessionCookie({ role: "admin" });
+  const target = { id: "123e4567-e89b-12d3-a456-426614174004", email: "disabled@example.test", full_name: "Disabled User", role: "user", is_active: 1, permissions_json: "[]", session_version: 3 };
+  const oldSession = await sessionCookie({ role: "user", id: target.id, email: target.email, sessionVersion: 3 });
+  const disable = await worker.fetch(new Request("https://example.test/api/admin/users/" + target.id, {
+    method: "PATCH",
+    headers: { cookie: actor.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({ is_active: false })
+  }), { DB: mockDb(actor.user, { targetUser: target }), SESSION_SECRET: secret });
+  assert.equal(disable.status, 200, "Admin can disable a separate limited account");
+  assert.equal(target.is_active, 0);
+  const followup = await requestSummary({ user: target, cookie: oldSession.cookie });
+  assert.equal(followup.status, 401, "disabled account's previously signed session is rejected");
+  expandedScenarios += 2;
+}
+
+// Password reset advances session_version and rejects the target's previous signed session.
+{
+  const actor = await sessionCookie({ role: "admin" });
+  const target = { id: "123e4567-e89b-12d3-a456-426614174005", email: "reset@example.test", full_name: "Reset User", role: "user", is_active: 1, permissions_json: "[]", session_version: 11 };
+  const oldSession = await sessionCookie({ role: "user", id: target.id, email: target.email, sessionVersion: 11 });
+  const reset = await worker.fetch(new Request("https://example.test/api/admin/users/" + target.id, {
+    method: "PATCH",
+    headers: { cookie: actor.cookie, origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({ password: "New-Strong-Test-Password-2026" })
+  }), { DB: mockDb(actor.user, { targetUser: target }), SESSION_SECRET: secret });
+  assert.equal(reset.status, 200, "Admin can reset a separate account password");
+  assert.equal(target.session_version, 12, "password reset increments session version");
+  const followup = await requestSummary({ user: target, cookie: oldSession.cookie });
+  assert.equal(followup.status, 401, "password reset invalidates the previous signed session");
   expandedScenarios += 2;
 }
 
