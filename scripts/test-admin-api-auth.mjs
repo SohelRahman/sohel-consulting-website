@@ -178,8 +178,8 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
     user: auth.user, cookie: auth.cookie, method: "PATCH", body: { role: "user" }
   });
   assert.equal(demote.status, 400, "Admin cannot demote their own account through account management");
-  const remove = await requestPath(targetPath, {
-    user: auth.user, cookie: auth.cookie, method: "DELETE"
+  const remove = await requestJson(targetPath, {
+    user: auth.user, cookie: auth.cookie, method: "DELETE", body: {}
   });
   assert.equal(remove.status, 400, "Admin cannot delete their own account");
   expandedScenarios += 3;
