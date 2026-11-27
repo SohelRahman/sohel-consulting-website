@@ -102,6 +102,15 @@ These are small samples from one disposable Worker run. They are not a stable pe
 | Production backup/migration/secrets | Preflight evidence incomplete | Not tested |
 | Production deployment | Not performed in this checkpoint | Not deployed |
 
+## MFA migration compatibility and CI — 2026-11-27
+
+- Branch: `current-focus-development`; tested commit: `0832630d1b3dd034db064a7d778df5a5eeaa1ea0`.
+- GitHub Actions [validation run #46002420731](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002420731): validation job completed successfully.
+- The test applies migrations `0019_admin_mfa.sql` then `0020_admin_mfa_challenge_state.sql` to SQLite and checks challenge replay, expiry, purpose, TOTP counter, recovery-code replay, enrollment replay and MFA-disable/reset factor/session atomicity.
+- The initial failure was a test fixture violating migration 0019's enabled-credential CHECK constraint (enabled credentials require `secret_ciphertext`). The fixture was corrected; no production code change was needed for this failure.
+- This is SQLite transaction/schema compatibility evidence, not a live Cloudflare D1 migration or Preview runtime test. Migration 0020 remains unapplied remotely pending explicit authorization.
+- Preview deployment and runtime smoke workflows were skipped; Production remains untouched.
+
 ## Test execution policy
 
 Record run ID/URL, tested commit, environment, exact scope, result, metrics, limitations, cleanup and side effects. Use synthetic records only with explicit authorization. Never submit real business records as test data.
