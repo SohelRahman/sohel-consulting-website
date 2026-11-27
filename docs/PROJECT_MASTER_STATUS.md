@@ -776,3 +776,9 @@ Added three authenticated Worker-handler cases to `scripts/test-admin-api-auth.m
 Added two further authenticated Worker-handler tests: `content.view` is denied CMS publish (403), while `content.manage` reaches page-identifier validation (400 for an intentionally invalid page identifier). The test rejects before any publishing query or database write. The authenticated Admin API integration suite now contains 29 scenarios. This remains mocked-D1 handler coverage, not live Preview CMS publishing evidence. CI is pending for this latest test change.
 
 **Production update:** No Production feature was deployed. Production Worker, D1, secrets and configuration remain untouched. The Preview deployment job was inspected for the prior documentation/test update and its deploy job was skipped. No migration 0020 was applied. Production release remains blocked pending Preview migration audit, approved Preview migration/deployment, live acceptance and Production readiness checks.
+
+## 2026-11-28 — Admin account self-protection handler tests added
+
+Extended `scripts/test-admin-api-auth.mjs` with three authenticated Worker-handler cases for Admin account management: an administrator cannot disable their own account, demote their own account, or delete their own account. Each request is checked through the real Worker `fetch()` entrypoint with a signed test session and mocked D1. The suite is expected to contain 32 scenarios after this addition, based on the prior documented 29 plus these three cases; verify the emitted test counter in CI before treating the count as confirmed.
+
+**Validation:** CI is pending for commit `240ec22c2cb733db2cba285a09920616c5e0ff00`. This is mocked-D1 handler coverage, not remote D1 or Preview runtime acceptance. No Preview deployment, migration 0020 application, or Production operation was performed. Production remains unreleased and unchanged.
