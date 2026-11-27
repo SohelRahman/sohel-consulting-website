@@ -192,3 +192,7 @@ Added two further authenticated Worker-handler tests: `content.view` is denied C
 Added three real-Worker-handler assertions in `scripts/test-admin-api-auth.mjs`: an authenticated Admin receives HTTP 400 when attempting to disable their own account, demote their own account, or delete their own account. The tests use signed sessions and mocked D1 and do not perform writes to a real database.
 
 The expected suite count is 32 (previously documented 29 plus three); the CI output must confirm the actual emitted counter. CI for commit `240ec22c2cb733db2cba285a09920616c5e0ff00` is pending. This does not verify target-account updates, last-active-Admin protection, password reset, or actual session revocation against D1. No Preview/Production deployment or migration occurred.
+
+## 2026-11-28 — Self-protection test fixture correction
+
+CI identified that the new DELETE self-account test did not reach the route's self-delete check because the fixture user ID was not UUID-shaped. Updated `sessionCookie()` to accept a test identity override and use the same UUID in the signed token and route path. This corrects the test setup only. Previous run failed on the DELETE assertion (403 versus expected 400); rerun for fix commit `d56c8ecdfecb8b208b109b1f10535ef7230f5066` is pending.
