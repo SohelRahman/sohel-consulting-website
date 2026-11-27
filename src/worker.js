@@ -497,18 +497,19 @@ async function handleApi(request, env) {
     if(!pending?.pending_secret_ciphertext||pending.enabled_at||Number(pending.pending_expires_at)<=Date.now())return mfaRejected(409);
     let secret;try{secret=await decryptTotpSecret(pending.pending_secret_ciphertext,env.MFA_ENCRYPTION_KEY,ctx.user.id);}catch{return json({error:"Pending MFA setup cannot be decrypted. Restart enrollment."},503);}
     const counter=await verifyTotp(secret,code,Date.now(),-1);if(counter===null){await audit(env,ctx.user.email,"admin_mfa_enrollment_verification_failed","admin_user",ctx.user.id,"TOTP enrollment code rejected");return json({error:"Authenticator code is invalid or expired. Check your device clock."},401);}
-    const codes=generateRecoveryCodes(10),batchId=id(),nextVersion=Number(ctx.user.session_version)+1,prepared=[];
+    const codes=generateRecoveryCodes(10),batchId=id(),consumeId=id(),nextVersion=Number(ctx.user.session_version)+1,prepared=[];
     for(const recoveryCode of codes){const salt=generateRecoverySalt(),codeHash=await hashRecoveryCode(recoveryCode,salt);prepared.push({salt,codeHash});}
     const statements=[
-      env.DB.prepare("UPDATE admin_mfa_credentials SET secret_ciphertext=pending_secret_ciphertext,pending_secret_ciphertext=NULL,pending_expires_at=NULL,last_totp_counter=?,recovery_batch_id=?,enabled_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND enabled_at IS NULL AND pending_secret_ciphertext=? AND pending_expires_at>? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(counter,batchId,ctx.user.id,pending.pending_secret_ciphertext,Date.now(),ctx.user.id,ctx.user.session_version),
-      env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=?").bind(ctx.user.id,ctx.user.session_version)
+      env.DB.prepare("UPDATE admin_mfa_challenges SET consumed_at=?,consumed_by=? WHERE nonce=? AND user_id=? AND purpose='enroll' AND expires_at>? AND consumed_at IS NULL").bind(Date.now(),consumeId,ctx.challenge.nonce,ctx.user.id,Date.now()),
+      env.DB.prepare("UPDATE admin_mfa_credentials SET secret_ciphertext=pending_secret_ciphertext,pending_secret_ciphertext=NULL,pending_expires_at=NULL,last_totp_counter=?,recovery_batch_id=?,enabled_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND enabled_at IS NULL AND pending_secret_ciphertext=? AND pending_expires_at>? AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?) AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)").bind(counter,batchId,ctx.user.id,pending.pending_secret_ciphertext,Date.now(),ctx.user.id,ctx.user.session_version,ctx.challenge.nonce,consumeId),
+      env.DB.prepare("UPDATE admin_users SET session_version=session_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND session_version=? AND EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND recovery_batch_id=? AND enabled_at IS NOT NULL) AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)").bind(ctx.user.id,ctx.user.session_version,ctx.user.id,batchId,ctx.challenge.nonce,consumeId)
     ];
-    for(const item of prepared)statements.push(env.DB.prepare("INSERT INTO admin_mfa_recovery_codes (user_id,code_hash,code_salt) SELECT ?,?,? WHERE EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND recovery_batch_id=? AND enabled_at IS NOT NULL) AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?)").bind(ctx.user.id,item.codeHash,item.salt,ctx.user.id,batchId,ctx.user.id,nextVersion));
+    for(const item of prepared)statements.push(env.DB.prepare("INSERT INTO admin_mfa_recovery_codes (user_id,code_hash,code_salt) SELECT ?,?,? WHERE EXISTS (SELECT 1 FROM admin_mfa_credentials WHERE user_id=? AND recovery_batch_id=? AND enabled_at IS NOT NULL) AND EXISTS (SELECT 1 FROM admin_users WHERE id=? AND session_version=?) AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)").bind(ctx.user.id,item.codeHash,item.salt,ctx.user.id,batchId,ctx.user.id,nextVersion,ctx.challenge.nonce,consumeId));
     const results=await env.DB.batch(statements);
-    if(!results[0]?.meta?.changes||!results[1]?.meta?.changes)return mfaRejected(409);
-    if(results.slice(2).some(x=>!x.meta?.changes))return json({error:"Recovery-code storage needs review. Sign in with your authenticator code."},500);
+    if(!results[0]?.meta?.changes||!results[1]?.meta?.changes||!results[2]?.meta?.changes)return mfaRejected(409);
+    if(results.slice(3).some(x=>!x.meta?.changes))return json({error:"Recovery-code storage needs review. Sign in with your authenticator code."},500);
     await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(ctx.user.id).run();
-    await audit(env,ctx.user.email,"admin_mfa_enabled","admin_user",ctx.user.id,"TOTP enabled; old sessions revoked and ten hashed recovery codes issued");
+    await audit(env,ctx.user.email,"admin_mfa_enabled","admin_user",ctx.user.id,"TOTP enabled; challenge consumed, old sessions revoked and ten hashed recovery codes issued");
     return mfaCompleteJson({ok:true,recoveryCodes:codes},await makeSession(ctx.user.id,ctx.user.email,nextVersion,env.SESSION_SECRET));
   }
   if(path==="/api/admin/mfa/verify"&&method==="POST"){
@@ -520,16 +521,34 @@ async function handleApi(request, env) {
     const data=await request.json().catch(()=>null),code=String(data?.code||""),recoveryCode=String(data?.recoveryCode||"");
     const credential=await env.DB.prepare("SELECT secret_ciphertext,last_totp_counter FROM admin_mfa_credentials WHERE user_id=? AND enabled_at IS NOT NULL").bind(ctx.user.id).first();
     if(!credential?.secret_ciphertext)return mfaRejected(409);
-    let accepted=false,usedRecovery=false;
+    let factorStatement=null,usedRecovery=false,consumeId=id();
     if(/^\d{6}$/.test(code)){
-      try{const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,ctx.user.id),counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));if(counter!==null){const result=await env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=?,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND last_totp_counter<?").bind(counter,ctx.user.id,counter).run();accepted=Boolean(result.meta?.changes);}}catch{return json({error:"MFA verification is temporarily unavailable."},503);}
+      try{
+        const secret=await decryptTotpSecret(credential.secret_ciphertext,env.MFA_ENCRYPTION_KEY,ctx.user.id);
+        const counter=await verifyTotp(secret,code,Date.now(),Number(credential.last_totp_counter));
+        if(counter!==null)factorStatement=env.DB.prepare("UPDATE admin_mfa_credentials SET last_totp_counter=?,updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND last_totp_counter<? AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)").bind(counter,ctx.user.id,counter,ctx.challenge.nonce,consumeId);
+      }catch{return json({error:"MFA verification is temporarily unavailable."},503);}
     }else if(recoveryCode){
       const rows=await env.DB.prepare("SELECT code_hash,code_salt FROM admin_mfa_recovery_codes WHERE user_id=? AND used_at IS NULL").bind(ctx.user.id).all();
-      for(const row of rows.results||[]){const candidate=await hashRecoveryCode(recoveryCode,row.code_salt);if(constantTimeTextEqual(candidate,row.code_hash)){const used=await env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL").bind(ctx.user.id,row.code_hash).run();accepted=Boolean(used.meta?.changes);usedRecovery=accepted;break;}}
+      for(const row of rows.results||[]){
+        const candidate=await hashRecoveryCode(recoveryCode,row.code_salt);
+        if(constantTimeTextEqual(candidate,row.code_hash)){
+          factorStatement=env.DB.prepare("UPDATE admin_mfa_recovery_codes SET used_at=CURRENT_TIMESTAMP WHERE user_id=? AND code_hash=? AND used_at IS NULL AND EXISTS (SELECT 1 FROM admin_mfa_challenges WHERE nonce=? AND consumed_by=?)").bind(ctx.user.id,row.code_hash,ctx.challenge.nonce,consumeId);
+          usedRecovery=true;break;
+        }
+      }
     }
-    if(!accepted){await audit(env,ctx.user.email,"admin_mfa_verification_failed","admin_user",ctx.user.id,"Second-factor code rejected or already consumed");return json({error:"Authenticator or recovery code is invalid or already used."},401);}
+    if(!factorStatement){await audit(env,ctx.user.email,"admin_mfa_verification_failed","admin_user",ctx.user.id,"Second-factor code rejected or already consumed");return json({error:"Authenticator or recovery code is invalid or already used."},401);}
+    const results=await env.DB.batch([
+      env.DB.prepare("UPDATE admin_mfa_challenges SET consumed_at=?,consumed_by=? WHERE nonce=? AND user_id=? AND purpose='login' AND expires_at>? AND consumed_at IS NULL").bind(Date.now(),consumeId,ctx.challenge.nonce,ctx.user.id,Date.now()),
+      factorStatement
+    ]);
+    if(!results[0]?.meta?.changes||!results[1]?.meta?.changes){
+      await audit(env,ctx.user.email,"admin_mfa_verification_failed","admin_user",ctx.user.id,"MFA challenge replay or factor reuse rejected");
+      return mfaRejected(409);
+    }
     await env.DB.prepare("UPDATE admin_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(ctx.user.id).run();
-    await audit(env,ctx.user.email,usedRecovery?"admin_mfa_recovery_code_used":"admin_mfa_verified","admin_user",ctx.user.id,usedRecovery?"One-time recovery code consumed":"TOTP challenge verified");
+    await audit(env,ctx.user.email,usedRecovery?"admin_mfa_recovery_code_used":"admin_mfa_verified","admin_user",ctx.user.id,usedRecovery?"One-time recovery code consumed; challenge consumed":"TOTP challenge and counter consumed");
     return mfaCompleteJson({ok:true},await makeSession(ctx.user.id,ctx.user.email,ctx.user.session_version,env.SESSION_SECRET));
   }
   if (path.startsWith("/api/admin/")) {
