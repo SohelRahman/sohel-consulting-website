@@ -1,3 +1,7 @@
+## 2026-11-27 — Argon2id CPU-budget gate clarification
+
+The latest isolated runtime produced route-level Worker CPU samples of 44–78 ms for /hash and 51–97 ms for /verify. This conflicts with the previously recorded Workers Free 10 ms/request assumption. The actual account and Worker usage model/limit must be verified read-only in Cloudflare Dashboard before the prototype can be accepted or rejected for the target runtime. No paid-plan upgrade, billing change, CPU-limit change or deployment configuration change is authorized. This gate blocks Argon2id integration, not unrelated Preview acceptance work.
+
 # Development Strategy and Work Breakdown Structure
 
 **Project:** Sohel Consulting Website  
