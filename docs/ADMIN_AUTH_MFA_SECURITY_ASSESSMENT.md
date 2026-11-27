@@ -1,3 +1,11 @@
+
+
+## 2026-11-27 — MFA single-use challenge CI validation passed
+
+- Development validation [#45996901546](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45996901546) completed successfully for branch head `782cec9dfd2951d0571d64e5baaf9d6f321b35e5`.
+- Passed Worker syntax, site validation, RBAC, CMS/Page Builder atomicity, CMS revision SQL, password compatibility, Admin MFA cryptographic/source-contract checks, the new MFA challenge SQLite transaction/replay test, course pricing, registration and quotation response tests.
+- This is CI/source-level evidence only. It does not prove remote D1 migration compatibility or authenticated Preview replay resistance.
+- Migration 0020 remains unapplied remotely; Preview deploy job was skipped. No D1 write, Preview deployment, Production action, `main` update or PR merge occurred.
 ## 2026-11-27 — Single-use challenge remediation implemented in source
 
 Migration `0020_admin_mfa_challenge_state.sql` persists challenge nonce, user, purpose, expiry, and consumption state. The Worker validates persisted unconsumed challenge state and claims the nonce in a D1 batch; the factor update is conditioned on that same unique claim. TOTP counter and recovery-code consumption are therefore coupled to the one-time challenge claim. Enrollment confirmation also claims the challenge in the same batch as MFA credential activation and recovery-code insertion.
