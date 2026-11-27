@@ -705,3 +705,11 @@ The Argon2 source remains pinned to immutable revision `dc7e0c25cda9a8421d2604de
 ## Toolchain warning classification — 2026-11-26
 
 The future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0` was emitted while compiling the separately installed `wasm-bindgen-cli` build tool, not while compiling the Argon2id crate. A direct check of the committed application `Cargo.lock` confirms neither package is present in its 34-package dependency graph. Keep this as a tooling dependency warning for follow-up; do not misclassify it as an application runtime dependency or a RustSec advisory. The pinned `wasm-bindgen-cli` version remains 0.2.130.
+
+
+## MFA migration CI checkpoint — 2026-11-27
+
+- Fixed the SQLite MFA transaction-test fixture to satisfy the credential-table CHECK constraint introduced by migration 0019.
+- Validation run [#46002420731](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002420731) completed successfully for `current-focus-development` commit `0832630d1b3dd034db064a7d778df5a5eeaa1ea0`.
+- Migration 0019 followed by 0020 now passes the SQLite schema/transaction test path, including challenge replay and factor/session claim checks.
+- This does not establish live Cloudflare D1 compatibility or Preview acceptance. Migration 0020 has not been applied remotely. Preview deployment and Production actions remain unauthorized and untouched.
