@@ -42,6 +42,13 @@ function mockDb(user, { mfaEnabled = true } = {}) {
     }
   };
 }
+
+async function requestPath(path, { user, cookie, method = "GET", mfaEnabled = true } = {}) {
+  return worker.fetch(new Request("https://example.test" + path, {
+    method, headers: cookie ? { cookie } : {}
+  }), { DB: mockDb(user, { mfaEnabled }), SESSION_SECRET: secret });
+}
+
 async function requestSummary({ user, cookie, mfaEnabled = true } = {}) {
   return worker.fetch(new Request("https://example.test/api/admin/summary", {
     headers: cookie ? { cookie } : {}
@@ -84,4 +91,37 @@ async function requestSummary({ user, cookie, mfaEnabled = true } = {}) {
   const response = await requestSummary({ user: auth.user, cookie: auth.cookie, mfaEnabled: false });
   assert.equal(response.status, 401, "MFA enrollment gate returns HTTP 401");
 }
-console.log("PASS authenticated Worker Admin API integration: 6 scenarios");
+
+let expandedScenarios = 6;
+// A view-only course permission cannot invoke a course mutation.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["courses.view"] });
+  const response = await requestPath("/api/admin/courses", { user: auth.user, cookie: auth.cookie, method: "POST" });
+  assert.equal(response.status, 403, "courses.view cannot create or mutate courses");
+  expandedScenarios++;
+}
+// A user with no course permission cannot read the course collection.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["dashboard.view"] });
+  const response = await requestPath("/api/admin/courses", { user: auth.user, cookie: auth.cookie });
+  assert.equal(response.status, 403, "dashboard.view does not grant courses.view");
+  expandedScenarios++;
+}
+// Account administration remains Admin-only, independent of ordinary permissions.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["dashboard.view", "courses.manage", "content.manage"] });
+  for (const [path, method] of [["/api/admin/users", "GET"], ["/api/admin/users", "POST"], ["/api/admin/users/target-user", "PATCH"], ["/api/admin/users/target-user", "DELETE"]]) {
+    const response = await requestPath(path, { user: auth.user, cookie: auth.cookie, method });
+    assert.equal(response.status, 403, `limited user is denied ${method} ${path}`);
+    expandedScenarios++;
+  }
+}
+// An administrator retains access to the account list endpoint.
+{
+  const auth = await sessionCookie({ role: "admin" });
+  const response = await requestPath("/api/admin/users", { user: auth.user, cookie: auth.cookie });
+  assert.equal(response.status, 200, "Admin can read account-management endpoint");
+  assert.deepEqual(await response.json(), { users: [] });
+  expandedScenarios++;
+}
+console.log(`PASS authenticated Worker Admin API integration: ${expandedScenarios} scenarios`);
