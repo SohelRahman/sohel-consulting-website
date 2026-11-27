@@ -249,4 +249,23 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
   expandedScenarios++;
 }
 
+
+ // CMS publishing is a manage-only operation.
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["content.view"] });
+  const response = await requestJson("/api/admin/cms/publish", {
+    user: auth.user, cookie: auth.cookie, method: "POST", body: { page: "home" }
+  });
+  assert.equal(response.status, 403, "content.view cannot publish CMS content");
+  expandedScenarios++;
+}
+{
+  const auth = await sessionCookie({ role: "user", permissions: ["content.manage"] });
+  const response = await requestJson("/api/admin/cms/publish", {
+    user: auth.user, cookie: auth.cookie, method: "POST", body: { page: "../invalid" }
+  });
+  assert.equal(response.status, 400, "content.manage reaches CMS publish page validation");
+  expandedScenarios++;
+}
+
 console.log(`PASS authenticated Worker Admin API integration: ${expandedScenarios} scenarios`);
