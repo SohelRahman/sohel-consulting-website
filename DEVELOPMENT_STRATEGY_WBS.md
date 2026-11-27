@@ -1,5 +1,14 @@
 
 
+## 2026-11-27 — MFA challenge and disable/reset hardening CI passed
+
+- Development validation [#45997274827](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/45997274827) completed successfully for branch head `a4f93af07ac9df33ad19cc8a4c8a722ec7910d37`.
+- The passing job includes Worker syntax, site validation, RBAC, CMS/Page Builder atomicity, CMS revision SQL, password compatibility, MFA cryptographic/source-contract tests, SQLite challenge replay/expiry/purpose tests, and MFA disable/reset factor-claim transaction checks, plus course pricing, registration and quotation tests.
+- The MFA disable route now assigns a unique factor claim marker to the consumed TOTP counter or recovery-code row. Session-version revocation is conditional on that exact marker, then MFA credential and recovery-code state are removed. This prevents a competing reset request from relying only on a factor value already consumed by another request.
+- This remains CI/source-level evidence. No authenticated D1 runtime replay/reset test has run. Migration 0020 has not been applied remotely and Preview deployment was skipped.
+- Next gate requires explicit authorization to apply migration 0020 and deploy the development Worker to Preview, then test fresh enrollment, MFA login, sequential/concurrent challenge replay, recovery-code single use, MFA reset and RBAC using a controlled Preview account. No Production action is included.
+
+
 ## 2026-11-27 — MFA disable/reset atomicity hardening added
 
 A further source review found MFA disable previously consumed the TOTP counter or recovery code before the separate session-revocation/deletion batch. The route now updates the factor and assigns a unique `factorClaimId` in the same guarded batch sequence; session-version increment is permitted only when that exact claim marker is present, followed by recovery-code and credential deletion. Migration 0020 adds `last_factor_claim_id` and `used_by` columns for these claim markers. Added source assertions and SQLite transaction coverage. CI result is pending for this additional change. No remote migration or deployment has occurred.
