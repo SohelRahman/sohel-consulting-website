@@ -1,3 +1,9 @@
+## 2026-11-27 — MFA single-use challenge source remediation
+
+Implemented on `current-focus-development`: migration `0020_admin_mfa_challenge_state.sql`; persisted challenge issuance/validation; one-time challenge claim coupled to TOTP counter or recovery-code consumption in a D1 batch; enrollment challenge claim coupled to MFA activation; expired challenge cleanup. Added source assertions and SQLite transaction tests, and wired them into development CI.
+
+**Do not treat as runtime accepted yet.** CI is pending. Migration 0020 has not been applied to Preview/Production, and no deployment or D1 write occurred. After CI, review D1 batch behavior and obtain explicit authorization for Preview migration/deployment before authenticated sequential/concurrent replay tests. Never merge PR #1 or touch Production without explicit authorization.
+
 ## New security blocker — MFA challenge replay
 
 Read-only review on 2026-11-27 found the signed five-minute MFA challenge nonce is not persisted/consumed after successful MFA verification. The same challenge may be reused with a different valid TOTP time-step or unused recovery code during its lifetime. This is a high-priority source-review finding, not a live exploit demonstration. Fix with a new additive migration for challenge state and atomic one-time consumption coupled to factor consumption; add sequential/concurrent replay tests. Do not merely increment global session_version on every login unless global session revocation is intended. See `docs/ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md` and `docs/SECURITY_BASELINE.md`.
