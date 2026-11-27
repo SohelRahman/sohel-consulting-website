@@ -165,6 +165,25 @@ async function requestJson(path, { user, cookie, method = "POST", body = {}, ori
     body: JSON.stringify(body)
   }), { DB: mockDb(user), SESSION_SECRET: secret });
 }
+
+// Account-management self-protection: an administrator cannot disable or demote their own account.
+{
+  const auth = await sessionCookie({ role: "admin" });
+  const targetPath = "/api/admin/users/123e4567-e89b-12d3-a456-426614174000";
+  const disable = await requestJson(targetPath, {
+    user: auth.user, cookie: auth.cookie, method: "PATCH", body: { is_active: false }
+  });
+  assert.equal(disable.status, 400, "Admin cannot disable their own account through account management");
+  const demote = await requestJson(targetPath, {
+    user: auth.user, cookie: auth.cookie, method: "PATCH", body: { role: "user" }
+  });
+  assert.equal(demote.status, 400, "Admin cannot demote their own account through account management");
+  const remove = await requestPath(targetPath, {
+    user: auth.user, cookie: auth.cookie, method: "DELETE"
+  });
+  assert.equal(remove.status, 400, "Admin cannot delete their own account");
+  expandedScenarios += 3;
+}
 // Inquiry view access and mutation permission boundary.
 {
   const auth = await sessionCookie({ role: "user", permissions: ["inquiries.view"] });
