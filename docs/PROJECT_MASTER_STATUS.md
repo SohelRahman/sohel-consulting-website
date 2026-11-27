@@ -717,3 +717,8 @@ The future-incompatibility warning for `buf_redux 0.8.4` and `multipart 0.18.0` 
 ## Preview deployment MFA gate — 2026-11-27
 
 The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa-challenge.py` alongside the existing MFA cryptographic/source-contract checks before any Preview deployment step. This adds the SQLite migration-order, challenge replay, expiry, purpose, recovery-code and factor/session transaction checks to the deployment gate. It does not apply migration 0020 or deploy the Worker. The workflow change is on `current-focus-development`; its CI validation is pending.
+
+
+## 2026-11-27 — Development validation and Preview gate passed
+
+Validation run [#46002620627](https://github.com/SohelRahman/sohel-consulting-website/actions/runs/46002620627) passed for `current-focus-development` commit `0bf2e16032b97bab504170caa8d1738aded25c74`. The run parsed both the general validation workflow and the guarded Preview deployment workflow; all listed JavaScript, site, RBAC, CMS, MFA (including SQLite challenge replay/migration-order tests), course pricing, registration and quotation checks passed. The Preview deployment workflow now runs the MFA challenge transaction test before any deployment step. This is CI evidence only: no workflow dispatch, Preview D1 migration or Worker deployment occurred. Next gate is a fresh read-only Preview D1 migration audit; applying migration 0020 and deploying remain separately approval-gated.
