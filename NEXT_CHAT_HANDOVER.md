@@ -1,3 +1,7 @@
+## New security blocker — MFA challenge replay
+
+Read-only review on 2026-11-27 found the signed five-minute MFA challenge nonce is not persisted/consumed after successful MFA verification. The same challenge may be reused with a different valid TOTP time-step or unused recovery code during its lifetime. This is a high-priority source-review finding, not a live exploit demonstration. Fix with a new additive migration for challenge state and atomic one-time consumption coupled to factor consumption; add sequential/concurrent replay tests. Do not merely increment global session_version on every login unless global session revocation is intended. See `docs/ADMIN_AUTH_MFA_SECURITY_ASSESSMENT.md` and `docs/SECURITY_BASELINE.md`.
+
 
 
 ### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
