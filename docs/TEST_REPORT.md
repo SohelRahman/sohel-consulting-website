@@ -143,3 +143,12 @@ Extended the RBAC test to execute the actual `permissionsFor()` implementation. 
 - Extended `scripts/test-rbac-contract.mjs` to execute the real permission mapper and assert that `POST`, `PUT`, `PATCH`, `DELETE`, and `OPTIONS` return no permission requirement for those read-only routes.
 - Validation status: CI pending. These are isolated function/contract tests, not authenticated Worker HTTP tests or Preview runtime checks.
 - No D1 migration, Preview deployment, or Production action was performed.
+
+
+## 2026-11-27 — Authenticated Admin API handler tests
+
+- Added `scripts/test-admin-api-auth.mjs`; it invokes the actual Worker `fetch()` handler with signed test sessions and a controlled D1 mock.
+- Scenarios: unauthenticated request 401; Admin summary read 200; limited user lacking `dashboard.view` 403; revoked session version 401; disabled account 401; MFA-not-enrolled account 401.
+- Added the test to `.github/workflows/validate-development.yml`.
+- Validation status: CI pending. The test uses mocked D1 and does not establish remote D1/Preview behavior.
+- No Preview or Production deployment/migration was performed.
