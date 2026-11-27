@@ -114,3 +114,7 @@ These are small samples from one disposable Worker run. They are not a stable pe
 ## Test execution policy
 
 Record run ID/URL, tested commit, environment, exact scope, result, metrics, limitations, cleanup and side effects. Use synthetic records only with explicit authorization. Never submit real business records as test data.
+
+## Preview deployment MFA gate — 2026-11-27
+
+The guarded Preview deployment workflow now runs `python3 scripts/test-admin-mfa-challenge.py` alongside the existing MFA cryptographic/source-contract checks before any Preview deployment step. This adds the SQLite migration-order, challenge replay, expiry, purpose, recovery-code and factor/session transaction checks to the deployment gate. It does not apply migration 0020 or deploy the Worker. The workflow change is on `current-focus-development`; its CI validation is pending.
