@@ -1,3 +1,7 @@
+## 2026-11-27 — WBS 3.0 MFA challenge replay remediation
+
+Source remediation implemented: persisted challenge records, purpose/expiry validation, single-use claim coupled with accepted factor consumption, enrollment challenge consumption and CI tests. Acceptance remains pending until CI passes, migration 0020 is reviewed/applied to an authorized Preview database, and authenticated sequential/concurrent replay tests pass against the exact deployed commit. No remote migration/deployment authorized or performed.
+
 ## 2026-11-27 — Authentication acceptance sequencing update
 
 A source review identified that the signed five-minute MFA challenge nonce is not persisted/consumed after success. Add a remediation subtask under WBS 3.0: persist challenge state, atomically consume it with the accepted TOTP/recovery factor, and test sequential/concurrent replay. This remediation precedes authenticated MFA Preview acceptance and ASVS sign-off. Do not apply the new migration or deploy without explicit approval.
