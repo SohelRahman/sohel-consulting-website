@@ -1,3 +1,8 @@
+## 2026-11-27 — MFA challenge replay gap found in source review
+
+- Read-only review of `src/worker.js` found the signed five-minute MFA challenge nonce is not persisted or consumed. A successful MFA verification issues a session without invalidating that challenge. TOTP counter and recovery-code one-time checks do not prevent using a different valid factor against the same challenge during its lifetime.
+- This is a high-priority source-review finding, not a live exploit demonstration. MFA acceptance is blocked until challenge state is persisted and consumed atomically with factor consumption; add sequential and concurrent replay tests.
+- Next code task: implement single-use MFA challenge persistence/consumption on `current-focus-development`, with a new additive migration and deterministic tests. No migration application or Preview deployment without explicit approval.
 
 
 ### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
