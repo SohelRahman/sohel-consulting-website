@@ -1,3 +1,8 @@
+## 2026-11-27 — MFA challenge replay remediation status
+
+The source now persists MFA challenge nonce, user, purpose and expiry. A successful login challenge is claimed once and the accepted TOTP counter or recovery-code row is updated only when the same claim succeeds. Enrollment confirmation similarly claims its challenge before enabling MFA and issuing recovery codes. This closes the previously identified source-level replay path in the intended D1 transaction model, subject to CI and D1 runtime verification.
+
+Open verification: CI pass; migration 0020 review and authorized Preview application; authenticated sequential and concurrent replay tests; then ASVS evidence update. No remote migration or deployment has occurred. See `docs/TEST_REPORT.md`.
 ## 2026-11-27 — MFA challenge single-use gap identified
 
 Read-only source review found that MFA challenge cookies are signed, purpose-bound and expire after five minutes, but their random nonce is not persisted or consumed. A successful MFA verification does not invalidate the challenge or change the session version. TOTP counter replay prevention and one-time recovery-code consumption do not make the challenge itself single-use; another valid time-step TOTP or unused recovery code could be accepted during the same challenge window. This is a high-priority source-review finding, not a live exploit demonstration.
