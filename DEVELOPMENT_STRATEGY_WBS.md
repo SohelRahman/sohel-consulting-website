@@ -1,3 +1,7 @@
+## 2026-11-27 — Authentication acceptance sequencing update
+
+A source review identified that the signed five-minute MFA challenge nonce is not persisted/consumed after success. Add a remediation subtask under WBS 3.0: persist challenge state, atomically consume it with the accepted TOTP/recovery factor, and test sequential/concurrent replay. This remediation precedes authenticated MFA Preview acceptance and ASVS sign-off. Do not apply the new migration or deploy without explicit approval.
+
 
 
 ### Additional Cloudflare usage-model finding (official docs checked 2026-11-27)
