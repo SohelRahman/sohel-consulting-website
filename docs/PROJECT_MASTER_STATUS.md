@@ -1,5 +1,10 @@
 
 
+## 2026-11-27 — Last-active-Administrator protection integration coverage added
+
+Extended the Admin API integration fixture to distinguish the authenticated administrator from a separate target account and to model the active-Administrator count query. Added real Worker-handler tests asserting that both PATCH disablement and DELETE are rejected with HTTP 409 when the target is the only active administrator. This validates the existing guard at the handler boundary; it does not establish behavior under concurrent D1 mutations. CI validation for commit `75ab74ca89850fbc37d743f394c3b22638228c47` is pending. No Preview/Production deployment or remote D1 write was performed.
+
+
 ## 2026-11-27 — Admin self-delete integration fixture corrected
 
 The latest Admin API integration run failed because the self-delete test used a request helper that omitted the required same-origin `Origin` header. The route correctly rejected that request with HTTP 403 before reaching its self-delete guard; the test expected HTTP 400. Updated the test to use the JSON request helper, which sends the same-origin header. This is a test-fixture correction, not a Worker behavior change. Validation for commit `a9d0e1c66c1499576f7dab28bb3265d210fff1ef` is pending. No Preview/Production deployment, remote D1 migration, or data write was performed.
